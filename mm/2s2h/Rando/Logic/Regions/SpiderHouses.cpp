@@ -8,7 +8,7 @@ using namespace Rando::Logic;
 
 // clang-format off
 static RegisterShipInitFunc initFunc([]() {
-        // Ocean Spider House
+    // Ocean Spider House
     Regions[RR_OCEAN_SPIDER_HOUSE_CENTRAL_ROOM] = RandoRegion{ .name = "Central Room", .sceneId = SCENE_KINDAN2,
         .checks = {
             CHECK(RC_OCEAN_SKULLTULA_2ND_ROOM_BEHIND_SKULL_1, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA),
@@ -198,7 +198,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_HIVE, CAN_USE_PROJECTILE),
             CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_NEAR_CEILING, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA),
             CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_PILLAR, CAN_KILL_CURSED_SKULLTULA),
-            CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_WALL, (Flags_GetSceneSwitch(SCENE_KINSTA1, 0x0d) && CAN_KILL_CURSED_SKULLTULA) || (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
+            CHECK(RC_SWAMP_SKULLTULA_GOLD_ROOM_WALL, (Flags_GetSceneSwitch(SCENE_KINSTA1, 0x0d) && CAN_USE_PROJECTILE) || (HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)),
             CHECK(RC_SWAMP_SPIDER_HOUSE_POT_GOLD_ROOM_LOWER_1, true),
             CHECK(RC_SWAMP_SPIDER_HOUSE_POT_GOLD_ROOM_LOWER_2, true),
         },
