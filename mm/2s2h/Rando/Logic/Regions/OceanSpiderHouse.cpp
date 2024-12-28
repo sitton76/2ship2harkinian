@@ -9,32 +9,6 @@ using namespace Rando::Logic;
 // clang-format off
 // Think we should we put both Spider houses in the same file?
 static RegisterShipInitFunc initFunc([]() {
-    Regions[RR_OCEAN_SPIDER_HOUSE_ENTRANCE_UPPER] = RandoRegion{ .name = "Entrance Upper", .sceneId = SCENE_KINDAN2,
-        .checks = {
-            // TODO : Add check for getting all of the Ocean Skulltula Tokens
-        },
-        .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(GREAT_BAY_COAST, 8),          ENTRANCE(OCEANSIDE_SPIDER_HOUSE, 0), true)
-        },
-        .connections = {
-            CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER, CAN_USE_EXPLOSIVE && CAN_BE_GORON),
-        }
-    };
-    Regions[RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER] = RandoRegion{ .name = "Entrance Lower", .sceneId = SCENE_KINDAN2,
-        .checks = {
-            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_LEFT_WALL, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_PROJECTILE && CAN_BE_GORON)),
-            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_RIGHT_WALL, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA),
-            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_WEB, HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_HOOKSHOT)),
-            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_1, true),
-            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_2, true),
-            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_3, true),
-            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_4, true)
-        },
-        .connections = {
-            CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_UPPER, CAN_BE_GORON),
-            CONNECTION(RR_OCEAN_SPIDER_HOUSE_CENTRAL_ROOM, HAS_ITEM(ITEM_HOOKSHOT))
-        }
-    };
     Regions[RR_OCEAN_SPIDER_HOUSE_CENTRAL_ROOM] = RandoRegion{ .name = "Central Room", .sceneId = SCENE_KINDAN2,
         .checks = {
             CHECK(RC_OCEAN_SKULLTULA_2ND_ROOM_BEHIND_SKULL_1, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA),
@@ -56,6 +30,32 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_LIBRARY_ROOM, CAN_LIGHT_TORCH_NEAR_ANOTHER),
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_MEETING_ROOM, true),
             CONNECTION(RR_OCEAN_SPIDER_HOUSE_STORAGE_ROOM, CAN_LIGHT_TORCH_NEAR_ANOTHER)
+        }
+    };
+    Regions[RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER] = RandoRegion{ .name = "Entrance Lower", .sceneId = SCENE_KINDAN2,
+        .checks = {
+            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_LEFT_WALL, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA || (CAN_USE_PROJECTILE && CAN_BE_GORON)),
+            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_RIGHT_WALL, HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA),
+            CHECK(RC_OCEAN_SKULLTULA_ENTRANCE_WEB, HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_HOOKSHOT)),
+            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_1, true),
+            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_2, true),
+            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_3, true),
+            CHECK(RC_OCEAN_SPIDER_HOUSE_POT_ENTRANCE_4, true)
+        },
+        .connections = {
+            CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_UPPER, CAN_BE_GORON),
+            CONNECTION(RR_OCEAN_SPIDER_HOUSE_CENTRAL_ROOM, HAS_ITEM(ITEM_HOOKSHOT))
+        }
+    };
+    Regions[RR_OCEAN_SPIDER_HOUSE_ENTRANCE_UPPER] = RandoRegion{ .name = "Entrance Upper", .sceneId = SCENE_KINDAN2,
+        .checks = {
+            // TODO : Add check for getting all of the Ocean Skulltula Tokens
+        },
+        .exits = { //     TO                                         FROM
+            EXIT(ENTRANCE(GREAT_BAY_COAST, 8),          ENTRANCE(OCEANSIDE_SPIDER_HOUSE, 0), true)
+        },
+        .connections = {
+            CONNECTION(RR_OCEAN_SPIDER_HOUSE_ENTRANCE_LOWER, CAN_USE_EXPLOSIVE && CAN_BE_GORON),
         }
     };
     Regions[RR_OCEAN_SPIDER_HOUSE_LIBRARY_ROOM] = RandoRegion{ .name = "Library Room", .sceneId = SCENE_KINDAN2,
