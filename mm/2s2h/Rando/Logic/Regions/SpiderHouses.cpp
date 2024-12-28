@@ -153,8 +153,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_SWAMP_SKULLTULA_MAIN_ROOM_WATER, CAN_KILL_CURSED_SKULLTULA),
             CHECK(RC_SWAMP_SPIDER_HOUSE_POT_MAIN_ROOM_LOWER_1, true),
             CHECK(RC_SWAMP_SPIDER_HOUSE_POT_MAIN_ROOM_LOWER_2, true),
-            CHECK(RC_SWAMP_SPIDER_HOUSE_POT_MAIN_ROOM_LOWER_3, true),
-
+            CHECK(RC_SWAMP_SPIDER_HOUSE_POT_MAIN_ROOM_LOWER_3, true),s
         },
         .connections = {
             CONNECTION(RR_SWAMP_SPIDER_HOUSE_ENTRANCE, true),
