@@ -161,7 +161,10 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_SWAMP_SPIDER_HOUSE_MONUMENT_ROOM, true),
             CONNECTION(RR_SWAMP_SPIDER_HOUSE_GOLD_ROOM_LOWER, true),
             CONNECTION(RR_SWAMP_SPIDER_HOUSE_BIG_POT_ROOM_LOWER, true),
-        }
+        },
+        .events = {
+            EVENT_ACCESS(RANDO_ACCESS_SPRING_WATER, true),
+        },
     };
     Regions[RR_SWAMP_SPIDER_HOUSE_CENTER_ROOM_UPPER] = RandoRegion{ .name = "Upper Center Room", .sceneId = SCENE_KINSTA1,
         .checks = {
