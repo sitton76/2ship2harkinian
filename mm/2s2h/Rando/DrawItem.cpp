@@ -14,6 +14,8 @@ extern "C" {
 #include "objects/object_sek/object_sek.h"
 
 Gfx* ResourceMgr_LoadGfxByName(const char* path);
+
+#include "src/overlays/actors/ovl_En_Slime/z_en_slime.h"
 }
 
 s32 StrayFairyOverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
@@ -272,6 +274,7 @@ void DrawBossKey(RandoItemId randoItemId) {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
+
 void DrawSparkles(RandoItemId randoItemId, Actor* actor) {
     if (actor == NULL) {
         return;
@@ -302,6 +305,62 @@ void DrawSparkles(RandoItemId randoItemId, Actor* actor) {
     EffectSsKirakira_SpawnDispersed(gPlayState, &newPos, &sVelocity, &sAccel, &sPrimColor, &sEnvColor, 2000, 16);
 }
 
+void DrawSlime(RandoItemId randoItemId) {
+    static u32 actionId = 0;
+    static u32 lastUpdate = 0;
+    static u32 switchCount = 5;
+    f32 yScale1 = 0.01f;
+    f32 yScale2 = 0.001f;
+    AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2000.0f, 0, MTXMODE_APPLY);
+
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    AnimatedMat_Draw(gPlayState, sSlimeTexAnim);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 100, 255, 255, 200, 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 180, 0, 255);
+
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    Scene_SetRenderModeXlu(gPlayState, 1, 2);
+    if (gPlayState != NULL && lastUpdate >= switchCount) {
+        lastUpdate = 0;
+        actionId++;
+    }
+    switch (actionId) {
+        case 0:
+            gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
+            break;
+        case 1:
+            Math_StepToF(&yScale1, yScale2, 0.0002f);
+            //Matrix_Scale(0.01f, 0.001f, 0.01f, MTXMODE_APPLY);
+            gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
+            break;
+        case 2:
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuPuddleDL);
+            break;
+        case 3:
+            Math_StepToF(&yScale2, yScale1, 0.0002f);
+            //Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
+            break;
+        case 4:
+            actionId = 0;
+            break;
+        default:
+            break;
+    }
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+
+    lastUpdate++;
+}
+
 void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
     switch (randoItemId) {
         case RI_JUNK:
@@ -314,6 +373,8 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
             DrawSmallKey(randoItemId);
             break;
         case RI_GREAT_BAY_BOSS_KEY:
+            DrawSlime(randoItemId);
+            break;
         case RI_SNOWHEAD_BOSS_KEY:
         case RI_STONE_TOWER_BOSS_KEY:
         case RI_WOODFALL_BOSS_KEY:
