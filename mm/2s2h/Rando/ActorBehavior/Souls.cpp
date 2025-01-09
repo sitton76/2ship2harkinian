@@ -8,12 +8,16 @@ extern "C" {
 bool FindSoul(ActorId actorId) {
     bool isFound = false;
     s8* soulsFound = gSaveContext.save.shipSaveInfo.rando.enemySouls;
-    
-    for (auto& soul : gSaveContext.save.shipSaveInfo.rando.enemySouls) {
-        if (soul == (int8_t)actorId) {
-            isFound = true;
-        }
+
+    if (soulsFound[actorId] == 1) {
+        isFound = true;
     }
+    
+    //for (auto& soul : gSaveContext.save.shipSaveInfo.rando.enemySouls) {
+    //    if (soul == (int8_t)actorId) {
+    //        isFound = true;
+    //    }
+    //}
 
     return isFound;
 }

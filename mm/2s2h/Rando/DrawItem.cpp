@@ -306,15 +306,12 @@ void DrawSparkles(RandoItemId randoItemId, Actor* actor) {
 }
 
 void DrawSlime(RandoItemId randoItemId) {
-    static u32 actionId = 0;
-    static u32 lastUpdate = 0;
-    static u32 switchCount = 5;
-    f32 yScale1 = 0.01f;
-    f32 yScale2 = 0.001f;
+    static int16_t timer = 25;
+    f32 timerFactor = sqrtf(timer) * 0.2f;
     AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
-    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Scale(0.01f, (((Math_CosF(timer * (2.0f * M_PI / 5.0f)) * (0.07f * timerFactor)) + 1.0f) * 0.01f), 0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -2000.0f, 0, MTXMODE_APPLY);
 
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
@@ -322,43 +319,19 @@ void DrawSlime(RandoItemId randoItemId) {
     gDPSetPrimColor(POLY_XLU_DISP++, 0, 100, 255, 255, 200, 255);
     gDPSetEnvColor(POLY_XLU_DISP++, 255, 180, 0, 255);
 
+    if (timer == 0) {
+        timer = 25;
+    }
+
     gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     Scene_SetRenderModeXlu(gPlayState, 1, 2);
-    if (gPlayState != NULL && lastUpdate >= switchCount) {
-        lastUpdate = 0;
-        actionId++;
-    }
-    switch (actionId) {
-        case 0:
-            gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
-            break;
-        case 1:
-            Math_StepToF(&yScale1, yScale2, 0.0002f);
-            //Matrix_Scale(0.01f, 0.001f, 0.01f, MTXMODE_APPLY);
-            gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
-            break;
-        case 2:
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuPuddleDL);
-            break;
-        case 3:
-            Math_StepToF(&yScale2, yScale1, 0.0002f);
-            //Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
-            gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
-            break;
-        case 4:
-            actionId = 0;
-            break;
-        default:
-            break;
-    }
-
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
+    gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
+    
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 
-    lastUpdate++;
+    timer--;
 }
 
 void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
@@ -373,8 +346,6 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
             DrawSmallKey(randoItemId);
             break;
         case RI_GREAT_BAY_BOSS_KEY:
-            DrawSlime(randoItemId);
-            break;
         case RI_SNOWHEAD_BOSS_KEY:
         case RI_STONE_TOWER_BOSS_KEY:
         case RI_WOODFALL_BOSS_KEY:
@@ -424,6 +395,9 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         case RI_PROGRESSIVE_SWORD:
         case RI_PROGRESSIVE_WALLET:
             Rando::DrawItem(Rando::ConvertItem(randoItemId), actor);
+            break;
+        case RI_SOUL_SLIME:
+            DrawSlime(randoItemId);
             break;
         case RI_NONE:
         case RI_UNKNOWN:

@@ -235,6 +235,9 @@ void Rando::GiveItem(RandoItemId randoItemId) {
         case RI_JUNK:
         case RI_NONE:
             break;
+        case RI_SOUL_SLIME:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_SLIME] = 1;
+            break;
         default:
             Item_Give(gPlayState, Rando::StaticData::Items[randoItemId].itemId);
             break;
