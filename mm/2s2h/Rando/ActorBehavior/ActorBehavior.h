@@ -60,6 +60,7 @@ void InitObjMoonStoneBehavior();
 void InitObjTaruBehavior();
 void InitObjTsuboBehavior();
 void InitObjWarpstoneBehavior();
+void InitSoulsBehavior();
 
 } // namespace ActorBehavior
 
