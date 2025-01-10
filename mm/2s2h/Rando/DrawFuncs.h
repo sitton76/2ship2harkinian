@@ -3,6 +3,7 @@
 
 extern "C" {
 #include <functions.h>
+#include "BenPort.h"
 // Enemy Includes
 #include "src/overlays/actors/ovl_En_Dodongo/z_en_dodongo.h"
 #include "src/overlays/actors/ovl_En_Neo_Reeba/z_en_neo_reeba.h"
@@ -13,28 +14,59 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
+
+#include "objects/gameplay_keep/gameplay_keep.h"
+
 #include "src/overlays/actors/ovl_En_Fall/z_en_fall.h"
 #include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
 #include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
+
+void ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
 }
 
-void DrawSmoke() {
+void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
     AnimatedMaterial* sMoonTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gGiMoonsTearTexAnim);
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
-    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 0, 0, 255);
-    gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 255);
     AnimatedMat_Draw(gPlayState, sMoonTexAnim);
-    Matrix_Scale(100.0f, 100.0f, 100.0f, MTXMODE_APPLY);
-    Matrix_Translate(0, 30.0f, 0, MTXMODE_APPLY);
+    Matrix_Scale(x, y, z, MTXMODE_APPLY);
+    Matrix_Translate(0, tY, 0, MTXMODE_APPLY);
     Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
     gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)&gGiMoonsTearGlowDL);
+    ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowPrim", 5, gsDPSetPrimColor(0, 0x80, 255, 0, 0, 120));
+    ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowEnv", 6, gsDPSetEnvColor(0, 255, 0, 0, 100));
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawFireRing(f32 x, f32 y, f32 z, f32 tY) {
+    static u32 lastUpdate = 0;
+    static uint32_t unk_1A4 = Rand_ZeroOne() * 128.0f;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    Matrix_Scale(x, y, z, MTXMODE_APPLY);
+    Matrix_Translate(0, tY, 0, MTXMODE_APPLY);
+    
+    gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 220, 0, 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 0);
+    gSPSegment(POLY_XLU_DISP++, 0x08,
+               (uintptr_t)Gfx_TwoTexScroll(gPlayState->state.gfxCtx, 0, unk_1A4 & 0x7F, 0, 0x20, 0x40, 1, 0,
+                                (unk_1A4 * -15) & 0xFF, 0x20, 0x40));
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gameplay_keep_DL_02E510);
+    
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        unk_1A4++;
+    }
 }
 
 void RealBombchuPostLimbDraw() {
@@ -83,6 +115,7 @@ void DrawBat() {
     POLY_OPA_DISP = &gfx[5];
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.0f, 0.5f, 2.0f, -3000.0f);
 }
 
 void DrawRealBombchu() {
@@ -113,6 +146,7 @@ void DrawRealBombchu() {
                           NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
 }
 
 void DrawDodongo() {
@@ -140,6 +174,7 @@ void DrawDodongo() {
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(4.0f, 0.5f, 4.0f, -200.0f);
 }
 
 void DrawLeever() {
@@ -169,6 +204,7 @@ void DrawLeever() {
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(1.0f, 0.3f, 1.0f, -200.0f);
 }
 
 void DrawSlime() {
@@ -196,7 +232,7 @@ void DrawSlime() {
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
     
     CLOSE_DISPS(gPlayState->state.gfxCtx);
-
+    DrawFireRing(5.0f, 1.0f, 5.0f, -200.0f);
     timer--;
 }
 
@@ -227,7 +263,7 @@ void DrawWolfos() {
                               NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
-    DrawSmoke();
+    DrawFireRing(5.0f, 1.0f, 5.0f, -200.0f);
 }
 
 #endif
