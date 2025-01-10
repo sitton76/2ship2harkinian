@@ -20,6 +20,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Fall/z_en_fall.h"
 #include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
 #include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
+#include "assets/objects/object_fusen/object_fusen.h"
 
 void ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
 }
