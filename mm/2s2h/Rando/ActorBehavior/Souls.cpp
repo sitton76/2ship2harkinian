@@ -5,19 +5,12 @@ extern "C" {
 #include "variables.h"
 }
 
-bool FindSoul(ActorId actorId) {
+bool FindSoul(int16_t actorId) {
     bool isFound = false;
-    s8* soulsFound = gSaveContext.save.shipSaveInfo.rando.enemySouls;
 
-    if (soulsFound[actorId] == 1) {
+    if (gSaveContext.save.shipSaveInfo.rando.enemySouls[actorId] == 1) {
         isFound = true;
     }
-    
-    //for (auto& soul : gSaveContext.save.shipSaveInfo.rando.enemySouls) {
-    //    if (soul == (int8_t)actorId) {
-    //        isFound = true;
-    //    }
-    //}
 
     return isFound;
 }
@@ -48,9 +41,23 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
     //    }
     //});
 
-    COND_ID_HOOK(ShouldActorInit, ACTOR_EN_SLIME, IS_RANDO, [](Actor* actor, bool* should) {
-        if (!FindSoul(ACTOR_EN_SLIME)) {
-            *should = false;
+    COND_HOOK(ShouldActorDraw, IS_RANDO, [](Actor* actor, bool* should) {
+        if (actor->category != ACTORCAT_ENEMY) {
+            return;
         }
+
+        if (!FindSoul(actor->id)) {
+            actor->flags &= ~ACTOR_FLAG_TARGETABLE;
+            *should = false;
+        } 
+    });
+    COND_HOOK(ShouldActorUpdate, IS_RANDO, [](Actor* actor, bool* should) {
+        if (actor->category != ACTORCAT_ENEMY) {
+            return;
+        }
+
+        if (!FindSoul(actor->id)) {
+            *should = false;
+        } 
     });
 }

@@ -1,0 +1,233 @@
+#ifndef RANDO_DRAW_FUNCS_H
+#define RANDO_DRAW_FUNCS_H
+
+extern "C" {
+#include <functions.h>
+// Enemy Includes
+#include "src/overlays/actors/ovl_En_Dodongo/z_en_dodongo.h"
+#include "src/overlays/actors/ovl_En_Neo_Reeba/z_en_neo_reeba.h"
+#include "src/overlays/actors/ovl_En_Slime/z_en_slime.h"
+#include "src/overlays/actors/ovl_En_Rat/z_en_rat.h"
+#include "src/overlays/actors/ovl_En_Bat/z_en_bat.h"
+#include "assets/objects/object_bat/object_bat.h"
+#include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
+
+#include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
+#include "src/overlays/actors/ovl_En_Fall/z_en_fall.h"
+#include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
+#include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
+}
+
+void DrawSmoke() {
+    AnimatedMaterial* sMoonTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gGiMoonsTearTexAnim);
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 0, 0, 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 255);
+    AnimatedMat_Draw(gPlayState, sMoonTexAnim);
+    Matrix_Scale(100.0f, 100.0f, 100.0f, MTXMODE_APPLY);
+    Matrix_Translate(0, 30.0f, 0, MTXMODE_APPLY);
+    Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)&gGiMoonsTearGlowDL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void RealBombchuPostLimbDraw() {
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
+
+    
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 150, 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 0);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)&gBombBodyDL);
+    Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawBat() {
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+
+    static Gfx* sWingsDLs[] = {
+    (Gfx*)&gBadBatWingsFrame0DL, (Gfx*)&gBadBatWingsFrame1DL, (Gfx*)&gBadBatWingsFrame2DL, (Gfx*)&gBadBatWingsFrame3DL, 
+    (Gfx*)&gBadBatWingsFrame4DL, (Gfx*)&gBadBatWingsFrame5DL, (Gfx*)&gBadBatWingsFrame6DL, (Gfx*)&gBadBatWingsFrame7DL, 
+    (Gfx*)&gBadBatWingsFrame8DL,
+    };
+
+    static u32 lastUpdate = 0;
+    static u32 wingAnim = 0;
+    Gfx* gfx = POLY_OPA_DISP;
+
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        if (wingAnim == 8) {
+            wingAnim = 0;
+        } else {
+            wingAnim++;
+        }
+    }
+
+    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
+    gSPMatrix(&gfx[1], Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(&gfx[2], (Gfx*)&gBadBatSetupDL);
+    gSPDisplayList(&gfx[3], (Gfx*)&gBadBatBodyDL);
+    gSPDisplayList(&gfx[4], sWingsDLs[wingAnim]);
+
+    POLY_OPA_DISP = &gfx[5];
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawRealBombchu() {
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+    Matrix_Translate(0, -1500.0f, 0, MTXMODE_APPLY);
+
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[REAL_BOMBCHU_LIMB_MAX];
+    static Vec3s morphTable[REAL_BOMBCHU_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRealBombchuSkel, 
+            (AnimationHeader*)&gRealBombchuRunAnim, jointTable, morphTable, REAL_BOMBCHU_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                          NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawDodongo() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[OBJECT_DODONGO_LIMB_MAX];
+    static Vec3s morphTable[OBJECT_DODONGO_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+    Matrix_Translate(0, -1500.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_dodongo_Skel_008318, 
+            (AnimationHeader*)&object_dodongo_Anim_004C20, jointTable, morphTable, OBJECT_DODONGO_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawLeever() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[LEEVER_LIMB_MAX];
+    static Vec3s morphTable[LEEVER_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.05f, 0.05f, 0.05f, MTXMODE_APPLY);
+    Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gLeeverSkel, (AnimationHeader*)&gLeeverSpinAnim, 
+            jointTable, morphTable, LEEVER_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x01, 255, 255, 255, 255);
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+void DrawSlime() {
+    static int16_t timer = 25;
+    f32 timerFactor = sqrtf(timer) * 0.2f;
+    AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, (((Math_CosF(timer * (2.0f * M_PI / 5.0f)) * (0.07f * timerFactor)) + 1.0f) * 0.01f), 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2700.0f, 0, MTXMODE_APPLY);
+
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    AnimatedMat_Draw(gPlayState, sSlimeTexAnim);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 100, 255, 255, 200, 255);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 180, 0, 255);
+
+    if (timer == 0) {
+        timer = 25;
+    }
+
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    Scene_SetRenderModeXlu(gPlayState, 1, 2);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
+    gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
+    
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+
+    timer--;
+}
+
+void DrawWolfos() {
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -3000.0f, 0, MTXMODE_APPLY);
+
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[WOLFOS_NORMAL_LIMB_MAX];
+    static Vec3s morphTable[WOLFOS_NORMAL_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWolfosNormalSkel, (AnimationHeader*)&gWolfosWaitAnim, 
+            jointTable, morphTable, WOLFOS_NORMAL_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    
+    gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)&gWolfosNormalEyeOpenTex);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                              NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawSmoke();
+}
+
+#endif

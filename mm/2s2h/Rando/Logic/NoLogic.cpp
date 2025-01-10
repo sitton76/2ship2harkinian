@@ -49,20 +49,17 @@ void ApplyNoLogicToSaveContext() {
         itemPool.push_back(randoStaticCheck.randoItemId);
     }
 
-    // Boss Soul TODO: Place behind Option
-    //uint32_t index = 0;
+    // Soul TODO: Place behind Option
+    uint32_t index = RI_SOUL_BAT;
     for (auto& item : itemPool) {
-        //uint32_t itemId = RI_SOUL_GOHT + index;
-        //RandoItemId soulId = (RandoItemId)itemId;
 
         if (item == RI_RUPEE_RED) {
-            item = RI_SOUL_SLIME;
-            //index++;
+            item = (RandoItemId)index;
+            index++;
+        }
+        if ((RandoItemId)index > RI_SOUL_WOLFOS) {
             break;
         }
-        //if (index >= 4) {
-        //    break;
-        //}
     }
     // End Soul
 

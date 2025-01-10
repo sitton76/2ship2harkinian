@@ -235,8 +235,23 @@ void Rando::GiveItem(RandoItemId randoItemId) {
         case RI_JUNK:
         case RI_NONE:
             break;
+        case RI_SOUL_BAT:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_BAT] = 1;
+            break;
+        case RI_SOUL_BOMBCHU:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_RAT] = 1;
+            break;
+        case RI_SOUL_DODONGO:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_DODONGO] = 1;
+            break;
+        case RI_SOUL_LEEVER:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_NEO_REEBA] = 1;
+            break;
         case RI_SOUL_SLIME:
             gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_SLIME] = 1;
+            break;
+        case RI_SOUL_WOLFOS:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_WF] = 1;
             break;
         default:
             Item_Give(gPlayState, Rando::StaticData::Items[randoItemId].itemId);
