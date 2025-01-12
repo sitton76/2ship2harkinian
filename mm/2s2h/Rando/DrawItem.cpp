@@ -379,6 +379,9 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         case RI_SOUL_LEEVER:
             DrawLeever();
             break;
+        case RI_SOUL_PEEHAT:
+            DrawPeehat();
+            break;
         case RI_SOUL_SLIME:
             DrawSlime();
             break;

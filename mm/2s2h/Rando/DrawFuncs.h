@@ -12,6 +12,8 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Bat/z_en_bat.h"
 #include "assets/objects/object_bat/object_bat.h"
 #include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
+#include "src/overlays/actors/ovl_En_Peehat/z_en_peehat.h"
+#include "assets/objects/object_ph/object_ph.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -206,6 +208,35 @@ void DrawLeever() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -200.0f);
+}
+
+void DrawPeehat() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[24];
+    static Vec3s morphTable[24];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    //Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_ph_Skel_001C80, (AnimationHeader*)&object_ph_Anim_0009C4, 
+            jointTable, morphTable, 24);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(3.0f, 1.0f, 3.0f, -2800.0f);
 }
 
 void DrawSlime() {
