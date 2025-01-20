@@ -15,6 +15,10 @@ bool FindSoul(int16_t actorId) {
     return isFound;
 }
 
+void DummyNewActorUpdate(Actor* actor, PlayState* play) {
+
+}
+
 void Rando::ActorBehavior::InitSoulsBehavior() {
     //COND_ID_HOOK(ShouldActorInit, ACTOR_BOSS_01, IS_RANDO, [](Actor* actor, bool* should) {
     //    if (gPlayState->sceneId == SCENE_MITURIN_BS &&
@@ -45,17 +49,19 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
         if (actor->category != ACTORCAT_ENEMY) {
             return;
         }
-
+    
         if (!FindSoul(actor->id)) {
             actor->flags &= ~ACTOR_FLAG_TARGETABLE;
             *should = false;
-        } 
+        } else {
+            actor->flags |= ACTOR_FLAG_TARGETABLE;
+        }
     });
     COND_HOOK(ShouldActorUpdate, IS_RANDO, [](Actor* actor, bool* should) {
         if (actor->category != ACTORCAT_ENEMY) {
             return;
         }
-
+    
         if (!FindSoul(actor->id)) {
             *should = false;
         } 
