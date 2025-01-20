@@ -376,6 +376,9 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         case RI_SOUL_DODONGO:
             DrawDodongo();
             break;
+        case RI_SOUL_GARO:
+            DrawGaroMaster();
+            break;
         case RI_SOUL_LEEVER:
             DrawLeever();
             break;

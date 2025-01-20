@@ -14,6 +14,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
 #include "src/overlays/actors/ovl_En_Peehat/z_en_peehat.h"
 #include "assets/objects/object_ph/object_ph.h"
+#include "src/overlays/actors/ovl_En_Jso2/z_en_jso2.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -25,6 +26,7 @@ extern "C" {
 #include "assets/objects/object_fusen/object_fusen.h"
 
 void ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
+void EnJso2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx);
 }
 
 void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
@@ -40,8 +42,8 @@ void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
     gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)&gGiMoonsTearGlowDL);
-    ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowPrim", 5, gsDPSetPrimColor(0, 0x80, 255, 0, 0, 120));
-    ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowEnv", 6, gsDPSetEnvColor(0, 255, 0, 0, 100));
+    //ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowPrim", 5, gsDPSetPrimColor(0, 0x80, 255, 0, 0, 120));
+    //ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowEnv", 6, gsDPSetEnvColor(0, 255, 0, 0, 100));
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
@@ -178,6 +180,39 @@ void DrawDodongo() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(4.0f, 0.5f, 4.0f, -200.0f);
+    //DrawSmoke(60.0f, 60.0f, 60.0f, 0);
+}
+
+void DrawGaroMaster() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[GARO_MASTER_LIMB_MAX];
+    static Vec3s morphTable[GARO_MASTER_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.03f, 0.03f, 0.03f, MTXMODE_APPLY);
+    Matrix_Translate(0, -50.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gGaroMasterSkel, (AnimationHeader*)&gGaroLookAroundAnim, 
+            jointTable, morphTable, GARO_MASTER_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    Scene_SetRenderModeXlu(gPlayState, 0, 1);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                              NULL, NULL, NULL);
+    
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
 }
 
 void DrawLeever() {
