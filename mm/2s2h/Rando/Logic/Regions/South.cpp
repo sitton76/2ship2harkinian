@@ -37,7 +37,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_DEKU_PALACE_BEAN_SALESMAN_GROTTO] = RandoRegion{ .name = "Deku Palace Bean Salesman Grotto", .sceneId = SCENE_KAKUSIANA,
         .checks = {
-            CHECK(RC_DEKU_PALACE_GROTTO_CHEST, CAN_GROW_BEAN_PLANT),
+            CHECK(RC_DEKU_PALACE_GROTTO_CHEST, CAN_GROW_BEAN_PLANT || HAS_ITEM(ITEM_HOOKSHOT)),
             // TODO: Bean salesman check
         },
         .exits = { //     TO                                         FROM
@@ -144,7 +144,8 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_DOGGY_RACETRACK] = RandoRegion{ .sceneId = SCENE_F01_B,
         .checks = {
             // TODO: Trick: Jumpslash to clip through (similar to Clock Town Straw).
-            CHECK(RC_DOGGY_RACETRACK_CHEST, HAS_ITEM(ITEM_HOOKSHOT) || CAN_GROW_BEAN_PLANT),
+            // Zora can just climb up, adding it to logic for now but if someone wants to make it a trick later feel free.
+            CHECK(RC_DOGGY_RACETRACK_CHEST, HAS_ITEM(ITEM_HOOKSHOT) || CAN_GROW_BEAN_PLANT || CAN_BE_ZORA),
             CHECK(RC_DOGGY_RACETRACK_PIECE_OF_HEART,    HAS_ITEM(ITEM_MASK_TRUTH)),
             CHECK(RC_DOGGY_RACETRACK_POT_01, true),
             CHECK(RC_DOGGY_RACETRACK_POT_02, true),
@@ -157,7 +158,8 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_GORMAN_TRACK] = RandoRegion{ .sceneId = SCENE_KOEPONARACE,
         .checks = {
-            CHECK(RC_GORMAN_TRACK_LARGE_CRATE, CAN_PLAY_SONG(EPONA)),
+            // TODO : Also apparently can be obtained using a trick with Goron mask and Bombs. Add trick later here
+            CHECK(RC_GORMAN_TRACK_LARGE_CRATE, CHECK_WEEKEVENTREG(WEEKEVENTREG_DEFENDED_AGAINST_THEM)), // Night 2 only, after defending cows from aliens.
             CHECK(RC_GORMAN_TRACK_GARO_MASK, CAN_PLAY_SONG(EPONA)),
         },
         .exits = { //     TO                                         FROM
@@ -172,13 +174,18 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_HAGS_POTION_SHOP_ITEM_01, CAN_AFFORD(RC_HAGS_POTION_SHOP_ITEM_01) && HAS_ITEM(ITEM_MASK_SCENTS) && HAS_BOTTLE),
             CHECK(RC_HAGS_POTION_SHOP_ITEM_02, CAN_AFFORD(RC_HAGS_POTION_SHOP_ITEM_02)),
             CHECK(RC_HAGS_POTION_SHOP_ITEM_03, CAN_AFFORD(RC_HAGS_POTION_SHOP_ITEM_03)),
+            CHECK(RC_HAGS_POTION_SHOP_KOTAKE, true),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(SOUTHERN_SWAMP_POISONED, 5),      ENTRANCE(MAGIC_HAGS_POTION_SHOP, 0), true),
         },
+        .events = {
+            EVENT_ACCESS(RANDO_ACCESS_RED_POTION_REFILL, true),
+        },
     };
     Regions[RR_MILK_ROAD] = RandoRegion{ .sceneId = SCENE_ROMANYMAE,
         .checks = {
+            CHECK(RC_KEATON_QUIZ, HAS_ITEM(ITEM_MASK_KEATON)),
             CHECK(RC_MILK_ROAD_OWL_STATUE, CAN_USE_SWORD),
             CHECK(RC_MILK_ROAD_TINGLE_MAP_01, CAN_USE_PROJECTILE),
             CHECK(RC_MILK_ROAD_TINGLE_MAP_02, CAN_USE_PROJECTILE),
@@ -245,7 +252,7 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_ROMANI_RANCH_FIELD_COW_NEAR_HOUSE_BACK, CAN_PLAY_SONG(EPONA) && CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG)),
             CHECK(RC_ROMANI_RANCH_FIELD_COW_NEAR_HOUSE_FRONT, CAN_PLAY_SONG(EPONA) && CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG)),
             CHECK(RC_ROMANI_RANCH_FIELD_LARGE_CRATE, true),
-            CHECK(RC_CREMIA_ESCORT, HAS_ITEM(ITEM_BOW) && CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG)),
+            CHECK(RC_CREMIA_ESCORT, HAS_ITEM(ITEM_BOW) && CHECK_WEEKEVENTREG(WEEKEVENTREG_DEFENDED_AGAINST_THEM)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(MILK_ROAD, 1),                    ENTRANCE(ROMANI_RANCH, 0), true),
@@ -253,6 +260,9 @@ static RegisterShipInitFunc initFunc([]() {
             EXIT(ENTRANCE(RANCH_HOUSE, 1),                  ENTRANCE(ROMANI_RANCH, 3), true), // House
             EXIT(ENTRANCE(CUCCO_SHACK, 0),                  ENTRANCE(ROMANI_RANCH, 4), true),
             EXIT(ENTRANCE(DOGGY_RACETRACK, 0),              ENTRANCE(ROMANI_RANCH, 5), true),
+        },
+        .events = {
+            EVENT_WEEKEVENTREG("Defended Cows from Aliens", WEEKEVENTREG_DEFENDED_AGAINST_THEM, CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG) && HAS_ITEM(ITEM_BOW)),
         },
     };
     Regions[RR_SOUTHERN_SWAMP_GROTTO] = RandoRegion{ .name = "Southern Swamp Grotto", .sceneId = SCENE_KAKUSIANA,
@@ -291,6 +301,13 @@ static RegisterShipInitFunc initFunc([]() {
             EVENT_OWL_WARP(OWL_WARP_SOUTHERN_SWAMP),
             EVENT_ACCESS(RANDO_ACCESS_SPRING_WATER, true),
             EVENT_ACCESS(RANDO_ACCESS_BEANS_REFILL, CAN_BE_DEKU && HAS_ITEM(ITEM_MAGIC_BEANS)),
+            EVENT( // Killing Octorok blocking the southern swamp south section(Without Boat)
+                "Kill Octorok(Without Boat)", 
+                Flags_GetSceneSwitch(SCENE_20SICHITAI, 0x01), 
+                Flags_SetSceneSwitch(SCENE_20SICHITAI, 0x01), 
+                Flags_ClearSceneSwitch(SCENE_20SICHITAI, 0x01), 
+                (HAS_ITEM(ITEM_BOW) || HAS_ITEM(ITEM_HOOKSHOT) || CAN_BE_ZORA)
+            ),
         },
         .oneWayEntrances = {
             ENTRANCE(SOUTHERN_SWAMP_POISONED, 9), // From river in Ikana
@@ -322,16 +339,21 @@ static RegisterShipInitFunc initFunc([]() {
         },
     };
     Regions[RR_TOURIST_INFORMATION] = RandoRegion{ .sceneId = SCENE_MAP_SHOP,
+        .checks = {
+            // Also requires poison to not be cleared
+            CHECK(RC_TOURIST_INFORMATION_ARCHERY, CHECK_WEEKEVENTREG(WEEKEVENTREG_SAVED_KOUME) && CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_WOODFALL_TEMPLE)),
+            CHECK(RC_TOURIST_INFORMATION_PICTOBOX, CHECK_WEEKEVENTREG(WEEKEVENTREG_SAVED_KOUME)),
+        },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(SOUTHERN_SWAMP_POISONED, 1),      ENTRANCE(TOURIST_INFORMATION, 0), true),
         },
         .events = {
-            EVENT( // Killing Octorok blocking the southern swamp south section
-                "Kill Octorok", 
+            EVENT( // Killing Octorok blocking the southern swamp south section(Using Boat)
+                "Kill Octorok(Using Boat)", 
                 Flags_GetSceneSwitch(SCENE_20SICHITAI, 0x01), 
                 Flags_SetSceneSwitch(SCENE_20SICHITAI, 0x01), 
                 Flags_ClearSceneSwitch(SCENE_20SICHITAI, 0x01), 
-                true // TODO: Conditions for starting swamp tour
+                CHECK_WEEKEVENTREG(WEEKEVENTREG_SAVED_KOUME)
             ),
         },
     };
@@ -375,6 +397,9 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .connections = {
             CONNECTION(RR_WOODS_OF_MYSTERY_GROTTO, true), // TODO: Grotto mapping
+        },
+        .events = {
+            EVENT_WEEKEVENTREG("Saved Koume", WEEKEVENTREG_SAVED_KOUME, HAS_BOTTLE && (CAN_ACCESS(RED_POTION_REFILL) || CAN_ACCESS(BLUE_POTION_REFILL))),
         },
     };
 }, {});

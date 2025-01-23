@@ -31,17 +31,17 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_BENEATH_THE_GRAVEYARD_NIGHT_1_BOSS] = RandoRegion{ .name = "Night 1 Boss", .sceneId = SCENE_HAKASHITA,
         .checks = {
-            CHECK(RC_BENEATH_THE_GRAVEYARD_SONG_OF_STORMS, CAN_KILL_IRONKNUCKLE),
+            CHECK(RC_BENEATH_THE_GRAVEYARD_SONG_OF_STORMS, CanKillEnemy(ACTOR_EN_IK)),
         },
         .connections = {
-            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_1_GRAVE, CAN_KILL_IRONKNUCKLE),
+            CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_1_GRAVE, CanKillEnemy(ACTOR_EN_IK)),
         },
     };
     Regions[RR_BENEATH_THE_GRAVEYARD_NIGHT_1_GRAVE] = RandoRegion{ .name = "Night 1 Grave", .sceneId = SCENE_HAKASHITA,
         .checks = {
             CHECK(RC_BENEATH_THE_GRAVEYARD_NIGHT_1_EARLY_POT_01, true),
             CHECK(RC_BENEATH_THE_GRAVEYARD_NIGHT_1_EARLY_POT_02, true),
-            CHECK(RC_BENEATH_THE_GRAVEYARD_CHEST, CAN_KILL_BAT),
+            CHECK(RC_BENEATH_THE_GRAVEYARD_CHEST, CanKillEnemy(ACTOR_EN_BAT)),
             CHECK(RC_BENEATH_THE_GRAVEYARD_NIGHT_1_BATS_POT_01, true),
             CHECK(RC_BENEATH_THE_GRAVEYARD_NIGHT_1_BATS_POT_02, true),
             CHECK(RC_BENEATH_THE_GRAVEYARD_NIGHT_1_BATS_POT_03, true),
@@ -55,7 +55,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_BENEATH_THE_GRAVEYARD_NIGHT_2_BOSS] = RandoRegion{ .name = "Night 2 Boss", .sceneId = SCENE_HAKASHITA,
         .checks = {
-            CHECK(RC_BENEATH_THE_GRAVEYARD_PIECE_OF_HEART, CAN_KILL_IRONKNUCKLE),
+            CHECK(RC_BENEATH_THE_GRAVEYARD_PIECE_OF_HEART, CanKillEnemy(ACTOR_EN_IK)),
         },
         .connections = {
             CONNECTION(RR_BENEATH_THE_GRAVEYARD_NIGHT_2_GRAVE_AFTER_PIT, true),
@@ -224,15 +224,14 @@ static RegisterShipInitFunc initFunc([]() {
     Regions[RR_ROAD_TO_IKANA_BELOW_LEDGE] = RandoRegion{ .name = "Below Ledge", .sceneId = SCENE_IKANAMAE,
         .checks = {
             CHECK(RC_ROAD_TO_IKANA_POT, CAN_HOOK_SCARECROW),
-            // TODO: HAS_ACCESS_TO_POTION_REFILL?
-            CHECK(RC_ROAD_TO_IKANA_STONE_MASK, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC /* && (HAS_ITEM(ITEM_POTION_RED) || HAS_ITEM(ITEM_POTION_BLUE)) */),
+            CHECK(RC_ROAD_TO_IKANA_STONE_MASK, HAS_ITEM(ITEM_LENS_OF_TRUTH) && HAS_MAGIC && HAS_BOTTLE && (CAN_ACCESS(RED_POTION_REFILL) || CAN_ACCESS(BLUE_POTION_REFILL))),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(IKANA_GRAVEYARD, 0),              ENTRANCE(ROAD_TO_IKANA, 2), true)
         },
         .connections = {
             CONNECTION(RR_ROAD_TO_IKANA_FIELD_SIDE, CAN_RIDE_EPONA),
-            CONNECTION(RR_ROAD_TO_IKANA_ABOVE_LEDGE, HAS_ITEM(ITEM_HOOKSHOT) && HAS_ITEM(ITEM_MASK_GARO)),
+            CONNECTION(RR_ROAD_TO_IKANA_ABOVE_LEDGE, HAS_ITEM(ITEM_HOOKSHOT) && (HAS_ITEM(ITEM_MASK_GARO) || HAS_ITEM(ITEM_MASK_GIBDO))),
         },
     };
     Regions[RR_ROAD_TO_IKANA_FIELD_SIDE] = RandoRegion{ .name = "Field Side", .sceneId = SCENE_IKANAMAE,
@@ -265,6 +264,9 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(IKANA_CANYON, 6),                 ENTRANCE(SAKONS_HIDEOUT, 0), true),
+        },
+        .events = {
+            EVENT_WEEKEVENTREG("Help Kafei get the Sun Mask", WEEKEVENTREG_ESCAPED_SAKONS_HIDEOUT, CanKillEnemy(ACTOR_EN_WF)), // Was gonna do Babas too, but it does not seem to like it when I do both
         },
     };
     Regions[RR_SECRET_SHRINE_ENTRANCE] = RandoRegion{ .name = "Entrance", .sceneId = SCENE_RANDOM,
@@ -316,10 +318,10 @@ static RegisterShipInitFunc initFunc([]() {
         },
         .events = {
             // TODO: Allow opting in to health checks
-            EVENT("Kill Dinalfos", Flags_GetSceneClear(SCENE_RANDOM, 0x02), Flags_SetSceneClear(SCENE_RANDOM, 0x02), Flags_UnsetSceneClear(SCENE_RANDOM, 0x02), /* CHECK_MAX_HP(4) && */ CAN_KILL_DINALFOS),
-            EVENT("Kill Wizzrobe", Flags_GetSceneClear(SCENE_RANDOM, 0x03), Flags_SetSceneClear(SCENE_RANDOM, 0x03), Flags_UnsetSceneClear(SCENE_RANDOM, 0x03), /* CHECK_MAX_HP(8) && */ CAN_KILL_WIZZROBE),
-            EVENT("Kill Wart", Flags_GetSceneClear(SCENE_RANDOM, 0x04), Flags_SetSceneClear(SCENE_RANDOM, 0x04), Flags_UnsetSceneClear(SCENE_RANDOM, 0x04), /* CHECK_MAX_HP(12) && */ CAN_KILL_WART),
-            EVENT("Kill Garo Master", Flags_GetSceneClear(SCENE_RANDOM, 0x05), Flags_SetSceneClear(SCENE_RANDOM, 0x05), Flags_UnsetSceneClear(SCENE_RANDOM, 0x05), /* CHECK_MAX_HP(16) && */ CAN_KILL_GARO_MASTER),
+            EVENT("Kill Dinalfos", Flags_GetSceneClear(SCENE_RANDOM, 0x02), Flags_SetSceneClear(SCENE_RANDOM, 0x02), Flags_UnsetSceneClear(SCENE_RANDOM, 0x02), /* CHECK_MAX_HP(4) && */ CanKillEnemy(ACTOR_EN_DINOFOS)),
+            EVENT("Kill Wizzrobe", Flags_GetSceneClear(SCENE_RANDOM, 0x03), Flags_SetSceneClear(SCENE_RANDOM, 0x03), Flags_UnsetSceneClear(SCENE_RANDOM, 0x03), /* CHECK_MAX_HP(8) && */ CanKillEnemy(ACTOR_EN_WIZ)),
+            EVENT("Kill Wart", Flags_GetSceneClear(SCENE_RANDOM, 0x04), Flags_SetSceneClear(SCENE_RANDOM, 0x04), Flags_UnsetSceneClear(SCENE_RANDOM, 0x04), /* CHECK_MAX_HP(12) && */ CanKillEnemy(ACTOR_BOSS_04)),
+            EVENT("Kill Garo Master", Flags_GetSceneClear(SCENE_RANDOM, 0x05), Flags_SetSceneClear(SCENE_RANDOM, 0x05), Flags_UnsetSceneClear(SCENE_RANDOM, 0x05), /* CHECK_MAX_HP(16) && */ CanKillEnemy(ACTOR_EN_JSO2)),
         },
     };
     Regions[RR_STONE_TOWER_BOTTOM] = RandoRegion{ .name = "Bottom", .sceneId = SCENE_F40,
@@ -345,16 +347,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_STONE_TOWER_INVERTED_NEAR_TEMPLE] = RandoRegion{ .sceneId = SCENE_F41,
         .exits = { //     TO                                         FROM
-            EXIT(ENTRANCE(STONE_TOWER_TEMPLE_INVERTED, 0),  ENTRANCE(STONE_TOWER_INVERTED, 1), (
-                // TODO: THIS IS TEMPORARY. Once stone tower is properly split up, this will be replaced with a proper logic check.
-                CAN_BE_ZORA && CAN_BE_DEKU && CAN_BE_GORON &&
-                HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_HOOKSHOT) && 
-                HAS_MAGIC && CAN_LIGHT_TORCH_NEAR_ANOTHER && CAN_USE_SWORD && CAN_USE_EXPLOSIVE && CAN_PLAY_SONG(ELEGY)
-                // TODO: We can't really add requirement for key count, as the keys need to be in the pool
-                // to be shuffled, and to be in the pool their vanilla location has to be accessible. Once
-                // all key locations are logically accessible we can re-add this check.
-                /* && KEY_COUNT(STONE_TOWER_TEMPLE) >= 4 */
-            )),
+            EXIT(ENTRANCE(STONE_TOWER_TEMPLE_INVERTED, 0),  ENTRANCE(STONE_TOWER_INVERTED, 1), true),
         },
         .connections = {
             CONNECTION(RR_STONE_TOWER_INVERTED_LOWER, true),
@@ -408,16 +401,6 @@ static RegisterShipInitFunc initFunc([]() {
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(STONE_TOWER_INVERTED, 0),         ENTRANCE(STONE_TOWER, 1), CAN_PLAY_SONG(ELEGY) && HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_ARROW_LIGHT) && HAS_MAGIC),
             EXIT(ENTRANCE(STONE_TOWER_TEMPLE, 0),           ENTRANCE(STONE_TOWER, 2), CAN_BE_ZORA && CAN_BE_GORON && CAN_PLAY_SONG(ELEGY))
-            // (
-            //     // TODO: THIS IS TEMPORARY. Once stone tower is properly split up, this will be replaced with a proper logic check.
-            //     CAN_BE_ZORA && CAN_BE_DEKU && CAN_BE_GORON &&
-            //     HAS_ITEM(ITEM_BOW) && HAS_ITEM(ITEM_HOOKSHOT) && 
-            //     HAS_MAGIC && CAN_LIGHT_TORCH_NEAR_ANOTHER && CAN_USE_SWORD && CAN_USE_EXPLOSIVE && CAN_PLAY_SONG(ELEGY)
-            //     // TODO: We can't really add requirement for key count, as the keys need to be in the pool
-            //     // to be shuffled, and to be in the pool their vanilla location has to be accessible. Once
-            //     // all key locations are logically accessible we can re-add this check.
-            //     /* && KEY_COUNT(STONE_TOWER_TEMPLE) >= 4 */
-            // )),
         },
         .connections = {
             CONNECTION(RR_STONE_TOWER_UPPER, HAS_ITEM(ITEM_HOOKSHOT)),

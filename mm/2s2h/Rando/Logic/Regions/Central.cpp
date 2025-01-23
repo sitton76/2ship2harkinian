@@ -61,8 +61,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_CLOCK_TOWER_INTERIOR] = RandoRegion{ .sceneId = SCENE_INSIDETOWER,
         .checks = {
-            CHECK(RC_CLOCK_TOWER_INTERIOR_SONG_OF_HEALING, HAS_ITEM(ITEM_OCARINA_OF_TIME)),
-            CHECK(RC_CLOCK_TOWER_INTERIOR_DEKU_MASK, HAS_ITEM(ITEM_OCARINA_OF_TIME)),
+            // There are no checks here, the 2 that the mask salesman would give you are in RR_MAX
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(SOUTH_CLOCK_TOWN, 0),             ENTRANCE(CLOCK_TOWER_INTERIOR, 1), true),
@@ -88,14 +87,14 @@ static RegisterShipInitFunc initFunc([]() {
         .checks = {
             CHECK(RC_CLOCK_TOWN_EAST_SMALL_CRATE_01, true),
             CHECK(RC_CLOCK_TOWN_EAST_SMALL_CRATE_02, true),
-            CHECK(RC_CLOCK_TOWN_EAST_POSTMAN_HAT,    HAS_ITEM(ITEM_LETTER_MAMA)),
+            CHECK(RC_CLOCK_TOWN_EAST_POSTMAN_HAT,    Flags_GetRandoInf(RANDO_INF_OBTAINED_LETTER_TO_MAMA)),
             CHECK(RC_CLOCK_TOWN_STRAY_FAIRY,         CAN_BE_DEKU),
             CHECK(RC_CLOCK_TOWN_EAST_UPPER_CHEST,    true),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(TERMINA_FIELD, 7),                ENTRANCE(EAST_CLOCK_TOWN, 0), true),
             EXIT(ENTRANCE(SOUTH_CLOCK_TOWN, 7),             ENTRANCE(EAST_CLOCK_TOWN, 1), true), // To lower
-            EXIT(ENTRANCE(ASTRAL_OBSERVATORY, 0),           ENTRANCE(EAST_CLOCK_TOWN, 2), CAN_USE_PROJECTILE), // TODO: Bombers Code req. EDIT BY SITTON : Adding CAN_USE_PROJECTILE as a stopgap solution
+            EXIT(ENTRANCE(ASTRAL_OBSERVATORY, 0),           ENTRANCE(EAST_CLOCK_TOWN, 2), CAN_USE_PROJECTILE),
             EXIT(ENTRANCE(SOUTH_CLOCK_TOWN, 2),             ENTRANCE(EAST_CLOCK_TOWN, 3), true), // To upper
             EXIT(ENTRANCE(TREASURE_CHEST_SHOP, 0),          ENTRANCE(EAST_CLOCK_TOWN, 4), true),
             EXIT(ENTRANCE(NORTH_CLOCK_TOWN, 1),             ENTRANCE(EAST_CLOCK_TOWN, 5), true),
@@ -109,9 +108,8 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_CLOCK_TOWN_GREAT_FAIRY_FOUNTAIN] = RandoRegion{ .name = "Clock Town", .sceneId = SCENE_YOUSEI_IZUMI,
         .checks = {
-            // TODO: Do we want there to be two checks here? In vanilla you can get one right away but the other requires human form. In rando you start as human. Maybe the other should require any form?
             CHECK(RC_CLOCK_TOWN_GREAT_FAIRY, CHECK_WEEKEVENTREG(WEEKEVENTREG_08_80)),
-            CHECK(RC_CLOCK_TOWN_GREAT_FAIRY_ALT, CHECK_WEEKEVENTREG(WEEKEVENTREG_08_80) && CAN_BE_DEKU),
+            CHECK(RC_CLOCK_TOWN_GREAT_FAIRY_ALT, CHECK_WEEKEVENTREG(WEEKEVENTREG_08_80) && (CAN_BE_DEKU || CAN_BE_GORON || CAN_BE_ZORA)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(NORTH_CLOCK_TOWN, 3),             ENTRANCE(FAIRY_FOUNTAIN, 0), true),
@@ -137,6 +135,9 @@ static RegisterShipInitFunc initFunc([]() {
             CHECK(RC_CLOCK_TOWN_NORTH_TINGLE_MAP_02, CAN_USE_PROJECTILE),
             CHECK(RC_CLOCK_TOWN_NORTH_TREE_PIECE_OF_HEART, true),
             CHECK(RC_CLOCK_TOWN_NORTH_BOMB_LADY, CAN_USE_SWORD || CAN_BE_ZORA || CAN_BE_GORON),
+            CHECK(RC_CLOCK_TOWN_BOMBERS_NOTEBOOK, CAN_USE_PROJECTILE), // TODO: This will have to check for access with entrance rando
+            CHECK(RC_CLOCK_TOWN_POSTBOX, HAS_ITEM(ITEM_MASK_POSTMAN)),
+            CHECK(RC_KEATON_QUIZ, HAS_ITEM(ITEM_MASK_KEATON)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(TERMINA_FIELD, 8),                ENTRANCE(NORTH_CLOCK_TOWN, 0), true),
@@ -151,6 +152,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_CLOCK_TOWN_SOUTH] = RandoRegion{ .sceneId = SCENE_CLOCKTOWER,
         .checks = {
+            CHECK(RC_CLOCK_TOWN_POSTBOX, HAS_ITEM(ITEM_MASK_POSTMAN)),
             CHECK(RC_CLOCK_TOWN_SOUTH_PLATFORM_PIECE_OF_HEART, true),
             CHECK(RC_CLOCK_TOWN_SCRUB_DEED, Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)),
             CHECK(RC_CLOCK_TOWN_SOUTH_CHEST_UPPER, (CAN_BE_DEKU && Flags_GetRandoInf(RANDO_INF_OBTAINED_MOONS_TEAR)) || HAS_ITEM(ITEM_HOOKSHOT)),
@@ -180,6 +182,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_CLOCK_TOWN_WEST] = RandoRegion{ .sceneId = SCENE_ICHIBA,
         .checks = {
+            CHECK(RC_CLOCK_TOWN_POSTBOX, HAS_ITEM(ITEM_MASK_POSTMAN)),
             CHECK(RC_CLOCK_TOWN_WEST_BANK_ADULTS_WALLET, true),
             CHECK(RC_CLOCK_TOWN_WEST_BANK_PIECE_OF_HEART, CUR_UPG_VALUE(UPG_WALLET) >= 1),
             CHECK(RC_CLOCK_TOWN_WEST_BANK_INTEREST, CUR_UPG_VALUE(UPG_WALLET) >= 1),
@@ -227,7 +230,7 @@ static RegisterShipInitFunc initFunc([]() {
     };
     Regions[RR_INN] = RandoRegion{ .sceneId = SCENE_YADOYA,
         .checks = {
-            // TODO : Add Couples Mask check here.
+            CHECK(RC_STOCK_POT_INN_COUPLES_MASK, HAS_ITEM(ITEM_MASK_KAFEIS_MASK) && Flags_GetRandoInf(RANDO_INF_OBTAINED_PENDANT_OF_MEMORIES) && CHECK_WEEKEVENTREG(WEEKEVENTREG_ESCAPED_SAKONS_HIDEOUT)),
             CHECK(RC_STOCK_POT_INN_GRANDMA_LONG_STORY, HAS_ITEM(ITEM_MASK_ALL_NIGHT)),
             CHECK(RC_STOCK_POT_INN_GRANDMA_SHORT_STORY, HAS_ITEM(ITEM_MASK_ALL_NIGHT)),
             CHECK(RC_STOCK_POT_INN_GUEST_ROOM_CHEST,Flags_GetRandoInf(RANDO_INF_OBTAINED_ROOM_KEY)),
@@ -270,6 +273,7 @@ static RegisterShipInitFunc initFunc([]() {
         .checks = {
             // TODO : Add shop checks.
             CHECK(RC_MILK_BAR_CIRCUS_LEADER_MASK, CAN_BE_DEKU && CAN_BE_GORON && CAN_BE_ZORA && HAS_ITEM(ITEM_OCARINA_OF_TIME)),
+            CHECK(RC_MILK_BAR_MADAME_AROMA, HAS_ITEM(ITEM_MASK_KAFEIS_MASK) && Flags_GetRandoInf(RANDO_INF_OBTAINED_LETTER_TO_MAMA)),
         },
         .exits = { //     TO                                         FROM
             EXIT(ENTRANCE(EAST_CLOCK_TOWN, 11),             ENTRANCE(MILK_BAR, 0), true),

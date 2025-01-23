@@ -63,7 +63,11 @@ void RegisterSkipOnePointCutscenes() {
             case ACTOR_OBJ_LIGHTBLOCK:
             case ACTOR_OBJ_LIGHTSWITCH:
             case ACTOR_BG_IKANA_BOMBWALL:
+            case ACTOR_BG_HAKUGIN_BOMBWALL:
             case ACTOR_EN_SW:
+            case ACTOR_OBJ_CHAN:
+            case ACTOR_EN_MM:
+            case ACTOR_BG_F40_BLOCK:
                 *should = false;
                 break;
             default:

@@ -12,6 +12,7 @@
 #include "2s2h/Enhancements/GfxPatcher/AuthenticGfxPatches.h"
 #include "2s2h/DeveloperTools/DeveloperTools.h"
 #include "HudEditor.h"
+#include "CosmeticEditor.h"
 
 #include "2s2h/Enhancements/Trackers/ItemTracker.h"
 #include "2s2h/Enhancements/Trackers/ItemTrackerSettings.h"
@@ -356,6 +357,7 @@ void DrawSettingsMenu() {
 }
 
 extern std::shared_ptr<HudEditorWindow> mHudEditorWindow;
+extern std::shared_ptr<CosmeticEditorWindow> mCosmeticEditorWindow;
 extern std::shared_ptr<ItemTrackerWindow> mItemTrackerWindow;
 extern std::shared_ptr<ItemTrackerSettingsWindow> mItemTrackerSettingsWindow;
 extern std::shared_ptr<DisplayOverlayWindow> mDisplayOverlayWindow;
@@ -499,8 +501,6 @@ void DrawEnhancementsMenu() {
                     .tooltip =
                         "Disclaimer: This doesn't do much yet, we will be progressively adding more skips over time",
                 });
-            UIWidgets::CVarCheckbox("Skip Get Item Cutscenes", "gEnhancements.Cutscenes.SkipGetItemCutscenes",
-                                    { .tooltip = "This only works in Randomizer currently" });
 
             ImGui::EndMenu();
         }
@@ -508,6 +508,9 @@ void DrawEnhancementsMenu() {
         if (UIWidgets::BeginMenu("Saving / Time Cycle")) {
 
             ImGui::SeparatorText("Saving");
+            UIWidgets::CVarCheckbox(
+                "3rd Save File Slot", "gEnhancements.Saving.FileSlot3",
+                { .tooltip = "Adds a 3rd file slot that can be used for saves", .defaultValue = true });
             UIWidgets::CVarCheckbox("Persistent Owl Saves", "gEnhancements.Saving.PersistentOwlSaves",
                                     { .tooltip = "Continuing a save will not remove the owl save. Playing Song of "
                                                  "Time, allowing the moon to crash or finishing the "
@@ -580,6 +583,11 @@ void DrawEnhancementsMenu() {
                 { .tooltip = "Pictograph Tour: Hold Z to speed up the boat. Archery: Score 20 points to unlock boat "
                              "speed up for future attempts. When reaching 20 points, you'll be automatically "
                              "transported back to Koume, completing the minigame." });
+
+            UIWidgets::CVarCheckbox(
+                "Shooting Gallery Both Rewards", "gEnhancements.Timesavers.GalleryTwofer",
+                { .tooltip = "When getting a perfect score at the Shooting Gallery, receive both rewards back to back "
+                             "instead of having to play twice." });
 
             ImGui::EndMenu();
         }
@@ -817,6 +825,12 @@ void DrawEnhancementsMenu() {
         if (mHudEditorWindow) {
             UIWidgets::WindowButton("Hud Editor", "gWindows.HudEditor", mHudEditorWindow,
                                     { .tooltip = "Enables the Hud Editor window, allowing you to edit your hud" });
+        }
+
+        if (mCosmeticEditorWindow) {
+            UIWidgets::WindowButton(
+                "Cosmetic Editor", "gWindows.CosmeticEditor", mCosmeticEditorWindow,
+                { .tooltip = "Enables the Cosmetic Editor window, allowing you to edit Cosmetics." });
         }
 
         if (mItemTrackerWindow) {

@@ -65,6 +65,7 @@ static std::vector<RandoItemId> junkItems = {
     RI_BOMBS_5,
     RI_DEKU_NUTS_5,
     RI_DEKU_STICKS_5,
+    RI_MAGIC_JAR_SMALL,
     // Refill
     RI_RED_POTION_REFILL,
     RI_GREEN_POTION_REFILL,
@@ -199,6 +200,13 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
                 return false;
             }
             break;
+        case RI_PROGRESSIVE_LULLABY:
+            if (hasObtainedCheck) {
+                return false;
+            } else if (CHECK_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO) && CHECK_QUEST_ITEM(QUEST_SONG_LULLABY)) {
+                return false;
+            }
+            return true;
         case RI_PROGRESSIVE_MAGIC:
             if (hasObtainedCheck) {
                 return false;
@@ -238,6 +246,7 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
             break;
         case RI_GOLD_DUST_REFILL:
         case RI_MILK_REFILL:
+        case RI_CHATEAU_ROMANI_REFILL:
         case RI_FAIRY_REFILL:
         case RI_RED_POTION_REFILL:
         case RI_BLUE_POTION_REFILL:
@@ -273,6 +282,7 @@ bool Rando::IsItemObtainable(RandoItemId randoItemId, RandoCheckId randoCheckId)
             }
             break;
         case RI_BOTTLE_EMPTY:
+        case RI_BOTTLE_CHATEAU_ROMANI:
         case RI_BOTTLE_MILK:
         case RI_BOTTLE_GOLD_DUST:
             if (hasObtainedCheck) {
@@ -470,6 +480,17 @@ RandoItemId Rando::ConvertItem(RandoItemId randoItemId, RandoCheckId randoCheckI
                 // Shouldn't happen, just in case
                 assert(false);
                 return RI_JUNK;
+            case RI_PROGRESSIVE_LULLABY:
+                if (!CHECK_QUEST_ITEM(QUEST_SONG_LULLABY_INTRO)) {
+                    return RI_SONG_LULLABY_INTRO;
+                } else {
+                    if (!CHECK_QUEST_ITEM(QUEST_SONG_LULLABY)) {
+                        return RI_SONG_LULLABY;
+                    }
+                }
+                // Shouldn't happen, just in case
+                assert(false);
+                return RI_JUNK;
             case RI_PROGRESSIVE_MAGIC:
                 if (!gSaveContext.save.saveInfo.playerData.isMagicAcquired) {
                     return RI_SINGLE_MAGIC;
@@ -515,6 +536,7 @@ RandoItemId Rando::ConvertItem(RandoItemId randoItemId, RandoCheckId randoCheckI
                 }
                 break;
             case RI_BOTTLE_MILK:
+            case RI_BOTTLE_CHATEAU_ROMANI:
                 if (Inventory_HasEmptyBottle()) {
                     return RI_MILK_REFILL;
                 }

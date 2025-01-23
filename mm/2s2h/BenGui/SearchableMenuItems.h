@@ -440,6 +440,17 @@ static const std::unordered_map<int32_t, const char*> dekuGuardSearchBallsOption
     { DEKU_GUARD_SEARCH_BALLS_ALWAYS, "Always" },
 };
 
+static const std::unordered_map<int32_t, const char*> skipGetItemCutscenesOptions = {
+    { 0, "Never" },
+    { 1, "Junk Items Only" },
+    { 2, "Everything But Major" },
+    { 3, "Always" },
+};
+
+static const std::unordered_map<int32_t, const char*> damageMultiplierOptions = {
+    { 0, "1x" }, { 1, "2x" }, { 2, "4x" }, { 3, "8x" }, { 4, "16x" }, { 10, "1 Hit KO" },
+};
+
 void FreeLookPitchMinMax() {
     f32 maxY = CVarGetFloat("gEnhancements.Camera.FreeLook.MaxPitch", 72.0f);
     f32 minY = CVarGetFloat("gEnhancements.Camera.FreeLook.MinPitch", -49.0f);
@@ -732,13 +743,36 @@ void AddSettings() {
                 WIDGET_CVAR_COMBOBOX,
                 { .comboBoxOptions = textureFilteringMap } } } } });
     // Input Editor
-    settingsSidebar.push_back({ "Input Editor",
-                                1,
-                                { { { "Popout Input Editor",
-                                      "gWindows.BenInputEditor",
-                                      "Enables the separate Input Editor window.",
-                                      WIDGET_WINDOW_BUTTON,
-                                      { .size = UIWidgets::Sizes::Inline, .windowName = "2S2H Input Editor" } } } } });
+    settingsSidebar.push_back(
+        { "Controls",
+          1,
+          { { {
+                  "Simulated Input Lag: %d frames",
+                  CVAR_SIMULATED_INPUT_LAG,
+                  "Buffers your inputs to be executed a specified amount of frames later",
+                  WIDGET_CVAR_SLIDER_INT,
+                  { 0, 6, 0 },
+              },
+              { .widgetName =
+                    "This interface can be a little daunting. Please bear with us as we work to improve the experience "
+                    "and address some known issues.\n"
+                    "\n"
+                    "At first glance, you may notice several input devices displayed below the 'Clear All' button. "
+                    "Some of these might be other controllers connected to your computer, while others may be "
+                    "duplicated controllers (a known issue). We recommend clicking on the box with the " ICON_FA_EYE
+                    " icon and the name of any disconnected or unused controllers to hide their inputs. Make sure the "
+                    "target controller remains visible.\n"
+                    "\n"
+                    "If you encounter issues connecting your controller or registering inputs, try closing Steam or "
+                    "any other external input software. Alternatively, test a different controller to determine if "
+                    "it's a compatibility issue.\n",
+                .widgetType = WIDGET_TEXT },
+              { .widgetName = "Bindings", .widgetType = WIDGET_SEPARATOR_TEXT },
+              { "Popout Bindings Window",
+                "gWindows.BenInputEditor",
+                "Enables the separate Input Editor window.",
+                WIDGET_WINDOW_BUTTON,
+                { .size = UIWidgets::Sizes::Inline, .windowName = "2S2H Input Editor" } } } } });
 
     settingsSidebar.push_back(
         { "Overlay",
@@ -990,7 +1024,7 @@ void AddEnhancements() {
                 "gEnhancements.Camera.RightStick.InvertYAxis",
                 "Inverts the Camera Y Axis",
                 WIDGET_CVAR_CHECKBOX,
-                {},
+                { .defaultVariant = true },
                 nullptr,
                 [](widgetInfo& info) {
                     if (disabledMap.at(DISABLE_FOR_CAMERAS_OFF).active) {
@@ -1044,6 +1078,9 @@ void AddEnhancements() {
               { "Infinite Rupees", "gCheats.InfiniteRupees", "Always have a full Wallet.", WIDGET_CVAR_CHECKBOX, {} },
               { "Infinite Consumables", "gCheats.InfiniteConsumables",
                 "Always have max Consumables, you must have collected the consumables first.", WIDGET_CVAR_CHECKBOX },
+              { "Easy Frame Advance", "gCheats.EasyFrameAdvance",
+                "Continue holding START button when unpausing to only advance a single frame and then re-pause",
+                WIDGET_CVAR_CHECKBOX },
               { "Longer Deku Flower Glide", "gCheats.LongerFlowerGlide",
                 "Allows Deku Link to glide longer, no longer dropping after a certain distance.",
                 WIDGET_CVAR_CHECKBOX },
@@ -1075,6 +1112,8 @@ void AddEnhancements() {
               { "Fast Deku Flower Launch", "gEnhancements.Player.FastFlowerLaunch",
                 "Speeds up the time it takes to be able to get maximum height from launching out of a deku flower",
                 WIDGET_CVAR_CHECKBOX },
+              { "Infinite Deku Hopping", "gEnhancements.Player.InfiniteDekuHopping",
+                "Allows Deku Link to hop indefinitely in water without drowning.", WIDGET_CVAR_CHECKBOX },
               { "Instant Putaway", "gEnhancements.Player.InstantPutaway",
                 "Allows Link to instantly puts away held item without waiting.", WIDGET_CVAR_CHECKBOX },
               { "Fierce Deity Putaway", "gEnhancements.Player.FierceDeityPutaway",
@@ -1100,7 +1139,9 @@ void AddEnhancements() {
                 "Inform the player what target if any is being captured in the pictograph.", WIDGET_CVAR_CHECKBOX },
               { "Arrow Type Cycling", "gEnhancements.PlayerActions.ArrowCycle",
                 "While aiming the bow, use L to cycle between Normal, Fire, Ice and Light arrows.",
-                WIDGET_CVAR_CHECKBOX } },
+                WIDGET_CVAR_CHECKBOX },
+              { "Bombchu Drops", "gEnhancements.Equipment.ChuDrops",
+                "When a bomb drop is spawned, it has a 50% chance to be a bombchu instead.", WIDGET_CVAR_CHECKBOX } },
             {
                 { .widgetName = "Modes", .widgetType = WIDGET_SEPARATOR_TEXT },
                 { "Play as Kafei", "gModes.PlayAsKafei", "Requires scene reload to take effect.",
@@ -1186,6 +1227,11 @@ void AddEnhancements() {
                   "Instantly win the Gorman Horse Race", WIDGET_CVAR_CHECKBOX },
             },
             { { .widgetName = "Saving", .widgetType = WIDGET_SEPARATOR_TEXT },
+              { "3rd Save File Slot",
+                "gEnhancements.Saving.FileSlot3",
+                "Adds a 3rd file slot that can be used for saves",
+                WIDGET_CVAR_CHECKBOX,
+                { .defaultVariant = true } },
               { "Persistent Owl Saves", "gEnhancements.Saving.PersistentOwlSaves",
                 "Continuing a save will not remove the owl save. Playing Song of "
                 "Time, allowing the moon to crash or finishing the "
@@ -1363,7 +1409,12 @@ void AddEnhancements() {
                 "'A' on it in the mask menu.",
                 WIDGET_CVAR_CHECKBOX },
               { "No Blast Mask Cooldown", "gEnhancements.Masks.NoBlastMaskCooldown",
-                "Eliminates the Cooldown between Blast Mask usage.", WIDGET_CVAR_CHECKBOX } },
+                "Eliminates the Cooldown between Blast Mask usage.", WIDGET_CVAR_CHECKBOX },
+              { "Goron Rolling Ignores Magic", "gEnhancements.Masks.GoronRollingIgnoresMagic",
+                "Goron rolling will use spikes even when Link doesn't have magic, and doesn't consume any.",
+                WIDGET_CVAR_CHECKBOX },
+              { "Goron Rolling Fast Spikes", "gEnhancements.Masks.GoronRollingFastSpikes",
+                "Speeds up the wind-up towards spiky rolling to be near instant.", WIDGET_CVAR_CHECKBOX } },
             // Song Enhancements
             { { .widgetName = "Ocarina", .widgetType = WIDGET_SEPARATOR_TEXT },
               { "Better Song of Double Time", "gEnhancements.Songs.BetterSongOfDoubleTime",
@@ -1402,7 +1453,9 @@ void AddEnhancements() {
               { "Hide Title Cards", "gEnhancements.Cutscenes.HideTitleCards", "Hides Title Cards when entering areas.",
                 WIDGET_CVAR_CHECKBOX },
               { "Skip One Point Cutscenes", "gEnhancements.Cutscenes.SkipOnePointCutscenes",
-                "Skip One Point Cutscenes.", WIDGET_CVAR_CHECKBOX },
+                "Skips freezing Link to focus on various events like chest spawning, door unlocking, switch pressed, "
+                "etc",
+                WIDGET_CVAR_CHECKBOX },
               { "Skip Entrance Cutscenes", "gEnhancements.Cutscenes.SkipEntranceCutscenes",
                 "Skip cutscenes that occur when first entering a new area.", WIDGET_CVAR_CHECKBOX },
               { "Skip to File Select", "gEnhancements.Cutscenes.SkipToFileSelect",
@@ -1425,8 +1478,11 @@ void AddEnhancements() {
               { "Skip Misc Interactions", "gEnhancements.Cutscenes.SkipMiscInteractions",
                 "Disclaimer: This doesn't do much yet, we will be progressively adding more skips over time.",
                 WIDGET_CVAR_CHECKBOX },
-              { "Skip Item Get Cutscene", "gEnhancements.Cutscenes.SkipGetItemCutscenes",
-                "Note: This only works in Randomizer currently", WIDGET_CVAR_CHECKBOX } },
+              { "Skip Item Get Cutscene",
+                "gEnhancements.Cutscenes.SkipGetItemCutscenes",
+                "Note: This only works in Randomizer currently",
+                WIDGET_CVAR_COMBOBOX,
+                { .comboBoxOptions = skipGetItemCutscenesOptions } } },
             // Dialogue Enhancements
             { { .widgetName = "Dialogue", .widgetType = WIDGET_SEPARATOR_TEXT },
               { "Fast Bank Selection", "gEnhancements.Dialogue.FastBankSelection",
@@ -1442,6 +1498,10 @@ void AddEnhancements() {
                 "Pictograph Tour: Hold Z to speed up the boat. Archery: Score 20 points to unlock boat speed up for "
                 "future attempts. When reaching 20 points, you'll be automatically transported back to Koume, "
                 "completing the minigame.",
+                WIDGET_CVAR_CHECKBOX },
+              { "Shooting Gallery Both Rewards", "gEnhancements.Timesavers.GalleryTwofer",
+                "When getting a perfect score at the Shooting Gallery, receive both rewards back to back "
+                "instead of having to play twice.",
                 WIDGET_CVAR_CHECKBOX } } } });
     enhancementsSidebar.push_back(
         { "Fixes",
@@ -1481,44 +1541,72 @@ void AddEnhancements() {
         { "Restorations",
           3,
           { // Restorations
-            { { .widgetName = "Restorations", .widgetType = WIDGET_SEPARATOR_TEXT },
-              { "Constant Distance Backflips and Sidehops", "gEnhancements.Restorations.ConstantFlipsHops",
-                "Backflips and Sidehops travel a constant distance as they did in OoT.", WIDGET_CVAR_CHECKBOX },
-              { "Power Crouch Stab", "gEnhancements.Restorations.PowerCrouchStab",
-                "Crouch stabs will use the power of Link's previous melee attack, as is in MM JP 1.0 and OoT.",
-                WIDGET_CVAR_CHECKBOX },
-              { "Side Rolls", "gEnhancements.Restorations.SideRoll", "Restores side rolling from OoT.",
-                WIDGET_CVAR_CHECKBOX },
-              { "Tatl ISG", "gEnhancements.Restorations.TatlISG", "Restores Navi ISG from OoT, but now with Tatl.",
-                WIDGET_CVAR_CHECKBOX },
-              { "Woodfall Mountain Appearance", "gEnhancements.Restorations.WoodfallMountainAppearance",
-                "Restores the appearance of Woodfall mountain to not look poisoned "
-                "when viewed from Termina Field after clearing Woodfall Temple\n\n"
-                "Requires a scene reload to take effect",
-                WIDGET_CVAR_CHECKBOX } } } });
+            {
+                { .widgetName = "Restorations", .widgetType = WIDGET_SEPARATOR_TEXT },
+                { "Constant Distance Backflips and Sidehops", "gEnhancements.Restorations.ConstantFlipsHops",
+                  "Backflips and Sidehops travel a constant distance as they did in OoT.", WIDGET_CVAR_CHECKBOX },
+                { "Power Crouch Stab", "gEnhancements.Restorations.PowerCrouchStab",
+                  "Crouch stabs will use the power of Link's previous melee attack, as is in MM JP 1.0 and OoT.",
+                  WIDGET_CVAR_CHECKBOX },
+                { "Side Rolls", "gEnhancements.Restorations.SideRoll", "Restores side rolling from OoT.",
+                  WIDGET_CVAR_CHECKBOX },
+                { "Tatl ISG", "gEnhancements.Restorations.TatlISG", "Restores Navi ISG from OoT, but now with Tatl.",
+                  WIDGET_CVAR_CHECKBOX },
+                { "Woodfall Mountain Appearance", "gEnhancements.Restorations.WoodfallMountainAppearance",
+                  "Restores the appearance of Woodfall mountain to not look poisoned "
+                  "when viewed from Termina Field after clearing Woodfall Temple\n\n"
+                  "Requires a scene reload to take effect",
+                  WIDGET_CVAR_CHECKBOX },
+                {
+                    "Pause Buffer Input Window",
+                    "gEnhancements.Restorations.PauseBufferWindow",
+                    "Amount of time in frames you have to buffer an input while unpausing the game. Original hardware "
+                    "is around 20",
+                    WIDGET_CVAR_SLIDER_INT,
+                    { 0, 40, 0 },
+                },
+            } } });
 
     enhancementsSidebar.push_back(
         { "Difficulty Options",
           3,
           { {
-              { "Disable Takkuri Steal", "gEnhancements.Cheats.DisableTakkuriSteal",
-                "Prevents the Takkuri from stealing key items like bottles and swords. It may still steal other items.",
-                WIDGET_CVAR_CHECKBOX },
-              { "Deku Guard Search Balls",
-                "gEnhancements.Cheats.DekuGuardSearchBalls",
-                "Choose when to show the Deku Palace Guards' search balls\n"
-                "- Never: Never show the search balls. This matches Majora's Mask 3D behaviour\n"
-                "- Night Only: Only show the search balls at night. This matches original N64 behaviour.\n"
-                "- Always: Always show the search balls.",
-                WIDGET_CVAR_COMBOBOX,
-                { .defaultVariant = DEKU_GUARD_SEARCH_BALLS_NIGHT_ONLY,
-                  .comboBoxOptions = dekuGuardSearchBallsOptions } },
-              { "Lower Bank Reward Thresholds", "gEnhancements.DifficultyOptions.LowerBankRewardThresholds",
-                "Reduces the amount of rupees required to receive the rewards from the bank.\n"
-                "From: 200 -> 1000 -> 5000\n"
-                "To:   100 ->  500 -> 1000",
-                WIDGET_CVAR_CHECKBOX },
-          } } });
+                { "Disable Takkuri Steal", "gEnhancements.Cheats.DisableTakkuriSteal",
+                  "Prevents the Takkuri from stealing key items like bottles and swords. It may still steal other "
+                  "items.",
+                  WIDGET_CVAR_CHECKBOX },
+                { "Deku Guard Search Balls",
+                  "gEnhancements.Cheats.DekuGuardSearchBalls",
+                  "Choose when to show the Deku Palace Guards' search balls\n"
+                  "- Never: Never show the search balls. This matches Majora's Mask 3D behaviour\n"
+                  "- Night Only: Only show the search balls at night. This matches original N64 behaviour.\n"
+                  "- Always: Always show the search balls.",
+                  WIDGET_CVAR_COMBOBOX,
+                  { .defaultVariant = DEKU_GUARD_SEARCH_BALLS_NIGHT_ONLY,
+                    .comboBoxOptions = dekuGuardSearchBallsOptions } },
+                { "Lower Bank Reward Thresholds", "gEnhancements.DifficultyOptions.LowerBankRewardThresholds",
+                  "Reduces the amount of rupees required to receive the rewards from the bank.\n"
+                  "From: 200 -> 1000 -> 5000\n"
+                  "To:   100 ->  500 -> 1000",
+                  WIDGET_CVAR_CHECKBOX },
+            },
+            {
+                {
+                    "Damage Multiplier",
+                    "gEnhancements.DifficultyOptions.DamageMultiplier",
+                    "Adjusts the amount of damage Link takes from all sources.",
+                    WIDGET_CVAR_COMBOBOX,
+                    { .comboBoxOptions = damageMultiplierOptions },
+                },
+                { "Permanent Heart Loss", "gEnhancements.DifficultyOptions.PermanentHeartLoss",
+                  "When you lose 4 quarters of a heart you will permanently lose that heart container.\n\nDisabling "
+                  "this after the fact will not restore any received heart containers.",
+                  WIDGET_CVAR_CHECKBOX },
+                { "Delete File on Death", "gEnhancements.DifficultyOptions.DeleteFileOnDeath",
+                  "Dying will delete your file\n\n     " ICON_FA_EXCLAMATION_TRIANGLE
+                  " WARNING " ICON_FA_EXCLAMATION_TRIANGLE "\nTHIS IS NOT REVERSABLE\nUSE AT YOUR OWN RISK!",
+                  WIDGET_CVAR_CHECKBOX },
+            } } });
     enhancementsSidebar.push_back({ "HUD Editor",
                                     1,
                                     { // HUD Editor
@@ -1884,7 +1972,7 @@ void SearchMenuGetItem(widgetInfo& widget) {
                 break;
             case WIDGET_TEXT:
                 ImGui::AlignTextToFramePadding();
-                ImGui::Text(widget.widgetName.c_str());
+                ImGui::TextWrapped(widget.widgetName.c_str());
                 break;
             case WIDGET_COMBOBOX: {
                 int32_t* pointer = std::get<int32_t*>(widget.widgetOptions.valuePointer);
