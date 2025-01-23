@@ -15,6 +15,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Peehat/z_en_peehat.h"
 #include "assets/objects/object_ph/object_ph.h"
 #include "src/overlays/actors/ovl_En_Jso2/z_en_jso2.h"
+#include "src/overlays/actors//ovl_En_Wallmas/z_en_wallmas.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -89,6 +90,9 @@ void RealBombchuPostLimbDraw() {
 }
 
 void DrawBat() {
+    static u32 lastUpdate = 0;
+    static u32 wingAnim = 0;
+    
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
 
@@ -98,8 +102,6 @@ void DrawBat() {
     (Gfx*)&gBadBatWingsFrame8DL,
     };
 
-    static u32 lastUpdate = 0;
-    static u32 wingAnim = 0;
     Gfx* gfx = POLY_OPA_DISP;
 
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
@@ -124,18 +126,17 @@ void DrawBat() {
 }
 
 void DrawRealBombchu() {
-    OPEN_DISPS(gPlayState->state.gfxCtx);
-
-    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
-    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
-    Matrix_Translate(0, -1500.0f, 0, MTXMODE_APPLY);
-
     static bool initialized = false;
     static SkelAnime skelAnime;
     static Vec3s jointTable[REAL_BOMBCHU_LIMB_MAX];
     static Vec3s morphTable[REAL_BOMBCHU_LIMB_MAX];
     static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+    Matrix_Translate(0, -1500.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;
@@ -161,8 +162,8 @@ void DrawDodongo() {
     static Vec3s morphTable[OBJECT_DODONGO_LIMB_MAX];
     static u32 lastUpdate = 0;
 
-    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
     Matrix_Translate(0, -1500.0f, 0, MTXMODE_APPLY);
 
@@ -180,7 +181,6 @@ void DrawDodongo() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(4.0f, 0.5f, 4.0f, -200.0f);
-    //DrawSmoke(60.0f, 60.0f, 60.0f, 0);
 }
 
 void DrawGaroMaster() {
@@ -190,10 +190,9 @@ void DrawGaroMaster() {
     static Vec3s morphTable[GARO_MASTER_LIMB_MAX];
     static u32 lastUpdate = 0;
 
+    OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-
-    OPEN_DISPS(gPlayState->state.gfxCtx);
     Matrix_Scale(0.03f, 0.03f, 0.03f, MTXMODE_APPLY);
     Matrix_Translate(0, -50.0f, 0, MTXMODE_APPLY);
 
@@ -222,9 +221,8 @@ void DrawLeever() {
     static Vec3s morphTable[LEEVER_LIMB_MAX];
     static u32 lastUpdate = 0;
 
-    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-
     OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.05f, 0.05f, 0.05f, MTXMODE_APPLY);
     Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
 
@@ -253,10 +251,8 @@ void DrawPeehat() {
     static u32 lastUpdate = 0;
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
-
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
-    //Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;
@@ -303,17 +299,48 @@ void DrawSlime() {
     timer--;
 }
 
-void DrawWolfos() {
+void DrawWallmaster() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[WALLMASTER_LIMB_MAX];
+    static Vec3s morphTable[WALLMASTER_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+        
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
-    Matrix_Translate(0, -3000.0f, 0, MTXMODE_APPLY);
+    Matrix_Translate(0, -3500.0f, 0, MTXMODE_APPLY);
 
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWallmasterSkel, (AnimationHeader*)&gWallmasterIdleAnim, 
+            jointTable, morphTable, WALLMASTER_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                          NULL, NULL, NULL);
+    
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(7.0f, 1.0f, 7.0f, -200.0f);
+}
+
+void DrawWolfos() {
     static bool initialized = false;
     static SkelAnime skelAnime;
     static Vec3s jointTable[WOLFOS_NORMAL_LIMB_MAX];
     static Vec3s morphTable[WOLFOS_NORMAL_LIMB_MAX];
     static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -3000.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;

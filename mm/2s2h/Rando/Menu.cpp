@@ -75,6 +75,9 @@ void Rando::DrawMenu() {
                 "here yet, consult the check tracker for more detailed information.");
             UIWidgets::CVarCheckbox("Shuffle Shops", Rando::StaticData::Options[RO_SHUFFLE_SHOPS].cvar);
             UIWidgets::CVarCheckbox("Shuffle Boss Remains", Rando::StaticData::Options[RO_SHUFFLE_BOSS_REMAINS].cvar);
+
+            ImGui::SeparatorText("Untested");
+            UIWidgets::CVarCheckbox("Shuffle Enemy Souls", Rando::StaticData::Options[RO_SHUFFLE_ENEMY_SOULS].cvar);
         }
     }
     ImGui::SeparatorText("Enhancements");

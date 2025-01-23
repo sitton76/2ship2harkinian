@@ -99,19 +99,19 @@ void ApplyNoLogicToSaveContext() {
         }
     }
 
-    // Soul TODO: Place behind Option
-    uint32_t index = RI_SOUL_BAT;
-    for (auto& item : itemPool) {
+    if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] == RO_GENERIC_YES) {
+        uint32_t index = RI_SOUL_BAT;
+        for (auto& item : itemPool) {
 
-        if (item == RI_RUPEE_RED) {
-            item = (RandoItemId)index;
-            index++;
-        }
-        if ((RandoItemId)index > RI_SOUL_WOLFOS) {
-            break;
+            if (item == RI_RUPEE_RED) {
+                item = (RandoItemId)index;
+                index++;
+            }
+            if ((RandoItemId)index > RI_SOUL_WOLFOS) {
+                break;
+            }
         }
     }
-    // End Soul
 
     for (size_t i = 0; i < itemPool.size(); i++) {
         std::swap(itemPool[i], itemPool[Ship_Random(0, itemPool.size() - 1)]);
