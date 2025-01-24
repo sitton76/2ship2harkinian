@@ -15,6 +15,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Jso2/z_en_jso2.h"
 #include "src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h"
 #include "src/overlays/actors/ovl_En_Firefly/z_en_firefly.h"
+#include "assets/objects/object_tite/object_tite.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -99,9 +100,9 @@ void DrawEnFirefly_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
     }
 
     if (limbIndex == FIRE_KEESE_LIMB_HEAD) {
-        Gfx* gfx = gPlayState->state.gfxCtx->polyXlu.p;
-        Scene_SetRenderModeXlu(gPlayState, 1, 2);
-        gSPMatrix(gfx++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        Gfx* gfx = play->state.gfxCtx->polyXlu.p;
+        Scene_SetRenderModeXlu(play, 1, 2);
+        gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(gfx++, (Gfx*)&gKeeseRedEyesDL);
     }
     if (limbIndex == FIRE_KEESE_LIMB_LEFT_WING_END || limbIndex == FIRE_KEESE_LIMB_RIGHT_WING_END_ROOT) {
@@ -367,7 +368,47 @@ void DrawSlime() {
     timer--;
 }
 
+void DrawTektite() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[25];
+    static Vec3s morphTable[25];
+    static u32 lastUpdate = 0;
 
+    static TexturePtr D_80896B24[2][3] = {
+    { (TexturePtr*)&object_tite_Tex_001300, (TexturePtr*)&object_tite_Tex_001700, (TexturePtr*)&object_tite_Tex_001900 },
+    { (TexturePtr*)&object_tite_Tex_001B00, (TexturePtr*)&object_tite_Tex_001F00, (TexturePtr*)&object_tite_Tex_002100 },
+    };
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2900.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_tite_Skel_003A20, 
+            (AnimationHeader*)&object_tite_Anim_0012E4, jointTable, morphTable, 25);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    Gfx* gfx = POLY_OPA_DISP;
+
+    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
+
+    gSPSegment(&gfx[1], 0x08, (uintptr_t)D_80896B24[0][0]);
+    gSPSegment(&gfx[2], 0x09, (uintptr_t)D_80896B24[0][1]);
+    gSPSegment(&gfx[3], 0x0A, (uintptr_t)D_80896B24[0][2]);
+
+    POLY_OPA_DISP = &gfx[4];
+
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(4.0f, 0.5f, 4.0f, -200.0f);
+}
 
 void DrawWallmaster() {
     static bool initialized = false;
