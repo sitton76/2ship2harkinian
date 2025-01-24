@@ -16,6 +16,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h"
 #include "src/overlays/actors/ovl_En_Firefly/z_en_firefly.h"
 #include "assets/objects/object_tite/object_tite.h"
+#include "assets/objects/object_okuta/object_okuta.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -310,6 +311,39 @@ void DrawLeever() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -200.0f);
+}
+
+void DrawOctorok() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[16];
+    static Vec3s morphTable[16];
+    static u32 lastUpdate = 0;
+    
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.007f, 0.007f, 0.007f, MTXMODE_APPLY);
+    Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gOctorokSkel, (AnimationHeader*)&gOctorokFloatAnim, 
+            jointTable, morphTable, 16);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    Gfx* gfxPtr = POLY_OPA_DISP;
+    gSPDisplayList(&gfxPtr[0], gSetupDLs[SETUPDL_25]);
+    gSPSegment(&gfxPtr[1], 0x08, (uintptr_t)D_801AEFA0);
+    POLY_OPA_DISP = &gfxPtr[2];
+    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x01, 255, 255, 255, 255);
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(6.0f, 0.7f, 6.0f, -5600.0f);
 }
 
 void DrawPeehat() {
