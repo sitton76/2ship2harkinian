@@ -248,6 +248,9 @@ void Rando::GiveItem(RandoItemId randoItemId) {
         case RI_SOUL_GARO:
             gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_JSO2] = 1;
             break;
+        case RI_SOUL_KEESE:
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_FIREFLY] = 1;
+            break;
         case RI_SOUL_LEEVER:
             gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_NEO_REEBA] = 1;
             break;

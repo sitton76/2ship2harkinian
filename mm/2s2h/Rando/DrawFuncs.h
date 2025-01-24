@@ -9,25 +9,22 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Neo_Reeba/z_en_neo_reeba.h"
 #include "src/overlays/actors/ovl_En_Slime/z_en_slime.h"
 #include "src/overlays/actors/ovl_En_Rat/z_en_rat.h"
-#include "src/overlays/actors/ovl_En_Bat/z_en_bat.h"
 #include "assets/objects/object_bat/object_bat.h"
 #include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
-#include "src/overlays/actors/ovl_En_Peehat/z_en_peehat.h"
 #include "assets/objects/object_ph/object_ph.h"
 #include "src/overlays/actors/ovl_En_Jso2/z_en_jso2.h"
-#include "src/overlays/actors//ovl_En_Wallmas/z_en_wallmas.h"
+#include "src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h"
+#include "src/overlays/actors/ovl_En_Firefly/z_en_firefly.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#include "src/overlays/actors/ovl_En_Fall/z_en_fall.h"
+
 #include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
 #include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
-#include "assets/objects/object_fusen/object_fusen.h"
 
 void ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
-void EnJso2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx);
 }
 
 void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
@@ -75,19 +72,62 @@ void DrawFireRing(f32 x, f32 y, f32 z, f32 tY) {
     }
 }
 
-void RealBombchuPostLimbDraw() {
-    OPEN_DISPS(gPlayState->state.gfxCtx);
-    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
+// Limb Override Functions
 
-    
-    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 150, 255);
-    gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 0);
-    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)&gBombBodyDL);
-    Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
-    CLOSE_DISPS(gPlayState->state.gfxCtx);
+void DrawEnFirefly_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* firefly) {
+    static Color_RGBA8 auraPrimColor[2] = { { 255, 255, 100, 255 }, { 100, 200, 255, 255 } };
+    static Color_RGBA8 auraEnvColor[2] = { { 255, 50, 0, 0 }, { 0, 0, 255, 0 } };
+    static uint32_t dustUpdate = 0;
+    static bool auraColor = false;
+    static Vec3f auraVelocity = { 0, 0.5f, 0 };
+    static Vec3f auraAccel = { 0, 0.5f, 0 };
+    static Vec3f auraPos;
+    if (firefly != NULL) {
+        auraPos = firefly->world.pos;
+    }
+
+    Matrix_MultZero(&auraPos);
+    auraPos.x += Rand_ZeroFloat(0.5f);
+    auraPos.y += Rand_ZeroFloat(0.5f);
+    auraPos.z += Rand_ZeroFloat(0.5f);
+
+    if (gPlayState != NULL && dustUpdate != gPlayState->state.frames) {
+        if (dustUpdate == gPlayState->state.frames - 20) {
+            dustUpdate = gPlayState->state.frames;
+            auraColor = !auraColor;
+        }
+    }
+
+    if (limbIndex == FIRE_KEESE_LIMB_HEAD) {
+        Gfx* gfx = gPlayState->state.gfxCtx->polyXlu.p;
+        Scene_SetRenderModeXlu(gPlayState, 1, 2);
+        gSPMatrix(gfx++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPDisplayList(gfx++, (Gfx*)&gKeeseRedEyesDL);
+    }
+    if (limbIndex == FIRE_KEESE_LIMB_LEFT_WING_END || limbIndex == FIRE_KEESE_LIMB_RIGHT_WING_END_ROOT) {
+        EffectSsDust_Spawn(gPlayState, 2, &auraPos, &auraVelocity, &auraAccel, &auraPrimColor[auraColor], &auraEnvColor[auraColor], 
+        100, -40, 3, 0);
+    }
 }
+
+void DrawEnRealBombchu_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* rat) {
+    //Gfx* gfx = play->state.gfxCtx->polyOpa.p;
+
+    if (limbIndex == REAL_BOMBCHU_LIMB_TAIL_END) {
+        OPEN_DISPS(play->state.gfxCtx);
+        Matrix_ReplaceRotation(&play->billboardMtxF);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPDisplayList(POLY_OPA_DISP++, (Gfx*)&gBombCapDL);
+        Matrix_RotateZYX(0x4000, 0, 0, MTXMODE_APPLY);
+        gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 80, 255);
+        gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 10, 0, 40, 255);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPDisplayList(POLY_OPA_DISP++, (Gfx*)&gBombBodyDL);
+        CLOSE_DISPS(play->state.gfxCtx);
+    }
+}
+
+// Enemy Soul Draw Functions
 
 void DrawBat() {
     static u32 lastUpdate = 0;
@@ -149,7 +189,7 @@ void DrawRealBombchu() {
     }
 
     SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                          NULL, NULL, NULL);
+                          NULL, DrawEnRealBombchu_PostLimbDraw, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
@@ -212,6 +252,34 @@ void DrawGaroMaster() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
+}
+
+void DrawKeese(Actor* actor) {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[FIRE_KEESE_LIMB_MAX];
+    static Vec3s morphTable[FIRE_KEESE_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gFireKeeseSkel, (AnimationHeader*)&gFireKeeseFlyAnim, 
+            jointTable, morphTable, FIRE_KEESE_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+   
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, DrawEnFirefly_PostLimbDraw, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(3.0f, 0.5f, 3.0f, -5200.0f);
 }
 
 void DrawLeever() {
@@ -298,6 +366,8 @@ void DrawSlime() {
     DrawFireRing(5.0f, 1.0f, 5.0f, -200.0f);
     timer--;
 }
+
+
 
 void DrawWallmaster() {
     static bool initialized = false;
