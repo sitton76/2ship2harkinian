@@ -408,6 +408,9 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         case RI_SOUL_BOMBCHU:
             DrawRealBombchu();
             break;
+        case RI_SOUL_DINOLFOS:
+            DrawDinolfos();
+            break;
         case RI_SOUL_DODONGO:
             DrawDodongo();
             break;

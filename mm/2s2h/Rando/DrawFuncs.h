@@ -17,6 +17,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Firefly/z_en_firefly.h"
 #include "assets/objects/object_tite/object_tite.h"
 #include "assets/objects/object_okuta/object_okuta.h"
+#include "src/overlays/actors/ovl_En_Dinofos/z_en_dinofos.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -195,6 +196,37 @@ void DrawRealBombchu() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
+}
+
+void DrawDinolfos() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[DINOLFOS_LIMB_MAX];
+    static Vec3s morphTable[DINOLFOS_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    
+    Matrix_Scale(0.014f, 0.014f, 0.014f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2200.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gDinolfosSkel, 
+            (AnimationHeader*)&gDinolfosIdleAnim, jointTable, morphTable, DINOLFOS_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    Scene_SetRenderModeXlu(gPlayState, 0, 1);
+    gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)&gDinolfosEyeOpenTex);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                          NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.5f, 0.5f, 2.5f, -200.0f);
 }
 
 void DrawDodongo() {

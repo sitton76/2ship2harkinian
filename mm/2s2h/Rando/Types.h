@@ -1393,6 +1393,7 @@ typedef enum {
     RI_SONG_TIME,
     RI_SOUL_BAT,
     RI_SOUL_BOMBCHU,
+    RI_SOUL_DINOLFOS,
     RI_SOUL_DODONGO,
     RI_SOUL_GARO,
     RI_SOUL_KEESE,
