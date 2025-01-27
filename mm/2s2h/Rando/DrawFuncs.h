@@ -18,6 +18,7 @@ extern "C" {
 #include "assets/objects/object_tite/object_tite.h"
 #include "assets/objects/object_okuta/object_okuta.h"
 #include "src/overlays/actors/ovl_En_Dinofos/z_en_dinofos.h"
+#include "assets/objects/object_st/object_st.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -288,7 +289,7 @@ void DrawGaroMaster() {
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
 }
 
-void DrawKeese(Actor* actor) {
+void DrawKeese() {
     static bool initialized = false;
     static SkelAnime skelAnime;
     static Vec3s jointTable[FIRE_KEESE_LIMB_MAX];
@@ -403,6 +404,34 @@ void DrawPeehat() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(3.0f, 1.0f, 3.0f, -2800.0f);
+}
+
+void DrawSkulltula() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[30];
+    static Vec3s morphTable[30];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.03f, 0.03f, 0.03f, MTXMODE_APPLY);
+    Matrix_Translate(0, 0, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_st_Skel_005298, (AnimationHeader*)&object_st_Anim_000304, 
+            jointTable, morphTable, 30);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+   
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.0f, 0.5f, 2.0f, -2800.0f);
 }
 
 void DrawSlime() {

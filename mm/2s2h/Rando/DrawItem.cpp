@@ -418,7 +418,7 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
             DrawGaroMaster();
             break;
         case RI_SOUL_KEESE:
-            DrawKeese(actor);
+            DrawKeese();
             break;
         case RI_SOUL_LEEVER:
             DrawLeever();
@@ -428,6 +428,9 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
             break;
         case RI_SOUL_PEEHAT:
             DrawPeehat();
+            break;
+        case RI_SOUL_SKULLTULA:
+            DrawSkulltula();
             break;
         case RI_SOUL_SLIME:
             DrawSlime();

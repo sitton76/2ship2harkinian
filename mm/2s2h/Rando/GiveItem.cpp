@@ -1,12 +1,19 @@
 #include "Rando/Rando.h"
 #include <libultraship/libultraship.h>
 
+#include "ActorBehavior/Souls.h"
+
 extern "C" {
 #include "variables.h"
 #include "functions.h"
 }
 
 void Rando::GiveItem(RandoItemId randoItemId) {
+    if (randoItemId >= RI_SOUL_BAT && randoItemId <= RI_SOUL_WOLFOS) {
+        SoulObtained(randoItemId);
+        return;
+    }
+
     switch (randoItemId) {
         case RI_CLOCK_TOWN_STRAY_FAIRY:
             SET_WEEKEVENTREG(WEEKEVENTREG_08_80);
@@ -235,45 +242,6 @@ void Rando::GiveItem(RandoItemId randoItemId) {
             break;
         case RI_JUNK:
         case RI_NONE:
-            break;
-        case RI_SOUL_BAT:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_BAT] = 1;
-            break;
-        case RI_SOUL_BOMBCHU:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_RAT] = 1;
-            break;
-        case RI_SOUL_DINOLFOS:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_DINOFOS] = 1;
-            break;
-        case RI_SOUL_DODONGO:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_DODONGO] = 1;
-            break;
-        case RI_SOUL_GARO:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_JSO2] = 1;
-            break;
-        case RI_SOUL_KEESE:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_FIREFLY] = 1;
-            break;
-        case RI_SOUL_LEEVER:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_NEO_REEBA] = 1;
-            break;
-        case RI_SOUL_OCTOROK:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_OKUTA] = 1;
-            break;
-        case RI_SOUL_PEEHAT:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_PEEHAT] = 1;
-            break;
-        case RI_SOUL_SLIME:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_SLIME] = 1;
-            break;
-        case RI_SOUL_TEKTITE:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_TITE] = 1;
-            break;
-        case RI_SOUL_WALLMASTER:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_WALLMAS] = 1;
-            break;
-        case RI_SOUL_WOLFOS:
-            gSaveContext.save.shipSaveInfo.rando.enemySouls[ACTOR_EN_WF] = 1;
             break;
         default:
             Item_Give(gPlayState, Rando::StaticData::Items[randoItemId].itemId);
