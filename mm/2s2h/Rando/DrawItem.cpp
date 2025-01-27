@@ -3,7 +3,7 @@
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/ShipInit.hpp"
 
-#include "DrawFuncs.h"
+#include "2s2h/Rando/ActorBehavior/Souls.h"
 
 extern "C" {
 #include "variables.h"
@@ -335,6 +335,11 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         func_800B8050(actor, gPlayState, 0);
     }
 
+    if (randoItemId >= RI_SOUL_ARMOS && randoItemId <= RI_SOUL_WOLFOS) {
+        DrawSoul(randoItemId);
+        return;
+    }
+
     switch (randoItemId) {
         case RI_JUNK:
             Rando::DrawItem(Rando::CurrentJunkItem(), actor);
@@ -401,48 +406,6 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         case RI_PROGRESSIVE_SWORD:
         case RI_PROGRESSIVE_WALLET:
             Rando::DrawItem(Rando::ConvertItem(randoItemId), actor);
-            break;
-        case RI_SOUL_BAT:
-            DrawBat();
-            break;
-        case RI_SOUL_BOMBCHU:
-            DrawRealBombchu();
-            break;
-        case RI_SOUL_DINOLFOS:
-            DrawDinolfos();
-            break;
-        case RI_SOUL_DODONGO:
-            DrawDodongo();
-            break;
-        case RI_SOUL_GARO:
-            DrawGaroMaster();
-            break;
-        case RI_SOUL_KEESE:
-            DrawKeese();
-            break;
-        case RI_SOUL_LEEVER:
-            DrawLeever();
-            break;
-        case RI_SOUL_OCTOROK:
-            DrawOctorok();
-            break;
-        case RI_SOUL_PEEHAT:
-            DrawPeehat();
-            break;
-        case RI_SOUL_SKULLTULA:
-            DrawSkulltula();
-            break;
-        case RI_SOUL_SLIME:
-            DrawSlime();
-            break;
-        case RI_SOUL_TEKTITE:
-            DrawTektite();
-            break;
-        case RI_SOUL_WALLMASTER:
-            DrawWallmaster();
-            break;
-        case RI_SOUL_WOLFOS:
-            DrawWolfos();
             break;
         case RI_NONE:
         case RI_UNKNOWN:

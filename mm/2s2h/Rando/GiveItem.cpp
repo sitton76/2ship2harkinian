@@ -9,7 +9,7 @@ extern "C" {
 }
 
 void Rando::GiveItem(RandoItemId randoItemId) {
-    if (randoItemId >= RI_SOUL_BAT && randoItemId <= RI_SOUL_WOLFOS) {
+    if (randoItemId >= RI_SOUL_ARMOS && randoItemId <= RI_SOUL_WOLFOS) {
         SoulObtained(randoItemId);
         return;
     }

@@ -100,7 +100,7 @@ void ApplyNoLogicToSaveContext() {
     }
 
     if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] == RO_GENERIC_YES) {
-        uint32_t index = RI_SOUL_BAT;
+        uint32_t index = RI_SOUL_ARMOS;
         for (auto& item : itemPool) {
 
             if (item == RI_RUPEE_RED) {
