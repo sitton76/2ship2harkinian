@@ -498,7 +498,7 @@ extern void DrawMadScrub() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuScrubSkel, (AnimationHeader*)&gDekuScrubIdleAnim, 
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuScrubSkel, (AnimationHeader*)&gDekuScrubLookAroundAnim, 
             jointTable, morphTable, DEKU_SCRUB_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
