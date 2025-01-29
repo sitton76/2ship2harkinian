@@ -11,6 +11,7 @@ void DrawDodongo();
 void DrawGaroMaster();
 void DrawKeese();
 void DrawLeever();
+void DrawMadScrub();
 void DrawOctorok();
 void DrawPeehat();
 void DrawSkulltula();
