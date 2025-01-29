@@ -624,23 +624,6 @@ extern void DrawRedead() {
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -2900.0f, 0, MTXMODE_APPLY);
 
-    //if (gPlayState) {
-    //    Player* player = GET_PLAYER(gPlayState);
-    //    if (player->currentMask == PLAYER_MASK_GIBDO) {
-    //        if (!animUpdated) {
-    //            roll = rand() % rdAnims.size();
-    //            animUpdated = true;
-    //        }
-    //        currentAnim = rdAnims[roll];
-    //    } else {
-    //        currentAnim = (AnimationHeader*)gGibdoRedeadIdleAnim;
-    //    }
-    //    if (skelAnime.animation != currentAnim) {
-    //        animUpdated = false;
-    //        Animation_MorphToLoop(&skelAnime, currentAnim, -6.0f);
-    //    }
-    //}
-
     if (!initialized) {
         initialized = true;
         SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRedeadSkel, 
