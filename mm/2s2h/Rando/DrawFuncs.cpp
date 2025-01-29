@@ -440,8 +440,8 @@ extern void DrawEeno() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gEenoSkel,
-                           (AnimationHeader*)&gEenoIdleAnim, jointTable, morphTable, EN_SNOWMAN_BODYPART_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gEenoSkel, (AnimationHeader*)&gEenoIdleAnim,
+                           jointTable, morphTable, EN_SNOWMAN_BODYPART_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
