@@ -13,6 +13,7 @@ std::unordered_map<RandoItemId, std::pair<std::function<void()>, ActorId>> soulM
     { RI_SOUL_BAT, { DrawBat, ACTOR_EN_BAT } },
     { RI_SOUL_BOMBCHU, { DrawRealBombchu, ACTOR_EN_RAT } },
     { RI_SOUL_DEATH_ARMOS, { DrawDeathArmos, ACTOR_EN_FAMOS } },
+    { RI_SOUL_DEKU_BABA, { DrawDekuBaba, ACTOR_EN_DEKUBABA } },
     { RI_SOUL_DINOLFOS, { DrawDinolfos, ACTOR_EN_DINOFOS } },
     { RI_SOUL_DODONGO, { DrawDodongo, ACTOR_EN_DODONGO } },
     { RI_SOUL_GARO, { DrawGaroMaster, ACTOR_EN_JSO2 } },

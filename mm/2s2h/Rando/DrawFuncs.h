@@ -5,6 +5,7 @@ void DrawArmos();
 void DrawBat();
 void DrawRealBombchu();
 void DrawDeathArmos();
+void DrawDekuBaba();
 void DrawDinolfos();
 void DrawDodongo();
 void DrawGaroMaster();
