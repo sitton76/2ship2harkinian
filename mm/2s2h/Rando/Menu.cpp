@@ -192,8 +192,7 @@ static void DrawItemsTab() {
     ImGui::BeginChild("randoItemsColumn2", ImVec2(columnWidth, halfHeight));
     CVarCheckbox("Boss Souls", "gPlaceholderBool",
                  CheckboxOptions({ { .disabled = true, .disabledTooltip = "Coming Soon" } }));
-    CVarCheckbox("Enemy Souls", "gPlaceholderBool",
-                 CheckboxOptions({ { .disabled = true, .disabledTooltip = "Coming Soon" } }));
+    CVarCheckbox("Enemy Souls", Rando::StaticData::Options[RO_SHUFFLE_ENEMY_SOULS].cvar);
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild("randoItemsColumn3", ImVec2(columnWidth, halfHeight));
