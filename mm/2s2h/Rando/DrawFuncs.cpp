@@ -26,6 +26,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Dekubaba/z_en_dekubaba.h"
 #include "src/overlays/actors/ovl_En_Dekunuts/z_en_dekunuts.h"
 #include "assets/objects/object_vm/object_vm.h"
+#include "assets/objects/object_rd/object_rd.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -599,6 +600,82 @@ extern void DrawPeehat() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(3.0f, 1.0f, 3.0f, -2800.0f);
+}
+
+extern void DrawRedead() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[REDEAD_LIMB_MAX];
+    static Vec3s morphTable[REDEAD_LIMB_MAX];
+    static u32 lastUpdate = 0;
+    static u32 animUpdate = 0;
+    static uint32_t rdAnimID = 0;
+    static AnimationHeader* currentAnim = (AnimationHeader*)gGibdoRedeadIdleAnim;
+
+    std::vector<AnimationHeader*> rdAnims = {
+        (AnimationHeader*)gGibdoRedeadSquattingDanceAnim,
+        (AnimationHeader*)gGibdoRedeadClappingDanceAnim,
+        (AnimationHeader*)gGibdoRedeadPirouetteAnim,
+    };
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2900.0f, 0, MTXMODE_APPLY);
+
+    //if (gPlayState) {
+    //    Player* player = GET_PLAYER(gPlayState);
+    //    if (player->currentMask == PLAYER_MASK_GIBDO) {
+    //        if (!animUpdated) {
+    //            roll = rand() % rdAnims.size();
+    //            animUpdated = true;
+    //        }
+    //        currentAnim = rdAnims[roll];
+    //    } else {
+    //        currentAnim = (AnimationHeader*)gGibdoRedeadIdleAnim;
+    //    }
+    //    if (skelAnime.animation != currentAnim) {
+    //        animUpdated = false;
+    //        Animation_MorphToLoop(&skelAnime, currentAnim, -6.0f);
+    //    }
+    //}
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRedeadSkel, 
+            (AnimationHeader*)gGibdoRedeadPirouetteAnim, jointTable, morphTable, REDEAD_LIMB_MAX);
+    }
+
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        Player* player = GET_PLAYER(gPlayState);
+        if (player->currentMask == PLAYER_MASK_GIBDO) {
+            if (animUpdate != gPlayState->state.frames) {
+                if (animUpdate <= gPlayState->state.frames - 35) {
+                    animUpdate = gPlayState->state.frames;
+                    currentAnim = rdAnims[rdAnimID];
+                    if (rdAnimID >= rdAnims.size() - 1) {
+                        rdAnimID = 0;
+                    } else {
+                        rdAnimID++;
+                    }
+                    Animation_MorphToLoop(&skelAnime, currentAnim, -6.0f);
+                }
+            }
+        } else {
+            currentAnim = (AnimationHeader*)gGibdoRedeadIdleAnim;
+            Animation_MorphToLoop(&skelAnime, currentAnim, -6.0f);
+        }
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)D_801AEFA0);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
+                          NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
 }
 
 extern void DrawSkulltula() {

@@ -15,6 +15,7 @@ void DrawLeever();
 void DrawMadScrub();
 void DrawOctorok();
 void DrawPeehat();
+void DrawRedead();
 void DrawSkulltula();
 void DrawSlime();
 void DrawTektite();
