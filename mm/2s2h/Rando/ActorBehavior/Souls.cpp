@@ -11,6 +11,7 @@ extern "C" {
 std::unordered_map<RandoItemId, std::pair<std::function<void()>, ActorId>> soulMap = {
     { RI_SOUL_ARMOS, { DrawArmos, ACTOR_EN_AM } },
     { RI_SOUL_BAT, { DrawBat, ACTOR_EN_BAT } },
+    { RI_SOUL_BEAMOS, { DrawBeamos, ACTOR_EN_VM } },
     { RI_SOUL_BOMBCHU, { DrawRealBombchu, ACTOR_EN_RAT } },
     { RI_SOUL_DEATH_ARMOS, { DrawDeathArmos, ACTOR_EN_FAMOS } },
     { RI_SOUL_DEKU_BABA, { DrawDekuBaba, ACTOR_EN_DEKUBABA } },

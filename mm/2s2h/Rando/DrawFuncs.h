@@ -3,6 +3,7 @@
 
 void DrawArmos();
 void DrawBat();
+void DrawBeamos();
 void DrawRealBombchu();
 void DrawDeathArmos();
 void DrawDekuBaba();

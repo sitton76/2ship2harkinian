@@ -25,6 +25,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Am/z_en_am.h"
 #include "src/overlays/actors/ovl_En_Dekubaba/z_en_dekubaba.h"
 #include "src/overlays/actors/ovl_En_Dekunuts/z_en_dekunuts.h"
+#include "assets/objects/object_vm/object_vm.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -248,6 +249,34 @@ extern void DrawBat() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -3000.0f);
+}
+
+extern void DrawBeamos() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[11];
+    static Vec3s morphTable[11];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -3200, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gBeamosSkel, (AnimationHeader*)&gBeamosAnim, 
+            jointTable, morphTable, 11);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(3.0f, 0.6f, 3.0f, -100);
 }
 
 extern void DrawRealBombchu() {
