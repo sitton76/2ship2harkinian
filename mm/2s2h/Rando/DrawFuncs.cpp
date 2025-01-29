@@ -32,7 +32,6 @@ extern "C" {
 
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-
 #include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
 #include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
 
@@ -52,8 +51,8 @@ void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
     gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)&gGiMoonsTearGlowDL);
-    //ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowPrim", 5, gsDPSetPrimColor(0, 0x80, 255, 0, 0, 120));
-    //ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowEnv", 6, gsDPSetEnvColor(0, 255, 0, 0, 100));
+    // ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowPrim", 5, gsDPSetPrimColor(0, 0x80, 255, 0, 0, 120));
+    // ResourceMgr_PatchGfxByName(gGiMoonsTearGlowDL, "MoonGlowEnv", 6, gsDPSetEnvColor(0, 255, 0, 0, 100));
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
@@ -67,15 +66,15 @@ void DrawFireRing(f32 x, f32 y, f32 z, f32 tY) {
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
     Matrix_Scale(x, y, z, MTXMODE_APPLY);
     Matrix_Translate(0, tY, 0, MTXMODE_APPLY);
-    
+
     gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 220, 0, 255);
     gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 0);
     gSPSegment(POLY_XLU_DISP++, 0x08,
                (uintptr_t)Gfx_TwoTexScroll(gPlayState->state.gfxCtx, 0, unk_1A4 & 0x7F, 0, 0x20, 0x40, 1, 0,
-                                (unk_1A4 * -15) & 0xFF, 0x20, 0x40));
+                                           (unk_1A4 * -15) & 0xFF, 0x20, 0x40));
     gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gameplay_keep_DL_02E510);
-    
+
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
@@ -87,18 +86,18 @@ void DrawFireRing(f32 x, f32 y, f32 z, f32 tY) {
 // Limb Override Functions
 void DrawEnAm_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot) {
     static Vec3f D_808B1128[] = {
-    { 4700.0f, -500.0f, 1800.0f },  // ENAM_BODYPART_0
-    { 4700.0f, -500.0f, -1800.0f }, // ENAM_BODYPART_1
-    { 2000.0f, -1500.0f, 0.0f },    // ENAM_BODYPART_2
-    { 2000.0f, 0.0f, -1500.0f },    // ENAM_BODYPART_3
-    { 2000.0f, 0.0f, 1500.0f },     // ENAM_BODYPART_4
+        { 4700.0f, -500.0f, 1800.0f },  // ENAM_BODYPART_0
+        { 4700.0f, -500.0f, -1800.0f }, // ENAM_BODYPART_1
+        { 2000.0f, -1500.0f, 0.0f },    // ENAM_BODYPART_2
+        { 2000.0f, 0.0f, -1500.0f },    // ENAM_BODYPART_3
+        { 2000.0f, 0.0f, 1500.0f },     // ENAM_BODYPART_4
     };
-    
+
     static Vec3f D_808B1164[] = {
         { 0.0f, -3000.0f, 0.0f },  // ENAM_BODYPART_5, ENAM_BODYPART_7
         { 700.0f, -800.0f, 0.0f }, // ENAM_BODYPART_6, ENAM_BODYPART_8
     };
-    
+
     static Vec3f D_808B117C[] = {
         { 800.0f, 1000.0f, -1000.0f },  // ENAM_BODYPART_9
         { 800.0f, 1000.0f, 1000.0f },   // ENAM_BODYPART_10
@@ -109,7 +108,7 @@ void DrawEnAm_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* r
     s32 phi_s3;
     Vec3f* phi_s1;
     Vec3f* phi_s2;
-    Vec3f zeroVector{0, 0, 0};
+    Vec3f zeroVector{ 0, 0, 0 };
 
     phi_s2 = 0;
     phi_s1 = 0;
@@ -122,8 +121,7 @@ void DrawEnAm_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* r
         phi_s1 = D_808B117C;
         phi_s3 = ARRAY_COUNT(D_808B117C);
     } else if ((limbIndex == OBJECT_AM_LIMB_07) || (limbIndex == OBJECT_AM_LIMB_0A)) {
-        phi_s2 = (limbIndex == OBJECT_AM_LIMB_07) ? &zeroVector
-                                                  : &zeroVector;
+        phi_s2 = (limbIndex == OBJECT_AM_LIMB_07) ? &zeroVector : &zeroVector;
         phi_s1 = D_808B1164;
         phi_s3 = ARRAY_COUNT(D_808B1164);
     } else {
@@ -165,13 +163,13 @@ void DrawEnFirefly_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
         gSPDisplayList(gfx++, (Gfx*)&gKeeseRedEyesDL);
     }
     if (limbIndex == FIRE_KEESE_LIMB_LEFT_WING_END || limbIndex == FIRE_KEESE_LIMB_RIGHT_WING_END_ROOT) {
-        EffectSsDust_Spawn(gPlayState, 2, &auraPos, &auraVelocity, &auraAccel, &auraPrimColor[auraColor], &auraEnvColor[auraColor], 
-        100, -40, 3, 0);
+        EffectSsDust_Spawn(gPlayState, 2, &auraPos, &auraVelocity, &auraAccel, &auraPrimColor[auraColor],
+                           &auraEnvColor[auraColor], 100, -40, 3, 0);
     }
 }
 
 void DrawEnRealBombchu_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* rat) {
-    //Gfx* gfx = play->state.gfxCtx->polyOpa.p;
+    // Gfx* gfx = play->state.gfxCtx->polyOpa.p;
 
     if (limbIndex == REAL_BOMBCHU_LIMB_TAIL_END) {
         OPEN_DISPS(play->state.gfxCtx);
@@ -202,15 +200,16 @@ extern void DrawArmos() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_am_Skel_005948, (AnimationHeader*)&gArmosHopAnim, 
-            jointTable, morphTable, OBJECT_AM_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_am_Skel_005948,
+                       (AnimationHeader*)&gArmosHopAnim, jointTable, morphTable, OBJECT_AM_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    
-    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, (PostLimbDrawOpa)DrawEnAm_PostLimbDraw, NULL);
+
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL,
+                      (PostLimbDrawOpa)DrawEnAm_PostLimbDraw, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(5.0f, 0.9f, 5.0f, 0);
@@ -219,14 +218,14 @@ extern void DrawArmos() {
 extern void DrawBat() {
     static u32 lastUpdate = 0;
     static u32 wingAnim = 0;
-    
+
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
 
     static Gfx* sWingsDLs[] = {
-    (Gfx*)&gBadBatWingsFrame0DL, (Gfx*)&gBadBatWingsFrame1DL, (Gfx*)&gBadBatWingsFrame2DL, (Gfx*)&gBadBatWingsFrame3DL, 
-    (Gfx*)&gBadBatWingsFrame4DL, (Gfx*)&gBadBatWingsFrame5DL, (Gfx*)&gBadBatWingsFrame6DL, (Gfx*)&gBadBatWingsFrame7DL, 
-    (Gfx*)&gBadBatWingsFrame8DL,
+        (Gfx*)&gBadBatWingsFrame0DL, (Gfx*)&gBadBatWingsFrame1DL, (Gfx*)&gBadBatWingsFrame2DL,
+        (Gfx*)&gBadBatWingsFrame3DL, (Gfx*)&gBadBatWingsFrame4DL, (Gfx*)&gBadBatWingsFrame5DL,
+        (Gfx*)&gBadBatWingsFrame6DL, (Gfx*)&gBadBatWingsFrame7DL, (Gfx*)&gBadBatWingsFrame8DL,
     };
 
     Gfx* gfx = POLY_OPA_DISP;
@@ -266,14 +265,14 @@ extern void DrawBeamos() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gBeamosSkel, (AnimationHeader*)&gBeamosAnim, 
-            jointTable, morphTable, 11);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gBeamosSkel, (AnimationHeader*)&gBeamosAnim,
+                       jointTable, morphTable, 11);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -295,16 +294,16 @@ extern void DrawRealBombchu() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRealBombchuSkel, 
-            (AnimationHeader*)&gRealBombchuRunAnim, jointTable, morphTable, REAL_BOMBCHU_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRealBombchuSkel,
+                           (AnimationHeader*)&gRealBombchuRunAnim, jointTable, morphTable, REAL_BOMBCHU_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
 
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                          NULL, DrawEnRealBombchu_PostLimbDraw, NULL);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL,
+                          DrawEnRealBombchu_PostLimbDraw, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
@@ -325,14 +324,14 @@ extern void DrawDeathArmos() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gFamosSkel, (AnimationHeader*)&gFamosIdleAnim, 
-            jointTable, morphTable, FAMOS_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gFamosSkel, (AnimationHeader*)&gFamosIdleAnim,
+                       jointTable, morphTable, FAMOS_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-   
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -353,14 +352,14 @@ extern void DrawDekuBaba() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuBabaSkel, (AnimationHeader*)&gDekuBabaFastChompAnim, 
-            jointTable, morphTable, DEKUBABA_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuBabaSkel,
+                       (AnimationHeader*)&gDekuBabaFastChompAnim, jointTable, morphTable, DEKUBABA_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -376,14 +375,14 @@ extern void DrawDinolfos() {
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-    
+
     Matrix_Scale(0.014f, 0.014f, 0.014f, MTXMODE_APPLY);
     Matrix_Translate(0, -2200.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gDinolfosSkel, 
-            (AnimationHeader*)&gDinolfosIdleAnim, jointTable, morphTable, DINOLFOS_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gDinolfosSkel,
+                           (AnimationHeader*)&gDinolfosIdleAnim, jointTable, morphTable, DINOLFOS_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -391,8 +390,7 @@ extern void DrawDinolfos() {
     }
     Scene_SetRenderModeXlu(gPlayState, 0, 1);
     gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)&gDinolfosEyeOpenTex);
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                          NULL, NULL, NULL);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.5f, 0.5f, 2.5f, -200.0f);
@@ -412,8 +410,8 @@ extern void DrawDodongo() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_dodongo_Skel_008318, 
-            (AnimationHeader*)&object_dodongo_Anim_004C20, jointTable, morphTable, OBJECT_DODONGO_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_dodongo_Skel_008318,
+                       (AnimationHeader*)&object_dodongo_Anim_004C20, jointTable, morphTable, OBJECT_DODONGO_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -441,17 +439,15 @@ extern void DrawGaroMaster() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gGaroMasterSkel, (AnimationHeader*)&gGaroLookAroundAnim, 
-            jointTable, morphTable, GARO_MASTER_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gGaroMasterSkel,
+                           (AnimationHeader*)&gGaroLookAroundAnim, jointTable, morphTable, GARO_MASTER_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
     Scene_SetRenderModeXlu(gPlayState, 0, 1);
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                              NULL, NULL, NULL);
-    
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
@@ -471,14 +467,14 @@ extern void DrawKeese() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gFireKeeseSkel, (AnimationHeader*)&gFireKeeseFlyAnim, 
-            jointTable, morphTable, FIRE_KEESE_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gFireKeeseSkel, (AnimationHeader*)&gFireKeeseFlyAnim,
+                       jointTable, morphTable, FIRE_KEESE_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-   
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, DrawEnFirefly_PostLimbDraw, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -499,8 +495,8 @@ extern void DrawLeever() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gLeeverSkel, (AnimationHeader*)&gLeeverSpinAnim, 
-            jointTable, morphTable, LEEVER_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gLeeverSkel, (AnimationHeader*)&gLeeverSpinAnim,
+                       jointTable, morphTable, LEEVER_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -528,14 +524,14 @@ extern void DrawMadScrub() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuScrubSkel, (AnimationHeader*)&gDekuScrubLookAroundAnim, 
-            jointTable, morphTable, DEKU_SCRUB_LIMB_MAX);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDekuScrubSkel,
+                       (AnimationHeader*)&gDekuScrubLookAroundAnim, jointTable, morphTable, DEKU_SCRUB_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -548,7 +544,6 @@ extern void DrawOctorok() {
     static Vec3s jointTable[16];
     static Vec3s morphTable[16];
     static u32 lastUpdate = 0;
-    
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
@@ -557,8 +552,8 @@ extern void DrawOctorok() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gOctorokSkel, (AnimationHeader*)&gOctorokFloatAnim, 
-            jointTable, morphTable, 16);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gOctorokSkel, (AnimationHeader*)&gOctorokFloatAnim,
+                       jointTable, morphTable, 16);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -588,8 +583,8 @@ extern void DrawPeehat() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_ph_Skel_001C80, (AnimationHeader*)&object_ph_Anim_0009C4, 
-            jointTable, morphTable, 24);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_ph_Skel_001C80,
+                       (AnimationHeader*)&object_ph_Anim_0009C4, jointTable, morphTable, 24);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -626,8 +621,8 @@ extern void DrawRedead() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRedeadSkel, 
-            (AnimationHeader*)gGibdoRedeadPirouetteAnim, jointTable, morphTable, REDEAD_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gRedeadSkel,
+                           (AnimationHeader*)gGibdoRedeadPirouetteAnim, jointTable, morphTable, REDEAD_LIMB_MAX);
     }
 
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
@@ -654,8 +649,7 @@ extern void DrawRedead() {
     }
 
     gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)D_801AEFA0);
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                          NULL, NULL, NULL);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
@@ -675,14 +669,14 @@ extern void DrawSkulltula() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_st_Skel_005298, (AnimationHeader*)&object_st_Anim_000304, 
-            jointTable, morphTable, 30);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_st_Skel_005298,
+                       (AnimationHeader*)&object_st_Anim_000304, jointTable, morphTable, 30);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-   
+
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
@@ -695,7 +689,10 @@ extern void DrawSlime() {
     AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
-    Matrix_Scale(0.01f, ((((coss(RAD_TO_BINANG(timer * (2.0f * M_PI / 5.0f))) * SHT_MINV) * (0.07f * timerFactor)) + 1.0f) * 0.01f), 0.01f, MTXMODE_APPLY);
+    Matrix_Scale(
+        0.01f,
+        ((((coss(RAD_TO_BINANG(timer * (2.0f * M_PI / 5.0f))) * SHT_MINV) * (0.07f * timerFactor)) + 1.0f) * 0.01f),
+        0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -2700.0f, 0, MTXMODE_APPLY);
 
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
@@ -712,7 +709,7 @@ extern void DrawSlime() {
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuBodyDL);
     gSPSegment(POLY_XLU_DISP++, 9, (uintptr_t)gChuchuEyeOpenTex);
     gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gChuchuEyesDL);
-    
+
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(5.0f, 1.0f, 5.0f, -200.0f);
     timer--;
@@ -726,8 +723,10 @@ extern void DrawTektite() {
     static u32 lastUpdate = 0;
 
     static TexturePtr D_80896B24[2][3] = {
-    { (TexturePtr*)&object_tite_Tex_001300, (TexturePtr*)&object_tite_Tex_001700, (TexturePtr*)&object_tite_Tex_001900 },
-    { (TexturePtr*)&object_tite_Tex_001B00, (TexturePtr*)&object_tite_Tex_001F00, (TexturePtr*)&object_tite_Tex_002100 },
+        { (TexturePtr*)&object_tite_Tex_001300, (TexturePtr*)&object_tite_Tex_001700,
+          (TexturePtr*)&object_tite_Tex_001900 },
+        { (TexturePtr*)&object_tite_Tex_001B00, (TexturePtr*)&object_tite_Tex_001F00,
+          (TexturePtr*)&object_tite_Tex_002100 },
     };
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
@@ -737,8 +736,8 @@ extern void DrawTektite() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_tite_Skel_003A20, 
-            (AnimationHeader*)&object_tite_Anim_0012E4, jointTable, morphTable, 25);
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&object_tite_Skel_003A20,
+                       (AnimationHeader*)&object_tite_Anim_0012E4, jointTable, morphTable, 25);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
@@ -769,22 +768,20 @@ extern void DrawWallmaster() {
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
-        
+
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -3500.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWallmasterSkel, (AnimationHeader*)&gWallmasterIdleAnim, 
-            jointTable, morphTable, WALLMASTER_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWallmasterSkel,
+                           (AnimationHeader*)&gWallmasterIdleAnim, jointTable, morphTable, WALLMASTER_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                          NULL, NULL, NULL);
-    
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(7.0f, 1.0f, 7.0f, -200.0f);
@@ -805,17 +802,16 @@ extern void DrawWolfos() {
 
     if (!initialized) {
         initialized = true;
-        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWolfosNormalSkel, (AnimationHeader*)&gWolfosWaitAnim, 
-            jointTable, morphTable, WOLFOS_NORMAL_LIMB_MAX);
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWolfosNormalSkel,
+                           (AnimationHeader*)&gWolfosWaitAnim, jointTable, morphTable, WOLFOS_NORMAL_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
         SkelAnime_Update(&skelAnime);
     }
-    
+
     gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)&gWolfosNormalEyeOpenTex);
-    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount,
-                              NULL, NULL, NULL);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(5.0f, 1.0f, 5.0f, -200.0f);

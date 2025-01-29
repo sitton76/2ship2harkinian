@@ -60,7 +60,7 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
         if (actor->category != ACTORCAT_ENEMY) {
             return;
         }
-    
+
         if (!FindSoul(actor->id)) {
             actor->flags &= ~ACTOR_FLAG_TARGETABLE;
             *should = false;
@@ -72,9 +72,9 @@ void Rando::ActorBehavior::InitSoulsBehavior() {
         if (actor->category != ACTORCAT_ENEMY) {
             return;
         }
-    
+
         if (!FindSoul(actor->id)) {
             *should = false;
-        } 
+        }
     });
 }
