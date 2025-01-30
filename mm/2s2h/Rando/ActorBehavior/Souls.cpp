@@ -24,6 +24,7 @@ std::unordered_map<RandoItemId, std::pair<std::function<void()>, ActorId>> soulM
     { RI_SOUL_OCTOROK, { DrawOctorok, ACTOR_EN_OKUTA } },
     { RI_SOUL_PEEHAT, { DrawPeehat, ACTOR_EN_PEEHAT } },
     { RI_SOUL_REDEAD, { DrawRedead, ACTOR_EN_RD } },
+    { RI_SOUL_SHELLBLADE, { DrawShellBlade, ACTOR_EN_SB } },
     { RI_SOUL_SKULLTULA, { DrawSkulltula, ACTOR_EN_ST } },
     { RI_SOUL_SLIME, { DrawSlime, ACTOR_EN_SLIME } },
     { RI_SOUL_TEKTITE, { DrawTektite, ACTOR_EN_TITE } },

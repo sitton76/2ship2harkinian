@@ -27,6 +27,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Dekunuts/z_en_dekunuts.h"
 #include "assets/objects/object_vm/object_vm.h"
 #include "assets/objects/object_rd/object_rd.h"
+#include "assets/objects/object_sb/object_sb.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -653,6 +654,34 @@ extern void DrawRedead() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(2.0f, 0.5f, 2.0f, -200.0f);
+}
+
+extern void DrawShellBlade() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[9];
+    static Vec3s morphTable[9];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+
+    Matrix_Scale(0.007f, 0.007f, 0.007f, MTXMODE_APPLY);
+    Matrix_Translate(0, -3500.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&object_sb_Skel_002BF0,
+                           (AnimationHeader*)&object_sb_Anim_000194, jointTable, morphTable, 9);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(7.0f, 1.0f, 7.0f, -200.0f);
 }
 
 extern void DrawSkulltula() {
