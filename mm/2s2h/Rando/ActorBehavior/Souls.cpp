@@ -8,28 +8,28 @@ extern "C" {
 #include "variables.h"
 }
 
-std::unordered_map<RandoItemId, std::pair<std::function<void()>, ActorId>> soulMap = {
-    { RI_SOUL_ARMOS, { DrawArmos, ACTOR_EN_AM } },
-    { RI_SOUL_BAT, { DrawBat, ACTOR_EN_BAT } },
-    { RI_SOUL_BEAMOS, { DrawBeamos, ACTOR_EN_VM } },
-    { RI_SOUL_BOMBCHU, { DrawRealBombchu, ACTOR_EN_RAT } },
-    { RI_SOUL_DEATH_ARMOS, { DrawDeathArmos, ACTOR_EN_FAMOS } },
-    { RI_SOUL_DEKU_BABA, { DrawDekuBaba, ACTOR_EN_DEKUBABA } },
-    { RI_SOUL_DINOLFOS, { DrawDinolfos, ACTOR_EN_DINOFOS } },
-    { RI_SOUL_DODONGO, { DrawDodongo, ACTOR_EN_DODONGO } },
-    { RI_SOUL_GARO, { DrawGaroMaster, ACTOR_EN_JSO2 } },
-    { RI_SOUL_KEESE, { DrawKeese, ACTOR_EN_FIREFLY } },
-    { RI_SOUL_LEEVER, { DrawLeever, ACTOR_EN_NEO_REEBA } },
-    { RI_SOUL_MAD_SCRUB, { DrawMadScrub, ACTOR_EN_DEKUNUTS } },
-    { RI_SOUL_OCTOROK, { DrawOctorok, ACTOR_EN_OKUTA } },
-    { RI_SOUL_PEEHAT, { DrawPeehat, ACTOR_EN_PEEHAT } },
-    { RI_SOUL_REDEAD, { DrawRedead, ACTOR_EN_RD } },
-    { RI_SOUL_SHELLBLADE, { DrawShellBlade, ACTOR_EN_SB } },
-    { RI_SOUL_SKULLTULA, { DrawSkulltula, ACTOR_EN_ST } },
-    { RI_SOUL_SLIME, { DrawSlime, ACTOR_EN_SLIME } },
-    { RI_SOUL_TEKTITE, { DrawTektite, ACTOR_EN_TITE } },
-    { RI_SOUL_WALLMASTER, { DrawWallmaster, ACTOR_EN_WALLMAS } },
-    { RI_SOUL_WOLFOS, { DrawWolfos, ACTOR_EN_WF } },
+std::unordered_map<RandoItemId, std::pair<std::function<void()>, std::vector<ActorId>>> soulMap = {
+    { RI_SOUL_ARMOS, { DrawArmos, { ACTOR_EN_AM } } },
+    { RI_SOUL_BAT, { DrawBat, { ACTOR_EN_BAT } } },
+    { RI_SOUL_BEAMOS, { DrawBeamos, { ACTOR_EN_VM } } },
+    { RI_SOUL_BOMBCHU, { DrawRealBombchu, { ACTOR_EN_RAT } } },
+    { RI_SOUL_DEATH_ARMOS, { DrawDeathArmos, { ACTOR_EN_FAMOS } } },
+    { RI_SOUL_DEKU_BABA, { DrawDekuBaba, { ACTOR_EN_DEKUBABA, ACTOR_EN_KAREBABA } } },
+    { RI_SOUL_DINOLFOS, { DrawDinolfos, { ACTOR_EN_DINOFOS } } },
+    { RI_SOUL_DODONGO, { DrawDodongo, { ACTOR_EN_DODONGO } } },
+    { RI_SOUL_GARO, { DrawGaroMaster, { ACTOR_EN_JSO2 } } },
+    { RI_SOUL_KEESE, { DrawKeese, { ACTOR_EN_FIREFLY } } },
+    { RI_SOUL_LEEVER, { DrawLeever, { ACTOR_EN_NEO_REEBA } } },
+    { RI_SOUL_MAD_SCRUB, { DrawMadScrub, { ACTOR_EN_DEKUNUTS } } },
+    { RI_SOUL_OCTOROK, { DrawOctorok, { ACTOR_EN_OKUTA } } },
+    { RI_SOUL_PEEHAT, { DrawPeehat, { ACTOR_EN_PEEHAT } } },
+    { RI_SOUL_REDEAD, { DrawRedead, { ACTOR_EN_RD } } },
+    { RI_SOUL_SHELLBLADE, { DrawShellBlade, { ACTOR_EN_SB } } },
+    { RI_SOUL_SKULLTULA, { DrawSkulltula, { ACTOR_EN_ST, ACTOR_EN_SW } } },
+    { RI_SOUL_SLIME, { DrawSlime, { ACTOR_EN_SLIME } } },
+    { RI_SOUL_TEKTITE, { DrawTektite, { ACTOR_EN_TITE } } },
+    { RI_SOUL_WALLMASTER, { DrawWallmaster, { ACTOR_EN_WALLMAS, ACTOR_EN_FLOORMAS } } },
+    { RI_SOUL_WOLFOS, { DrawWolfos, { ACTOR_EN_WF } } },
 };
 
 bool FindSoul(int16_t actorId) {
@@ -45,7 +45,9 @@ bool FindSoul(int16_t actorId) {
 extern void SoulObtained(RandoItemId randoItemId) {
     auto it = soulMap.find(randoItemId);
     if (it != soulMap.end()) {
-        gSaveContext.save.shipSaveInfo.rando.enemySouls[it->second.second] = 1;
+        for (auto& actorList : it->second.second) {
+            gSaveContext.save.shipSaveInfo.rando.enemySouls[actorList] = 1;
+        }
     }
 }
 
