@@ -29,6 +29,7 @@ extern "C" {
 #include "assets/objects/object_rd/object_rd.h"
 #include "assets/objects/object_sb/object_sb.h"
 #include "src/overlays/actors/ovl_En_Ik/z_en_ik.h"
+#include "src/overlays/actors/ovl_En_Crow/z_en_crow.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -453,6 +454,35 @@ extern void DrawGaroMaster() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
+}
+
+extern void DrawGuay() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[OBJECT_CROW_LIMB_MAX];
+    static Vec3s morphTable[OBJECT_CROW_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
+    Matrix_Translate(0, 0, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gGuaySkel, (AnimationHeader*)&gGuayFlyAnim,
+                           jointTable, morphTable, OBJECT_CROW_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.0f, 0.3f, 2.0f, -4300.0f);
 }
 
 extern void DrawIronKnuckle() {
