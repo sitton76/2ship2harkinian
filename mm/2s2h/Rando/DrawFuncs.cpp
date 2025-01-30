@@ -28,6 +28,7 @@ extern "C" {
 #include "assets/objects/object_vm/object_vm.h"
 #include "assets/objects/object_rd/object_rd.h"
 #include "assets/objects/object_sb/object_sb.h"
+#include "src/overlays/actors/ovl_En_Ik/z_en_ik.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -452,6 +453,45 @@ extern void DrawGaroMaster() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
+}
+
+extern void DrawIronKnuckle() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[IRON_KNUCKLE_LIMB_MAX];
+    static Vec3s morphTable[IRON_KNUCKLE_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+
+    Matrix_Scale(0.014f, 0.014f, 0.014f, MTXMODE_APPLY);
+    Matrix_Translate(0, -2400.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gIronKnuckleSkel,
+                           (AnimationHeader*)&gIronKnuckleWalkAnim, jointTable, morphTable, IRON_KNUCKLE_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    Gfx* gfx = POLY_XLU_DISP;
+    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
+    POLY_XLU_DISP = &gfx[1];
+    gfx = POLY_OPA_DISP;
+    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
+    gSPSegment(&gfx[1], 0x08, (uintptr_t)gIronKnuckleBlackArmorMaterialDL);
+    gSPSegment(&gfx[2], 0x09, (uintptr_t)gIronKnuckleBrownArmorMaterialDL);
+    gSPSegment(&gfx[3], 0x0A, (uintptr_t)gIronKnuckleBrownArmorMaterialDL);
+    POLY_OPA_DISP = &gfx[4];
+
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(2.5f, 0.8f, 2.5f, -200.0f);
 }
 
 extern void DrawKeese() {

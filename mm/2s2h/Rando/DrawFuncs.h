@@ -10,6 +10,7 @@ void DrawDekuBaba();
 void DrawDinolfos();
 void DrawDodongo();
 void DrawGaroMaster();
+void DrawIronKnuckle();
 void DrawKeese();
 void DrawLeever();
 void DrawMadScrub();
