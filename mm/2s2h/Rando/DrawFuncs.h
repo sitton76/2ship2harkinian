@@ -23,6 +23,7 @@ void DrawRedead();
 void DrawShellBlade();
 void DrawSkulltula();
 void DrawSlime();
+void DrawSnapper();
 void DrawTektite();
 void DrawWallmaster();
 void DrawWolfos();
