@@ -436,7 +436,7 @@ extern void DrawEeno() {
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
-    Matrix_Translate(0, -2000.0f, 0, MTXMODE_APPLY);
+    Matrix_Translate(0, -3000.0f, 0, MTXMODE_APPLY);
 
     if (!initialized) {
         initialized = true;
@@ -451,7 +451,7 @@ extern void DrawEeno() {
     SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
-    DrawFireRing(6.0f, 0.7f, 6.0f, -2300.0f);
+    DrawFireRing(6.0f, 0.7f, 6.0f, -500.0f);
 }
 
 extern void DrawGaroMaster() {
