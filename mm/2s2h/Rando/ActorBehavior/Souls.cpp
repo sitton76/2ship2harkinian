@@ -13,6 +13,7 @@ std::unordered_map<RandoItemId, std::tuple<std::function<void()>, std::vector<Ac
     { RI_SOUL_ARMOS, { DrawArmos, { ACTOR_EN_AM }, RANDO_INF_OBTAINED_SOUL_OF_ARMOS } },
     { RI_SOUL_BAT, { DrawBat, { ACTOR_EN_BAT }, RANDO_INF_OBTAINED_SOUL_OF_BATS } },
     { RI_SOUL_BEAMOS, { DrawBeamos, { ACTOR_EN_VM }, RANDO_INF_OBTAINED_SOUL_OF_BEAMOS } },
+    { RI_SOUL_BOE, { DrawBoe, { ACTOR_EN_MKK }, RANDO_INF_OBTAINED_SOUL_OF_BOES } },
     { RI_SOUL_BOMBCHU, { DrawRealBombchu, { ACTOR_EN_RAT }, RANDO_INF_OBTAINED_SOUL_OF_BOMBCHU } },
     { RI_SOUL_DEATH_ARMOS, { DrawDeathArmos, { ACTOR_EN_FAMOS }, RANDO_INF_OBTAINED_SOUL_OF_DEATH_ARMOS } },
     { RI_SOUL_DEKU_BABA,

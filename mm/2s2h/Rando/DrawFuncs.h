@@ -5,6 +5,7 @@ void DrawAlien();
 void DrawArmos();
 void DrawBat();
 void DrawBeamos();
+void DrawBoe();
 void DrawRealBombchu();
 void DrawDeathArmos();
 void DrawDekuBaba();
