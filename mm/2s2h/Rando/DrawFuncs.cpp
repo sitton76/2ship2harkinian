@@ -90,54 +90,6 @@ void DrawFireRing(f32 x, f32 y, f32 z, f32 tY) {
 }
 
 // Limb Override Functions
-void DrawEnAm_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot) {
-    static Vec3f D_808B1128[] = {
-        { 4700.0f, -500.0f, 1800.0f },  // ENAM_BODYPART_0
-        { 4700.0f, -500.0f, -1800.0f }, // ENAM_BODYPART_1
-        { 2000.0f, -1500.0f, 0.0f },    // ENAM_BODYPART_2
-        { 2000.0f, 0.0f, -1500.0f },    // ENAM_BODYPART_3
-        { 2000.0f, 0.0f, 1500.0f },     // ENAM_BODYPART_4
-    };
-
-    static Vec3f D_808B1164[] = {
-        { 0.0f, -3000.0f, 0.0f },  // ENAM_BODYPART_5, ENAM_BODYPART_7
-        { 700.0f, -800.0f, 0.0f }, // ENAM_BODYPART_6, ENAM_BODYPART_8
-    };
-
-    static Vec3f D_808B117C[] = {
-        { 800.0f, 1000.0f, -1000.0f },  // ENAM_BODYPART_9
-        { 800.0f, 1000.0f, 1000.0f },   // ENAM_BODYPART_10
-        { 800.0f, -1000.0f, 1000.0f },  // ENAM_BODYPART_11
-        { 800.0f, -1000.0f, -1000.0f }, // ENAM_BODYPART_12
-    };
-    s32 i;
-    s32 phi_s3;
-    Vec3f* phi_s1;
-    Vec3f* phi_s2;
-    Vec3f zeroVector{ 0, 0, 0 };
-
-    phi_s2 = 0;
-    phi_s1 = 0;
-    if (limbIndex == OBJECT_AM_LIMB_04) {
-        phi_s2 = &zeroVector;
-        phi_s1 = D_808B1128;
-        phi_s3 = ARRAY_COUNT(D_808B1128);
-    } else if (limbIndex == OBJECT_AM_LIMB_0D) {
-        phi_s2 = &zeroVector;
-        phi_s1 = D_808B117C;
-        phi_s3 = ARRAY_COUNT(D_808B117C);
-    } else if ((limbIndex == OBJECT_AM_LIMB_07) || (limbIndex == OBJECT_AM_LIMB_0A)) {
-        phi_s2 = (limbIndex == OBJECT_AM_LIMB_07) ? &zeroVector : &zeroVector;
-        phi_s1 = D_808B1164;
-        phi_s3 = ARRAY_COUNT(D_808B1164);
-    } else {
-        phi_s3 = 0;
-    }
-    for (i = 0; i < phi_s3; i++, phi_s2++, phi_s1++) {
-        Matrix_MultVec3f(phi_s1, phi_s2);
-    }
-}
-
 void DrawEnFirefly_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* firefly) {
     static Color_RGBA8 auraPrimColor[2] = { { 255, 255, 100, 255 }, { 100, 200, 255, 255 } };
     static Color_RGBA8 auraEnvColor[2] = { { 255, 50, 0, 0 }, { 0, 0, 255, 0 } };
@@ -245,7 +197,7 @@ extern void DrawArmos() {
     }
 
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL,
-                      (PostLimbDrawOpa)DrawEnAm_PostLimbDraw, NULL);
+                      NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(5.0f, 0.9f, 5.0f, 0);
