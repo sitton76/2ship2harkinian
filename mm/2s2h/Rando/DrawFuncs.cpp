@@ -5,46 +5,47 @@
 
 extern "C" {
 #include <functions.h>
-
-// Enemy Includes
-#include "src/overlays/actors/ovl_En_Dodongo/z_en_dodongo.h"
-#include "src/overlays/actors/ovl_En_Neo_Reeba/z_en_neo_reeba.h"
-#include "src/overlays/actors/ovl_En_Slime/z_en_slime.h"
-#include "src/overlays/actors/ovl_En_Rat/z_en_rat.h"
-#include "assets/objects/object_bat/object_bat.h"
-#include "src/overlays/actors/ovl_En_Wf/z_en_wf.h"
-#include "assets/objects/object_ph/object_ph.h"
-#include "src/overlays/actors/ovl_En_Jso2/z_en_jso2.h"
-#include "src/overlays/actors/ovl_En_Wallmas/z_en_wallmas.h"
-#include "src/overlays/actors/ovl_En_Firefly/z_en_firefly.h"
-#include "assets/objects/object_tite/object_tite.h"
-#include "assets/objects/object_okuta/object_okuta.h"
-#include "src/overlays/actors/ovl_En_Dinofos/z_en_dinofos.h"
-#include "assets/objects/object_st/object_st.h"
-#include "src/overlays/actors/ovl_En_Famos/z_en_famos.h"
-#include "src/overlays/actors/ovl_En_Am/z_en_am.h"
-#include "src/overlays/actors/ovl_En_Dekubaba/z_en_dekubaba.h"
-#include "src/overlays/actors/ovl_En_Dekunuts/z_en_dekunuts.h"
-#include "src/overlays/actors/ovl_En_Snowman/z_en_snowman.h"
-#include "assets/objects/object_vm/object_vm.h"
-#include "assets/objects/object_rd/object_rd.h"
-#include "assets/objects/object_sb/object_sb.h"
-#include "src/overlays/actors/ovl_En_Ik/z_en_ik.h"
-#include "src/overlays/actors/ovl_En_Crow/z_en_crow.h"
-#include "src/overlays/actors/ovl_En_Grasshopper/z_en_grasshopper.h"
-#include "assets/objects/object_uch/object_uch.h"
-#include "src/overlays/actors/ovl_En_Kame/z_en_kame.h"
-#include "assets/objects/object_skb/object_skb.h"
-#include "assets/objects/object_mkk/object_mkk.h"
-
-#include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
-
 #include "objects/gameplay_keep/gameplay_keep.h"
 
+// clang-format off
+// Enemy Includes
+/* Alien */         #include "assets/objects/object_uch/object_uch.h"
+/* Armos */         #include "assets/objects/object_am/object_am.h" 
+/* Bad Bat */       #include "assets/objects/object_bat/object_bat.h"
+/* Beamos */        #include "assets/objects/object_vm/object_vm.h"
+/* Boe */           #include "assets/objects/object_mkk/object_mkk.h"
+/* Rat */           #include "assets/objects/object_rat/object_rat.h"
+/* Death Armos */   #include "assets/objects/object_famos/object_famos.h"
+/* Deku Baba */     #include "assets/objects/object_dekubaba/object_dekubaba.h"
+/* Dinolfos */      #include "assets/objects/object_dinofos/object_dinofos.h"
+/* Dodongo */       #include "assets/objects/object_dodongo/object_dodongo.h"
+/* Eeno */          #include "assets/objects/object_snowman/object_snowman.h"
+/* Garo Master */   #include "assets/objects/object_jso/object_jso.h"
+/* Grasshopper */   #include "assets/objects/object_grasshopper/object_grasshopper.h"
+/* Guay */          #include "assets/objects/object_crow/object_crow.h"
+/* Iron Knuckle */  #include "assets/objects/object_ik/object_ik.h"
+/* Keese */         #include "assets/objects/object_firefly/object_firefly.h"
+/* Leever */        #include "assets/objects/object_rb/object_rb.h"
+/* Mad Scrub */     #include "assets/objects/object_dekunuts/object_dekunuts.h"
+/* Octorok */       #include "assets/objects/object_okuta/object_okuta.h"
+/* Peehat */        #include "assets/objects/object_ph/object_ph.h"
+/* Redead */        #include "assets/objects/object_rd/object_rd.h"
+/* Shellblade */    #include "assets/objects/object_sb/object_sb.h"
+/* Skulltula */     #include "assets/objects/object_st/object_st.h"
+/* Slimes */        #include "assets/objects/object_slime/object_slime.h"
+/* Snapper */       #include "assets/objects/object_tl/object_tl.h"
+/* Stalchild */     #include "assets/objects/object_skb/object_skb.h"
+/* Tektite */       #include "assets/objects/object_tite/object_tite.h"
+/* Wallmaster */    #include "assets/objects/object_wallmaster/object_wallmaster.h"
+/* Wolfos */        #include "assets/objects/object_wf/object_wf.h"
+// clang-format on
+
+// Soul Effects
 #include "src/overlays/actors/ovl_Obj_Moon_Stone/z_obj_moon_stone.h"
 #include "assets/objects/object_gi_reserve00/object_gi_reserve00.h"
 
-void ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
+    void
+    ResourceMgr_PatchGfxByName(const char* path, const char* patchName, int index, Gfx instruction);
 }
 
 void DrawSmoke(f32 x, f32 y, f32 z, f32 tY) {
@@ -454,8 +455,8 @@ extern void DrawDodongo() {
 extern void DrawEeno() {
     static bool initialized = false;
     static SkelAnime skelAnime;
-    static Vec3s jointTable[EN_SNOWMAN_BODYPART_MAX];
-    static Vec3s morphTable[EN_SNOWMAN_BODYPART_MAX];
+    static Vec3s jointTable[EENO_LIMB_MAX];
+    static Vec3s morphTable[EENO_LIMB_MAX];
     static u32 lastUpdate = 0;
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
@@ -467,7 +468,7 @@ extern void DrawEeno() {
     if (!initialized) {
         initialized = true;
         SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gEenoSkel, (AnimationHeader*)&gEenoIdleAnim,
-                           jointTable, morphTable, EN_SNOWMAN_BODYPART_MAX);
+                           jointTable, morphTable, EENO_LIMB_MAX);
     }
     if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
         lastUpdate = gPlayState->state.frames;
