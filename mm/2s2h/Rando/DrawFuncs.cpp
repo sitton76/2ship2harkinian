@@ -25,6 +25,7 @@ extern "C" {
 #include "src/overlays/actors/ovl_En_Am/z_en_am.h"
 #include "src/overlays/actors/ovl_En_Dekubaba/z_en_dekubaba.h"
 #include "src/overlays/actors/ovl_En_Dekunuts/z_en_dekunuts.h"
+#include "src/overlays/actors/ovl_En_Snowman/z_en_snowman.h"
 #include "assets/objects/object_vm/object_vm.h"
 #include "assets/objects/object_rd/object_rd.h"
 #include "assets/objects/object_sb/object_sb.h"
@@ -410,6 +411,35 @@ extern void DrawDodongo() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(4.0f, 0.5f, 4.0f, -200.0f);
+}
+
+extern void DrawEeno() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[EN_SNOWMAN_BODYPART_MAX];
+    static Vec3s morphTable[EN_SNOWMAN_BODYPART_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -3000.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gEenoSkel, (AnimationHeader*)&gEenoIdleAnim,
+                           jointTable, morphTable, EN_SNOWMAN_BODYPART_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    Scene_SetRenderModeXlu(gPlayState, 0, 1);
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(6.0f, 0.7f, 6.0f, -500.0f);
 }
 
 extern void DrawGaroMaster() {
