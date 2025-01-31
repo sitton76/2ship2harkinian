@@ -276,45 +276,31 @@ extern void DrawBoe() {
         (Gfx*)gBlackBoeEndDL,
         (Gfx*)gBlackBoeEyesDL,
     };
-
-    static Color_RGBA8 D_80A4F7C4[] = {
-        { 255, 255, 255, 255 }, { 128, 128, 128, 255 }, { 0, 0, 0, 255 },
-        { 0, 0, 0, 255 },       { 128, 128, 128, 255 }, { 255, 255, 255, 255 },
-    };
-
-    Gfx* gfx;
-    Color_RGBA8* primColors;
-
-    MtxF* matrix;
+    static Color_RGBA8 D_80A4F7C4 = { 0, 0, 0, 255 };
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -1200, 0, MTXMODE_APPLY);
 
-    primColors = &D_80A4F7C4[2];
-    gfx = POLY_OPA_DISP;
-    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
-    gDPSetPrimColor(&gfx[1], 0, 0xFF, primColors->r, primColors->g, primColors->b, primColors->a);
-    gSPSegment(&gfx[2], 0x08, (uintptr_t)D_801AEFA0);
-    gSPMatrix(&gfx[3], Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPDisplayList(&gfx[4], (Gfx*)gBlackBoeEndDL);
-    POLY_OPA_DISP = &gfx[5];
+    gSPDisplayList(POLY_OPA_DISP++, gSetupDLs[SETUPDL_25]);
+    gDPSetPrimColor(POLY_OPA_DISP++, 0, 0xFF, 0, 0, 0, 255);
+    gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)D_801AEFA0);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(POLY_OPA_DISP++, (Gfx*)gBlackBoeEndDL);
 
-    gfx = POLY_XLU_DISP;
-    gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
-    gDPSetEnvColor(&gfx[1], 255, 255, 255, 255);
-    gSPDisplayList(&gfx[2], (Gfx*)gBlackBoeBodyMaterialDL);
+    gSPDisplayList(POLY_XLU_DISP++, gSetupDLs[SETUPDL_25]);
+    gDPSetEnvColor(POLY_XLU_DISP++, 255, 255, 255, 255);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gBlackBoeBodyMaterialDL);
     Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
-    gSPMatrix(&gfx[3], Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPDisplayList(&gfx[4], (Gfx*)gBlackBoeBodyModelDL);
-    gDPSetPrimColor(&gfx[5], 0, 0xFF, 245, 97, 0, primColors->a);
-    gSPDisplayList(&gfx[6], (Gfx*)gBlackBoeEyesDL);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gBlackBoeBodyModelDL);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0xFF, 245, 97, 0, 255);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gBlackBoeEyesDL);
     Matrix_Scale(0.009f, 0.009f, 0.009f, MTXMODE_APPLY);
-    gSPMatrix(&gfx[7], Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetPrimColor(&gfx[8], 0, 0xFF, 245, 214, 0, primColors->a);
-    gSPDisplayList(&gfx[9], (Gfx*)gBlackBoeEyesDL);
-    POLY_XLU_DISP = &gfx[10];
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gPlayState->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetPrimColor(POLY_XLU_DISP++, 0, 0xFF, 245, 214, 0, 255);
+    gSPDisplayList(POLY_XLU_DISP++, (Gfx*)gBlackBoeEyesDL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(190.0f, 50.5f, 190.0f, -2900.0f);
