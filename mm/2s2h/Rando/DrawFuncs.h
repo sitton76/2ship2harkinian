@@ -1,6 +1,7 @@
 #ifndef RANDO_DRAW_FUNCS_H
 #define RANDO_DRAW_FUNCS_H
 
+void DrawAlien();
 void DrawArmos();
 void DrawBat();
 void DrawBeamos();

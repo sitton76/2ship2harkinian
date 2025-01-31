@@ -9,6 +9,7 @@ extern "C" {
 }
 
 std::unordered_map<RandoItemId, std::tuple<std::function<void()>, std::vector<ActorId>, RandoInf>> soulMap = {
+    { RI_SOUL_ALIEN, { DrawAlien, { ACTOR_EN_INVADEPOH }, RANDO_INF_OBTAINED_SOUL_OF_ALIENS } },
     { RI_SOUL_ARMOS, { DrawArmos, { ACTOR_EN_AM }, RANDO_INF_OBTAINED_SOUL_OF_ARMOS } },
     { RI_SOUL_BAT, { DrawBat, { ACTOR_EN_BAT }, RANDO_INF_OBTAINED_SOUL_OF_BATS } },
     { RI_SOUL_BEAMOS, { DrawBeamos, { ACTOR_EN_VM }, RANDO_INF_OBTAINED_SOUL_OF_BEAMOS } },
