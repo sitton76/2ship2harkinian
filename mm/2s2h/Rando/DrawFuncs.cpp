@@ -30,6 +30,7 @@ extern "C" {
 #include "assets/objects/object_sb/object_sb.h"
 #include "src/overlays/actors/ovl_En_Ik/z_en_ik.h"
 #include "src/overlays/actors/ovl_En_Crow/z_en_crow.h"
+#include "src/overlays/actors/ovl_En_Grasshopper/z_en_grasshopper.h"
 
 #include "src/overlays/actors/ovl_En_Bom/z_en_bom.h"
 
@@ -454,6 +455,34 @@ extern void DrawGaroMaster() {
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(1.0f, 0.3f, 1.0f, -3200.0f);
+}
+
+extern void DrawGrasshopper() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[DRAGONFLY_LIMB_MAX];
+    static Vec3s morphTable[DRAGONFLY_LIMB_MAX];
+    static u32 lastUpdate = 0;
+
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
+    Matrix_Translate(0, -700.0f, 0, MTXMODE_APPLY);
+
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_Init(gPlayState, &skelAnime, (SkeletonHeader*)&gDragonflySkel, (AnimationHeader*)&gDragonflyFlyAnim,
+                       jointTable, morphTable, DRAGONFLY_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
+
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+    DrawFireRing(4.0f, 0.7f, 4.0f, -4000.0f);
 }
 
 extern void DrawGuay() {
