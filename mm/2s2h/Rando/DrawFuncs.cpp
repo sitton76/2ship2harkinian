@@ -196,8 +196,7 @@ extern void DrawArmos() {
         SkelAnime_Update(&skelAnime);
     }
 
-    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL,
-                      NULL, NULL);
+    SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
     CLOSE_DISPS(gPlayState->state.gfxCtx);
     DrawFireRing(5.0f, 0.9f, 5.0f, 0);
