@@ -15,6 +15,20 @@ void ApplyNoLogicToSaveContext(std::unordered_map<RandoCheckId, bool>& checkPool
         std::swap(itemPool[i], itemPool[Ship_Random(0, itemPool.size() - 1)]);
     }
 
+    if (RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] == RO_GENERIC_YES) {
+        uint32_t index = RI_SOUL_ALIEN;
+        for (auto& item : itemPool) {
+    
+            if (item == RI_RUPEE_RED) {
+                item = (RandoItemId)index;
+                index++;
+            }
+            if ((RandoItemId)index > RI_SOUL_WOLFOS) {
+                break;
+            }
+        }
+    }
+
     for (auto& [randoCheckId, _] : checkPool) {
         if (randoCheckId == RC_UNKNOWN) {
             continue;
