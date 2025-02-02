@@ -6,5 +6,6 @@ void DrawGoht();
 void DrawGyorg();
 void DrawOdolwa();
 void DrawTwinmold();
+void DrawWart();
 
 #endif

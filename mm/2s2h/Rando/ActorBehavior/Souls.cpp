@@ -13,6 +13,7 @@ std::unordered_map<RandoItemId, std::tuple<std::function<void()>, std::vector<Ac
     { RI_SOUL_GYORG, { DrawGyorg, { ACTOR_BOSS_03 }, RANDO_INF_OBTAINED_SOUL_OF_GYORG } },
     { RI_SOUL_ODOLWA, { DrawOdolwa, { ACTOR_BOSS_01 }, RANDO_INF_OBTAINED_SOUL_OF_ODOLWA } },
     { RI_SOUL_TWINMOLD, { DrawTwinmold, { ACTOR_BOSS_02 }, RANDO_INF_OBTAINED_SOUL_OF_TWINMOLD } },
+    { RI_SOUL_WART, { DrawWart, { ACTOR_BOSS_04, ACTOR_EN_TANRON2 }, RANDO_INF_OBTAINED_SOUL_OF_WART } },
 };
 
 bool FindSoul(int16_t actorId) {

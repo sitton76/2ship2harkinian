@@ -13,6 +13,7 @@ extern "C" {
 /* Gyorg */     #include "objects/object_boss03/object_boss03.h"
 /* Odolwa */    #include "objects/object_boss01/object_boss01.h"
 /* Twinmold */  #include "objects/object_boss02/object_boss02.h"
+/* Wart */      #include "src/overlays/actors/ovl_Boss_04/z_boss_04.h"
 // clang-format on
 
 // Soul Effects
@@ -174,5 +175,28 @@ extern void DrawTwinmold() {
     gSPSegment(POLY_OPA_DISP++, 0x08, (uintptr_t)gTwinmoldBlueSkinTex);
     SkelAnime_DrawOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, NULL, NULL, NULL);
 
+    CLOSE_DISPS(gPlayState->state.gfxCtx);
+}
+
+extern void DrawWart() {
+    static bool initialized = false;
+    static SkelAnime skelAnime;
+    static Vec3s jointTable[WART_LIMB_MAX];
+    static Vec3s morphTable[WART_LIMB_MAX];
+    static u32 lastUpdate = 0;
+    OPEN_DISPS(gPlayState->state.gfxCtx);
+    Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
+    Matrix_Scale(0.025f, 0.025f, 0.025f, MTXMODE_APPLY);
+    Matrix_Translate(0, 0.0f, 650, MTXMODE_APPLY);
+    if (!initialized) {
+        initialized = true;
+        SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gWartSkel,
+                           (AnimationHeader*)&gWartIdleAnim, jointTable, morphTable, WART_LIMB_MAX);
+    }
+    if (gPlayState != NULL && lastUpdate != gPlayState->state.frames) {
+        lastUpdate = gPlayState->state.frames;
+        SkelAnime_Update(&skelAnime);
+    }
+    SkelAnime_DrawFlexOpa(gPlayState, skelAnime.skeleton, skelAnime.jointTable, skelAnime.dListCount, NULL, NULL, NULL);
     CLOSE_DISPS(gPlayState->state.gfxCtx);
 }
