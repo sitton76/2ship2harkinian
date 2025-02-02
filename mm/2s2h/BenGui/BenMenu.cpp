@@ -863,6 +863,10 @@ void BenMenu::AddEnhancements() {
     AddWidget(path, "Skip Gorman Horse Race", WIDGET_CVAR_CHECKBOX)
         .CVar("gEnhancements.Minigames.SkipHorseRace")
         .Options(CheckboxOptions().Tooltip("Instantly win the Gorman Horse Race"));
+    AddWidget(path, "Skip Ballad of Windfish", WIDGET_CVAR_CHECKBOX)
+        .CVar("gEnhancements.Minigames.SkipBalladOfWindfish")
+        .Options(CheckboxOptions().Tooltip(
+            "Play the complete Ballad after playing in one form if you have all three transformation masks."));
 
     path.column = 3;
     AddWidget(path, "Saving", WIDGET_SEPARATOR_TEXT);
@@ -1084,6 +1088,9 @@ void BenMenu::AddEnhancements() {
     AddWidget(path, "Faster Song Playback", WIDGET_CVAR_CHECKBOX)
         .CVar("gEnhancements.Songs.FasterSongPlayback")
         .Options(CheckboxOptions().Tooltip("Speeds up the playback of songs."));
+    AddWidget(path, "Skip Song of Time cutscenes", WIDGET_CVAR_CHECKBOX)
+        .CVar("gEnhancements.Songs.SkipSoTCutscenes")
+        .Options(CheckboxOptions().Tooltip("Skips the cutscenes when playing any of the Song of Time songs"));
 
     // Time Savers
     path = { "Enhancements", "Time Savers", 1 };
@@ -1246,12 +1253,12 @@ void BenMenu::AddEnhancements() {
     path = { "Enhancements", "Difficulty Options", 1 };
     AddSidebarEntry("Enhancements", "Difficulty Options", 3);
     AddWidget(path, "Disable Takkuri Steal", WIDGET_CVAR_CHECKBOX)
-        .CVar("gEnhancements.Cheats.DisableTakkuriSteal")
+        .CVar("gEnhancements.DifficultyOptions.DisableTakkuriSteal")
         .Options(CheckboxOptions().Tooltip(
             "Prevents the Takkuri from stealing key items like bottles and swords. It may still steal "
             "other items."));
     AddWidget(path, "Deku Guard Search Balls", WIDGET_CVAR_COMBOBOX)
-        .CVar("gEnhancements.Cheats.DekuGuardSearchBalls")
+        .CVar("gEnhancements.DifficultyOptions.DekuGuardSearchBalls")
         .Options(
             ComboboxOptions()
                 .Tooltip("Choose when to show the Deku Palace Guards' search balls\n"
@@ -1266,6 +1273,18 @@ void BenMenu::AddEnhancements() {
             CheckboxOptions().Tooltip("Reduces the amount of rupees required to receive the rewards from the bank.\n"
                                       "From: 200 -> 1000 -> 5000\n"
                                       "To:   100 ->  500 -> 1000"));
+    AddWidget(path, "Gibdo Trade Sequence Options", WIDGET_CVAR_COMBOBOX)
+        .CVar("gEnhancements.DifficultyOptions.GibdoTradeSequence")
+        .Options(
+            ComboboxOptions()
+                .Tooltip(
+                    "Changes the way the Gibdo Trade Sequence works\n"
+                    "-Vanilla: Works normally\n"
+                    "-MM3D: Gibdos will only take one quantity of the item they request, as they do in MM3D. The Gibdo "
+                    "requesting a blue potion will also accept a red potion.\n"
+                    "-No trade: Gibdos will vanish without taking items")
+                .DefaultIndex(GibdoTradeSequenceOptions::GIBDO_TRADE_SEQUENCE_VANILLA)
+                .ComboMap(gibdoTradeSequenceOptions));
 
     path.column = 2;
     AddWidget(path, "Damage Multiplier", WIDGET_CVAR_COMBOBOX)
@@ -1297,8 +1316,8 @@ void BenMenu::AddEnhancements() {
     // Item Tracker Settings
     path = { "Enhancements", "Item Tracker", 1 };
     AddSidebarEntry("Enhancements", "Item Tracker", 1);
-    AddWidget(path, "Popout Item Tracker", WIDGET_WINDOW_BUTTON)
-        .CVar("gWindows.ItemTracker")
+    AddWidget(path, "Popout Settings", WIDGET_WINDOW_BUTTON)
+        .CVar("gWindows.ItemTrackerSettings")
         .WindowName("Item Tracker Settings");
 }
 
