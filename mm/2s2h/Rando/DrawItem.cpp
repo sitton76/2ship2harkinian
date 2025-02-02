@@ -335,7 +335,7 @@ void Rando::DrawItem(RandoItemId randoItemId, Actor* actor) {
         func_800B8050(actor, gPlayState, 0);
     }
 
-    if (randoItemId >= RI_SOUL_ALIEN && randoItemId <= RI_SOUL_WOLFOS) {
+    if (randoItemId >= RI_SOUL_GOHT && randoItemId <= RI_SOUL_TWINMOLD) {
         DrawSoul(randoItemId);
         return;
     }
