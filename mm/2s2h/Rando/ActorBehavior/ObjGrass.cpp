@@ -323,63 +323,63 @@ std::map<SceneId, std::map<std::pair<float, float>, RandoCheckId>> grassMap = {
     // Romani Ranch
     { SCENE_F01,
       {
-          { { -135.49f, 1834.23f }, RC_ROMANI_RANCH_GRASS_01 },
-          { { -156.83f, 1863.63f }, RC_ROMANI_RANCH_GRASS_02 },
-          { { -198.50f, 1860.36f }, RC_ROMANI_RANCH_GRASS_03 },
-          { { -214.50f, 1821.76f }, RC_ROMANI_RANCH_GRASS_04 },
-          { { -175.00f, 1808.00f }, RC_ROMANI_RANCH_GRASS_05 },
-          { { -103.72f, 1864.32f }, RC_ROMANI_RANCH_GRASS_06 },
-          { { -175.00f, 1908.00f }, RC_ROMANI_RANCH_GRASS_07 },
-          { { -246.27f, 1864.32f }, RC_ROMANI_RANCH_GRASS_08 },
+          { { -135.49f, 1834.24f }, RC_ROMANI_RANCH_GRASS_01 }, //Working
+          { { -156.83f, 1863.64f }, RC_ROMANI_RANCH_GRASS_02 }, //Working
+          { { -198.50f, 1860.37f }, RC_ROMANI_RANCH_GRASS_03 }, //Working
+          { { -214.51f, 1821.75f }, RC_ROMANI_RANCH_GRASS_04 },
+          { { -175.00f, 1808.00f }, RC_ROMANI_RANCH_GRASS_05 }, //Working
+          { { -103.73f, 1864.33f }, RC_ROMANI_RANCH_GRASS_06 },
+          { { -175.00f, 1908.00f }, RC_ROMANI_RANCH_GRASS_07 }, //Working
+          { { -246.27f, 1864.33f }, RC_ROMANI_RANCH_GRASS_08 }, //Working
           { { -246.27f, 1791.67f }, RC_ROMANI_RANCH_GRASS_09 },
-          { { -211.32f, 1756.72f }, RC_ROMANI_RANCH_GRASS_10 },
+          { { -211.33f, 1756.73f }, RC_ROMANI_RANCH_GRASS_10 },
           { { -162.52f, 1748.98f }, RC_ROMANI_RANCH_GRASS_11 },
-          { { -132.54f, 1785.60f }, RC_ROMANI_RANCH_GRASS_12 },
-          { { -1529.49f, 1630.23f }, RC_ROMANI_RANCH_GRASS_13 },
-          { { -1550.83f, 1659.63f }, RC_ROMANI_RANCH_GRASS_14 },
-          { { -1592.50f, 1656.36f }, RC_ROMANI_RANCH_GRASS_15 },
-          { { -1608.50f, 1617.76f }, RC_ROMANI_RANCH_GRASS_16 },
-          { { -1569.00f, 1604.00f }, RC_ROMANI_RANCH_GRASS_17 },
-          { { -1497.72f, 1660.32f }, RC_ROMANI_RANCH_GRASS_18 },
-          { { -1569.00f, 1704.00f }, RC_ROMANI_RANCH_GRASS_19 },
-          { { -1640.27f, 1660.32f }, RC_ROMANI_RANCH_GRASS_20 },
+          { { -132.54f, 1785.61f }, RC_ROMANI_RANCH_GRASS_12 }, //Working
+          { { -1529.49f, 1630.24f }, RC_ROMANI_RANCH_GRASS_13 }, //Working
+          { { -1550.84f, 1659.64f }, RC_ROMANI_RANCH_GRASS_14 },
+          { { -1592.50f, 1656.37f }, RC_ROMANI_RANCH_GRASS_15 }, //Working
+          { { -1608.51f, 1617.76f }, RC_ROMANI_RANCH_GRASS_16 },
+          { { -1569.00f, 1604.00f }, RC_ROMANI_RANCH_GRASS_17 }, //Working
+          { { -1497.73f, 1660.33f }, RC_ROMANI_RANCH_GRASS_18 },
+          { { -1569.00f, 1704.00f }, RC_ROMANI_RANCH_GRASS_19 }, //Working
+          { { -1640.27f, 1660.33f }, RC_ROMANI_RANCH_GRASS_20 }, //Working
           { { -1640.27f, 1587.67f }, RC_ROMANI_RANCH_GRASS_21 },
-          { { -1605.32f, 1552.72f }, RC_ROMANI_RANCH_GRASS_22 },
+          { { -1605.33f, 1552.73f }, RC_ROMANI_RANCH_GRASS_22 },
           { { -1556.52f, 1544.98f }, RC_ROMANI_RANCH_GRASS_23 },
-          { { -1526.54f, 1581.60f }, RC_ROMANI_RANCH_GRASS_24 },
-          { { 1873.50f, 1167.23f }, RC_ROMANI_RANCH_GRASS_25 },
-          { { 1852.16f, 1196.63f }, RC_ROMANI_RANCH_GRASS_26 },
-          { { 1810.49f, 1193.36f }, RC_ROMANI_RANCH_GRASS_27 },
+          { { -1526.54f, 1581.61f }, RC_ROMANI_RANCH_GRASS_24 }, //Working
+          { { 1873.51f, 1167.24f }, RC_ROMANI_RANCH_GRASS_25 }, //Working
+          { { 1852.16f, 1196.64f }, RC_ROMANI_RANCH_GRASS_26 },
+          { { 1810.50f, 1193.37f }, RC_ROMANI_RANCH_GRASS_27 }, //Working
           { { 1794.49f, 1154.76f }, RC_ROMANI_RANCH_GRASS_28 },
-          { { 1834.00f, 1141.00f }, RC_ROMANI_RANCH_GRASS_29 },
-          { { 1905.27f, 1197.32f }, RC_ROMANI_RANCH_GRASS_30 },
-          { { 1834.00f, 1241.00f }, RC_ROMANI_RANCH_GRASS_31 },
-          { { 1762.72f, 1197.32f }, RC_ROMANI_RANCH_GRASS_32 },
-          { { 1762.72f, 1124.67f }, RC_ROMANI_RANCH_GRASS_33 },
-          { { 1797.67f, 1089.72f }, RC_ROMANI_RANCH_GRASS_34 },
-          { { 1846.47f, 1081.98f }, RC_ROMANI_RANCH_GRASS_35 },
-          { { 1876.45f, 1118.60f }, RC_ROMANI_RANCH_GRASS_36 },
-          { { 1202.50f, -1378.76f }, RC_ROMANI_RANCH_GRASS_37 },
+          { { 1834.00f, 1141.00f }, RC_ROMANI_RANCH_GRASS_29 }, //Working
+          { { 1905.27f, 1197.33f }, RC_ROMANI_RANCH_GRASS_30 },
+          { { 1834.00f, 1241.00f }, RC_ROMANI_RANCH_GRASS_31 }, //Working
+          { { 1762.73f, 1197.33f }, RC_ROMANI_RANCH_GRASS_32 }, //Working
+          { { 1762.73f, 1124.67f }, RC_ROMANI_RANCH_GRASS_33 },
+          { { 1797.67f, 1089.73f }, RC_ROMANI_RANCH_GRASS_34 },
+          { { 1846.48f, 1081.98f }, RC_ROMANI_RANCH_GRASS_35 },
+          { { 1876.46f, 1118.61f }, RC_ROMANI_RANCH_GRASS_36 }, //Working
+          { { 1202.51f, -1378.76f }, RC_ROMANI_RANCH_GRASS_37 }, //Working
           { { 1181.16f, -1349.36f }, RC_ROMANI_RANCH_GRASS_38 },
-          { { 1139.49f, -1352.63f }, RC_ROMANI_RANCH_GRASS_39 },
-          { { 1123.49f, -1391.23f }, RC_ROMANI_RANCH_GRASS_40 },
-          { { 1163.00f, -1405.00f }, RC_ROMANI_RANCH_GRASS_41 },
+          { { 1139.50f, -1352.63f }, RC_ROMANI_RANCH_GRASS_39 }, //Working
+          { { 1123.49f, -1391.24f }, RC_ROMANI_RANCH_GRASS_40 },
+          { { 1163.00f, -1405.00f }, RC_ROMANI_RANCH_GRASS_41 }, //Working
           { { 1234.27f, -1348.67f }, RC_ROMANI_RANCH_GRASS_42 },
-          { { 1163.00f, -1305.00f }, RC_ROMANI_RANCH_GRASS_43 },
-          { { 1091.72f, -1348.67f }, RC_ROMANI_RANCH_GRASS_44 },
-          { { 1091.72f, -1421.32f }, RC_ROMANI_RANCH_GRASS_45 },
+          { { 1163.00f, -1305.00f }, RC_ROMANI_RANCH_GRASS_43 }, //Working
+          { { 1091.73f, -1348.67f }, RC_ROMANI_RANCH_GRASS_44 }, //Working
+          { { 1091.73f, -1421.33f }, RC_ROMANI_RANCH_GRASS_45 },
           { { 1126.67f, -1456.27f }, RC_ROMANI_RANCH_GRASS_46 },
-          { { 1175.47f, -1464.01f }, RC_ROMANI_RANCH_GRASS_47 },
+          { { 1175.48f, -1464.02f }, RC_ROMANI_RANCH_GRASS_47 },
           { { 1205.45f, -1427.39f }, RC_ROMANI_RANCH_GRASS_48 },
-          { { -223.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_49 },
-          { { -143.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_50 },
-          { { -166.47f, -2214.38f }, RC_ROMANI_RANCH_GRASS_51 },
-          { { -223.00f, -2191.00f }, RC_ROMANI_RANCH_GRASS_52 },
-          { { -279.61f, -2214.47f }, RC_ROMANI_RANCH_GRASS_53 },
-          { { -303.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_54 },
-          { { -279.52f, -2327.61f }, RC_ROMANI_RANCH_GRASS_55 },
-          { { -223.00f, -2351.00f }, RC_ROMANI_RANCH_GRASS_56 },
-          { { -166.38f, -2327.52f }, RC_ROMANI_RANCH_GRASS_57 },
+          { { -223.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_49 }, //Working
+          { { -143.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_50 }, //Working
+          { { -166.48f, -2214.39f }, RC_ROMANI_RANCH_GRASS_51 },
+          { { -223.00f, -2191.00f }, RC_ROMANI_RANCH_GRASS_52 }, //Working
+          { { -279.61f, -2214.48f }, RC_ROMANI_RANCH_GRASS_53 },
+          { { -303.00f, -2271.00f }, RC_ROMANI_RANCH_GRASS_54 }, //Working
+          { { -279.52f, -2327.61f }, RC_ROMANI_RANCH_GRASS_55 }, //Working
+          { { -223.00f, -2351.00f }, RC_ROMANI_RANCH_GRASS_56 }, //Working
+          { { -166.39f, -2327.52f }, RC_ROMANI_RANCH_GRASS_57 },
       }
     }
 };
@@ -496,7 +496,6 @@ void Rando::ActorBehavior::InitObjGrassBehavior() {
             return;
         }
 
-        printf("x: {}, y: {}, z: {}\n", pos.x, pos.y, pos.z);
         SpawnGrassDrop(pos, randoCheckId);
         *should = false;
     })
