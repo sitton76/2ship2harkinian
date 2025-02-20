@@ -74,7 +74,7 @@ static RegisterShipInitFunc initFunc([]() {
             CONNECTION(RR_IKANA_CASTLE_REDEAD_WALKWAY, true)
         },
         .events = {
-            EVENT(RE_IKANA_CASTLE_MAIN_SUNLIGHT, true),
+            EVENT(RE_IKANA_CASTLE_MAIN_SUNLIGHT, CAN_BE_GORON && HAS_ITEM(ITEM_POWDER_KEG)),
         }
     };
     Regions[RR_IKANA_CASTLE_MAIN_ROOM] = RandoRegion{ .name = "Main Room", .sceneId = SCENE_CASTLE,
