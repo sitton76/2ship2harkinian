@@ -9,7 +9,6 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
                    s32 invincibilityTimer);
 }
 
-
 int roll = TRAP_FREEZE;
 const u16 TimeSkipInc = 400;
 
