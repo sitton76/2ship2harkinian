@@ -2,7 +2,6 @@
 #include "z64light.h"
 #include "z64math.h"
 #include "public/bridge/consolevariablebridge.h"
-#include "2s2h/GameInteractor/GameInteractor.h"
 
 typedef enum {
     /* 0x00 */ LIGHTNING_BOLT_START,
