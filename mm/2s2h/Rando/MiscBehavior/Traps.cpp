@@ -53,7 +53,15 @@ std::string GetTrapMessage() {
 void VerifyTimeSkip(u16 gameTime) {
     // Prevents weirdness if multiple time skips are triggered around the same time.
     if (gSaveContext.save.time <= gameTime) {
+        u16 captured_time = gSaveContext.save.time;
+        u16 morning_time = 16429;
         UpdateGameTime(gameTime);
+        // Handles case where Night -> Day
+        if (captured_time < morning_time && gameTime >= morning_time) {
+            gSaveContext.save.day++;
+            gSaveContext.save.eventDayCount++;
+            Interface_NewDay(gPlayState, CURRENT_DAY);
+        }
     }
 }
 
@@ -80,6 +88,13 @@ void Rando::MiscBehavior::OfferTrapItem() {
             break;
         case TRAP_TIME:
             for (u16 i = gSaveContext.save.time; i <= gSaveContext.save.time + (TimeSkipInc * 10); i += TimeSkipInc) {
+                if (i < gSaveContext.save.time) {
+                    // Midnight is the overflow value for the .day, so instead of queuing multiple Updates past here we
+                    // simply do one more update past Midnight.
+                    GameInteractor::Instance->events.emplace_back(
+                        GIEventTrap{ .action = []() { UpdateGameTime(TimeSkipInc); } });
+                    break;
+                }
                 GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = [i]() { VerifyTimeSkip(i); } });
             }
             break;
