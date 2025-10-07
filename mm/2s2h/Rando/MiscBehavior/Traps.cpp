@@ -1,5 +1,6 @@
 #include "Traps.h"
 #include "MiscBehavior.h"
+#include "2s2h/DeveloperTools/SaveEditor.h"
 
 extern "C" {
 #include "variables.h"
@@ -9,7 +10,7 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
 }
 
 int roll = 0;
-int TimeSkipFrameCounter = 0;
+const u16 TimeSkipInc = 400;
 
 std::vector<std::string> blastTrapMessages = {
     "Coming to you live from the %yThunderdome%w!",
@@ -26,6 +27,9 @@ std::vector<std::string> shockTrapMessages = {
 
 std::vector<std::string> timeTrapMessages = {
     "Time flashes before your eyes!",
+    "You have played the Sun's Song!",
+    "The Goddess of Time smites you!",
+    "Spent an hour and a half admiring this fake item.",
 };
 
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
@@ -66,20 +70,19 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
         case TRAP_TIME:
-            TimeSkipFrameCounter += 10;
+            for (u16 i = gSaveContext.save.time; i <= gSaveContext.save.time + (TimeSkipInc * 10); i += TimeSkipInc) {
+                GameInteractor::Instance->events.emplace_back(
+                    GIEventTrap{ .action = [i](){ VerifyTimeSkip(i); }});
+            }
             break;
         default:
             break;
     }
 }
 
-void Rando::MiscBehavior::InitTrapBehaviour() {
-    COND_VB_SHOULD(VB_TRAP_TIME_SKIP, IS_RANDO, {
-        if (TimeSkipFrameCounter > 0) {
-            TimeSkipFrameCounter -= 1;
-            *should = true;
-        } else {
-            *should = false;
-        }
-    });
+void VerifyTimeSkip(u16 gameTime) {
+    // Prevents weirdness if multiple time skips are triggered around the same time.
+    if (gSaveContext.save.time <= gameTime) {
+        UpdateGameTime(gameTime);
+    }
 }

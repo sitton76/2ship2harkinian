@@ -1198,10 +1198,6 @@ void Environment_UpdateTime(PlayState* play, EnvironmentContext* envCtx, PauseCo
                 if (play->transitionTrigger == TRANS_TRIGGER_OFF) {
                     if ((CutsceneManager_GetCurrentCsId() == CS_ID_NONE) && !Play_InCsMode(play)) {
                         gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)R_TIME_SPEED;
-                        if (GameInteractor_Should(VB_TRAP_TIME_SKIP, true)) {
-                            // Same as above but with a fixed value, for the Time Skip Trap
-                            gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)400;
-                        }
                         if (R_TIME_SPEED != 0) {
                             gSaveContext.save.time =
                                 ((void)0, gSaveContext.save.time) + (u16)((void)0, gSaveContext.save.timeSpeedOffset);

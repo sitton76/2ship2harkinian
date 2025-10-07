@@ -253,7 +253,6 @@ typedef enum {
     VB_PLAYER_CUTSCENE_ACTION,
     VB_SET_CAMERA_AT_EYE,
     VB_SET_CAMERA_FOV,
-    VB_TRAP_TIME_SKIP,
 } GIVanillaBehavior;
 
 typedef enum {

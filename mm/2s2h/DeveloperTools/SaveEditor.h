@@ -7,6 +7,8 @@ extern "C" {
 #include "z64save.h"
 }
 
+void UpdateGameTime(u16 gameTime);
+
 typedef enum {
     CURRENT_SCENE_FLAGS,
     WEEK_EVENT_REG,
