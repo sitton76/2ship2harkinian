@@ -78,8 +78,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
             break;
         case TRAP_TIME:
             for (u16 i = gSaveContext.save.time; i <= gSaveContext.save.time + (TimeSkipInc * 10); i += TimeSkipInc) {
-                GameInteractor::Instance->events.emplace_back(
-                    GIEventTrap{ .action = [i](){ VerifyTimeSkip(i); }});
+                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = [i]() { VerifyTimeSkip(i); } });
             }
             break;
         default:
