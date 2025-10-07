@@ -3,7 +3,7 @@
 
 #include "Rando/Rando.h"
 
-typedef enum { TRAP_BLAST, TRAP_FREEZE, TRAP_SHOCK, TRAP_MAX } TrapTypes;
+typedef enum { TRAP_BLAST, TRAP_FREEZE, TRAP_SHOCK, TRAP_TIME, TRAP_MAX } TrapTypes;
 
 extern std::string GetTrapMessage();
 

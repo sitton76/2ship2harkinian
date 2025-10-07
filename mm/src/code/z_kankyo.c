@@ -2,6 +2,7 @@
 #include "z64light.h"
 #include "z64math.h"
 #include "public/bridge/consolevariablebridge.h"
+#include "2s2h/GameInteractor/GameInteractor.h"
 
 typedef enum {
     /* 0x00 */ LIGHTNING_BOLT_START,
@@ -1197,6 +1198,10 @@ void Environment_UpdateTime(PlayState* play, EnvironmentContext* envCtx, PauseCo
                 if (play->transitionTrigger == TRANS_TRIGGER_OFF) {
                     if ((CutsceneManager_GetCurrentCsId() == CS_ID_NONE) && !Play_InCsMode(play)) {
                         gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)R_TIME_SPEED;
+                            if (GameInteractor_Should(VB_TRAP_TIME_SKIP, true)) {
+                                // Same as below but with a different offset value
+                                gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)400;
+                            }
                         if (R_TIME_SPEED != 0) {
                             gSaveContext.save.time =
                                 ((void)0, gSaveContext.save.time) + (u16)((void)0, gSaveContext.save.timeSpeedOffset);

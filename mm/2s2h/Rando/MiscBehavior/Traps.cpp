@@ -9,6 +9,7 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
 }
 
 int roll = 0;
+int TimeSkipFrameCounter = 0;
 
 std::vector<std::string> blastTrapMessages = {
     "Coming to you live from the %yThunderdome%w!",
@@ -23,10 +24,15 @@ std::vector<std::string> shockTrapMessages = {
     "%gCLEAR%w!",
 };
 
+std::vector<std::string> timeTrapMessages = {
+    "Time flashes before your eyes!",
+};
+
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
     { TRAP_BLAST, blastTrapMessages },
     { TRAP_FREEZE, freezeTrapMessages },
     { TRAP_SHOCK, shockTrapMessages },
+    { TRAP_TIME, timeTrapMessages },
 };
 
 std::string GetTrapMessage() {
@@ -59,7 +65,21 @@ void Rando::MiscBehavior::OfferTrapItem() {
             GameInteractor::Instance->events.emplace_back(
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
+        case TRAP_TIME:
+            TimeSkipFrameCounter += 10;
+            break;
         default:
             break;
     }
+}
+
+void Rando::MiscBehavior::InitTrapBehaviour() {
+    COND_VB_SHOULD(VB_TRAP_TIME_SKIP, IS_RANDO, {
+        if (TimeSkipFrameCounter > 0) {
+            TimeSkipFrameCounter -= 1;
+            *should = true;
+        } else {
+            *should = false;
+        }
+    });
 }
