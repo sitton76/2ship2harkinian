@@ -7,6 +7,4 @@ typedef enum { TRAP_BLAST, TRAP_FREEZE, TRAP_SHOCK, TRAP_TIME, TRAP_MAX } TrapTy
 
 extern std::string GetTrapMessage();
 
-void VerifyTimeSkip(u16 gameTime);
-
 #endif

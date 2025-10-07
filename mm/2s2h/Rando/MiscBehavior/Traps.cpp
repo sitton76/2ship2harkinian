@@ -45,6 +45,13 @@ std::string GetTrapMessage() {
     return trapMessages[rand() % trapMessages.size()];
 }
 
+void VerifyTimeSkip(u16 gameTime) {
+    // Prevents weirdness if multiple time skips are triggered around the same time.
+    if (gSaveContext.save.time <= gameTime) {
+        UpdateGameTime(gameTime);
+    }
+}
+
 void Rando::MiscBehavior::OfferTrapItem() {
     if (!gPlayState) {
         return;
@@ -77,12 +84,5 @@ void Rando::MiscBehavior::OfferTrapItem() {
             break;
         default:
             break;
-    }
-}
-
-void VerifyTimeSkip(u16 gameTime) {
-    // Prevents weirdness if multiple time skips are triggered around the same time.
-    if (gSaveContext.save.time <= gameTime) {
-        UpdateGameTime(gameTime);
     }
 }
