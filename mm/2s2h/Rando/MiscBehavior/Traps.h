@@ -1,7 +1,7 @@
 #ifndef RANDO_TRAP_H
 #define RANDO_TRAP_H
 
-#include "Rando/Rando.h"<<<<<<< time_trap
+#include "Rando/Rando.h"
 typedef enum { TRAP_FREEZE, TRAP_BLAST, TRAP_SHOCK, TRAP_TIME, TRAP_MAX } TrapTypes;
 
 extern int RollTrapType();
