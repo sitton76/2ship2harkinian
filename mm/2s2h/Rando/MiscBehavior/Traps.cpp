@@ -73,8 +73,6 @@ void Rando::MiscBehavior::OfferTrapItem() {
         return;
     }
 
-    u16 captured_time = gSaveContext.save.time;
-
     switch (roll) {
         case TRAP_FREEZE:
             GameInteractor::Instance->events.emplace_back(
