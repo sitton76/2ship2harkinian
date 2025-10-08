@@ -80,7 +80,7 @@ void ApplyTimeSkip() {
             UpdateGameTime(new_time);
             Interface_NewDay(gPlayState, CURRENT_DAY);
         } else {
-            // Hanldes Moonfall case, prevents skipping past it by setting time right before Moonfall.
+            // Handles Moonfall case, prevents skipping past it by setting time right before Moonfall.
             UpdateGameTime(morning_time - TimeSkipInc);
         }
     } else {
