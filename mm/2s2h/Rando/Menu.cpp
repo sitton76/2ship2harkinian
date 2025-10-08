@@ -292,7 +292,7 @@ static void DrawItemsTab() {
             .Color(UIWidgets::Colors(CVarGetInteger("gSettings.Menu.Theme", 5)))
             .Format("Traps: %i")
             .Min(1)
-            .Max(200)
+            .Max(10)
             .DefaultValue(5));
     ImGui::SeparatorText("Toggle Trap Types");
     CVarCheckbox("Freeze Traps", "gPlaceholderBool",
