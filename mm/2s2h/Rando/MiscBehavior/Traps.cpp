@@ -1,7 +1,6 @@
 #include "Traps.h"
 #include "MiscBehavior.h"
 #include "2s2h/DeveloperTools/SaveEditor.h"
-#include <limits>
 
 extern "C" {
 #include "variables.h"
@@ -51,22 +50,21 @@ std::string GetTrapMessage() {
     return trapMessages[rand() % trapMessages.size()];
 }
 
-void VerifyTimeSkip(u16 gameTime) {
+void VerifyTimeSkip() {
     // Prevents weirdness if multiple time skips are triggered around the same time.
-    if (gSaveContext.save.time <= gameTime) {
-        u16 captured_time = gSaveContext.save.time;
-        u16 morning_time = 16429;
-        UpdateGameTime(gameTime);
-        // Handles case where Night -> Day
-        if (captured_time < morning_time && gameTime >= morning_time) {
-            if (gSaveContext.save.day != 3) {
-                gSaveContext.save.day++;
-                gSaveContext.save.eventDayCount++;
-                Interface_NewDay(gPlayState, CURRENT_DAY);
-            } else {
-                // Sets the time to be 7s until moonfall. Prevents skipping past it.
-                UpdateGameTime(morning_time - 400);
-            }
+    u16 previous_time = gSaveContext.save.time;
+    u16 new_time = gSaveContext.save.time + TimeSkipInc;
+    u16 morning_time = 16429;
+    UpdateGameTime(new_time);
+    // Handles case where Night -> Day
+    if (previous_time < morning_time && new_time >= morning_time) {
+        if (gSaveContext.save.day != 3) {
+            gSaveContext.save.day++;
+            gSaveContext.save.eventDayCount++;
+            Interface_NewDay(gPlayState, CURRENT_DAY);
+        } else {
+            // Sets the time to be 7s until moonfall. Prevents skipping past it.
+            UpdateGameTime(morning_time - 400);
         }
     }
 }
@@ -96,17 +94,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
             break;
         case TRAP_TIME:
             for (u16 i = 0; i <= 10; i++) {
-                if (captured_time + TimeSkipInc > std::numeric_limits<u16>::max()) {
-                    // Going through midnight causes a overflow, so for that case we skip over VerifyTimeSkip.
-                    captured_time = (std::numeric_limits<u16>::max() - captured_time) + TimeSkipInc;
-                    GameInteractor::Instance->events.emplace_back(
-                        GIEventTrap{ .action = [captured_time]() { UpdateGameTime(captured_time); } });
-                } else {
-                    // For any other case we add guardrails to prevent issues in VerifyTimeSkip.
-                    captured_time = captured_time + TimeSkipInc;
-                    GameInteractor::Instance->events.emplace_back(
-                        GIEventTrap{ .action = [captured_time]() { VerifyTimeSkip(captured_time); } });
-                }
+                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { VerifyTimeSkip(); } });
             }
             break;
         default:
