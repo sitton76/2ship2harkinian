@@ -57,6 +57,8 @@ std::vector<std::string> timeTrapMessages = {
     "You have played the Sun's Song!",
     "The Goddess of Time smites you!",
     "Spent an hour and a half admiring this fake item.",
+    "You found a great place to take a nap!",
+    "Break time! Not like the world is ending right?",
 };
 
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
