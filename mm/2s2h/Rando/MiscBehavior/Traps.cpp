@@ -51,7 +51,6 @@ std::string GetTrapMessage() {
 }
 
 void ApplyTimeSkip() {
-    // Prevents weirdness if multiple time skips are triggered around the same time.
     u16 previous_time = gSaveContext.save.time;
     u16 new_time = gSaveContext.save.time + TimeSkipInc;
     u16 morning_time = 16429;
@@ -64,7 +63,7 @@ void ApplyTimeSkip() {
             Interface_NewDay(gPlayState, CURRENT_DAY);
         } else {
             // Sets the time to be 7s until moonfall. Prevents skipping past it.
-            UpdateGameTime(morning_time - 400);
+            UpdateGameTime(morning_time - TimeSkipInc);
         }
     }
 }
