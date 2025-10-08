@@ -1,4 +1,5 @@
 #include "Traps.h"
+#include "public/bridge/consolevariablebridge.h"
 #include "MiscBehavior.h"
 #include "2s2h/DeveloperTools/SaveEditor.h"
 
@@ -9,11 +10,30 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
                    s32 invincibilityTimer);
 }
 
+std::map<TrapTypes, const char*> trapToCvarMap = {
+    { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
+    { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" },
+};
+
+std::vector<TrapTypes> getEnabledTrapTypes() {
+    std::vector<TrapTypes> enabledTrapTypes;
+    for (auto& trap : trapToCvarMap) {
+        if (CVarGetInteger(trap.second, 0)) {
+            enabledTrapTypes.push_back(trap.first);
+        }
+    }
+    if (enabledTrapTypes.size() == 0) {
+        enabledTrapTypes.push_back(TRAP_FREEZE);
+    }
+    return enabledTrapTypes;
+};
+
 int roll = TRAP_FREEZE;
 const u16 TimeSkipInc = 400;
 
 int RollTrapType() {
-    roll = rand() % TRAP_MAX;
+    auto enabledTraps = getEnabledTrapTypes();
+    roll = enabledTraps[rand() % enabledTraps.size()];
     return roll;
 }
 
@@ -38,10 +58,8 @@ std::vector<std::string> timeTrapMessages = {
 };
 
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
-    { TRAP_FREEZE, freezeTrapMessages },
-    { TRAP_BLAST, blastTrapMessages },
-    { TRAP_SHOCK, shockTrapMessages },
-    { TRAP_TIME, timeTrapMessages },
+    { TRAP_FREEZE, freezeTrapMessages }, { TRAP_BLAST, blastTrapMessages },  { TRAP_SHOCK, shockTrapMessages },
+    { TRAP_JINX, freezeTrapMessages },   { TRAP_ENEMY, freezeTrapMessages }, { TRAP_TIME, timeTrapMessages },
 };
 
 std::string GetTrapMessage() {
@@ -92,7 +110,23 @@ void Rando::MiscBehavior::OfferTrapItem() {
             GameInteractor::Instance->events.emplace_back(
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
-        case TRAP_TIME:
+        case TRAP_JINX:
+            GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() {
+                Actor_PlaySfx(&GET_PLAYER(gPlayState)->actor, NA_SE_EN_BUBLE_BITE);
+                gSaveContext.jinxTimer = 1200;
+            } });
+            break;
+        case TRAP_ENEMY:
+            GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() {
+                int currentSetting = CVarGetInteger("gDeveloperTools.DisableObjectDependency", 0);
+                CVarSetInteger("gDeveloperTools.DisableObjectDependency", 1);
+                Actor_Spawn(&gPlayState->actorCtx, gPlayState, ACTOR_EN_RR, GET_PLAYER(gPlayState)->actor.world.pos.x,
+                            GET_PLAYER(gPlayState)->actor.world.pos.y, GET_PLAYER(gPlayState)->actor.world.pos.z, 0, 0,
+                            0, 1);
+                CVarSetInteger("gDeveloperTools.DisableObjectDependency", currentSetting);
+            } });
+            break;
+       case TRAP_TIME:
             for (u16 i = 0; i < 10; i++) {
                 GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { ApplyTimeSkip(); } });
             }
