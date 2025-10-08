@@ -126,7 +126,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 CVarSetInteger("gDeveloperTools.DisableObjectDependency", currentSetting);
             } });
             break;
-       case TRAP_TIME:
+        case TRAP_TIME:
             for (u16 i = 0; i < 10; i++) {
                 GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { ApplyTimeSkip(); } });
             }
