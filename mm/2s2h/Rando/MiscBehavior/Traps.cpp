@@ -132,6 +132,9 @@ void Rando::MiscBehavior::OfferTrapItem() {
                     // Every other case
                     UpdateGameTime(new_time);
                 }
+                TransitionFade_SetColor(&gPlayState->unk_18E48, 0x000000);
+                R_TRANS_FADE_FLASH_ALPHA_STEP = -1;
+                Player_PlaySfx(GET_PLAYER(gPlayState), NA_SE_SY_TRANSFORM_MASK_FLASH);
             } });
             break;
         default:
