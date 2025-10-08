@@ -90,7 +90,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
         case TRAP_TIME:
-            for (u16 i = 0; i <= 10; i++) {
+            for (u16 i = 0; i < 10; i++) {
                 GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { ApplyTimeSkip(); } });
             }
             break;
