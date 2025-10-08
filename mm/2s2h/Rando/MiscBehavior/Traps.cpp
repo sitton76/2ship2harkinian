@@ -79,6 +79,11 @@ void ApplyTimeSkip() {
             gSaveContext.save.eventDayCount++;
             UpdateGameTime(new_time);
             Interface_NewDay(gPlayState, CURRENT_DAY);
+            // Load environment values for new day
+            func_800FEAF4(&gPlayState->envCtx);
+            // Clear weather from day 2
+            gWeatherMode = WEATHER_MODE_CLEAR;
+            gPlayState->envCtx.lightningState = LIGHTNING_OFF;
         } else {
             // Handles Moonfall case, prevents skipping past it by setting time right before Moonfall.
             UpdateGameTime(morning_time - TimeSkipInc);
