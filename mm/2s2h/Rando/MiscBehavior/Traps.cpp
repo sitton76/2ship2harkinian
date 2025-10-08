@@ -1,6 +1,7 @@
 #include "Traps.h"
 #include "MiscBehavior.h"
 #include "2s2h/DeveloperTools/SaveEditor.h"
+#include <limits>
 
 extern "C" {
 #include "variables.h"
@@ -75,8 +76,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
         return;
     }
 
-    u8 iter_count;
-    u8 remaining_cycles;
+    u16 captured_time = gSaveContext.save.time;
 
     switch (roll) {
         case TRAP_FREEZE:
@@ -95,20 +95,18 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
         case TRAP_TIME:
-            iter_count = 0;
-            for (u16 i = gSaveContext.save.time; i <= gSaveContext.save.time + (TimeSkipInc * 10); i += TimeSkipInc) {
-                if (i < gSaveContext.save.time) {
-                    // Midnight is the overflow value for the .day, instead we do a fallback loop starting from where it
-                    // leftoff using the remaining cycles.
-                    remaining_cycles = 10 - iter_count;
-                    for (u16 j = iter_count; j <= i + (TimeSkipInc * remaining_cycles); j += TimeSkipInc) {
-                        GameInteractor::Instance->events.emplace_back(
-                            GIEventTrap{ .action = [j]() { UpdateGameTime(j); } });
-                    }
-                    break;
+            for (u16 i = 0; i <= 10; i++) {
+                if (captured_time + TimeSkipInc > std::numeric_limits<u16>::max()) {
+                    // Going through midnight causes a overflow, so for that case we skip over VerifyTimeSkip.
+                    captured_time = (std::numeric_limits<u16>::max() - captured_time) + TimeSkipInc;
+                    GameInteractor::Instance->events.emplace_back(
+                        GIEventTrap{ .action = [captured_time]() { UpdateGameTime(captured_time); } });
+                } else {
+                    // For any other case we add guardrails to prevent issues in VerifyTimeSkip.
+                    captured_time = captured_time + TimeSkipInc;
+                    GameInteractor::Instance->events.emplace_back(
+                        GIEventTrap{ .action = [captured_time]() { VerifyTimeSkip(captured_time); } });
                 }
-                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = [i]() { VerifyTimeSkip(i); } });
-                iter_count += 1;
             }
             break;
         default:
