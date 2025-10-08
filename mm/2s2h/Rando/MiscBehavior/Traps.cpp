@@ -50,7 +50,7 @@ std::string GetTrapMessage() {
     return trapMessages[rand() % trapMessages.size()];
 }
 
-void VerifyTimeSkip() {
+void ApplyTimeSkip() {
     // Prevents weirdness if multiple time skips are triggered around the same time.
     u16 previous_time = gSaveContext.save.time;
     u16 new_time = gSaveContext.save.time + TimeSkipInc;
@@ -94,7 +94,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
             break;
         case TRAP_TIME:
             for (u16 i = 0; i <= 10; i++) {
-                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { VerifyTimeSkip(); } });
+                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { ApplyTimeSkip(); } });
             }
             break;
         default:
