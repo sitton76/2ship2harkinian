@@ -75,6 +75,9 @@ void Rando::MiscBehavior::OfferTrapItem() {
         return;
     }
 
+    u8 iter_count;
+    u8 remaining_cycles;
+
     switch (roll) {
         case TRAP_FREEZE:
             GameInteractor::Instance->events.emplace_back(
@@ -92,15 +95,20 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 GIEventTrap{ .action = []() { func_80833B18(gPlayState, GET_PLAYER(gPlayState), 4, 0, 0, 0, 0); } });
             break;
         case TRAP_TIME:
+            iter_count = 0;
             for (u16 i = gSaveContext.save.time; i <= gSaveContext.save.time + (TimeSkipInc * 10); i += TimeSkipInc) {
                 if (i < gSaveContext.save.time) {
-                    // Midnight is the overflow value for the .day, so instead of queuing multiple Updates past here we
-                    // simply do one more update past Midnight.
-                    GameInteractor::Instance->events.emplace_back(
-                        GIEventTrap{ .action = []() { UpdateGameTime(TimeSkipInc); } });
+                    // Midnight is the overflow value for the .day, instead we do a fallback loop starting from where it
+                    // leftoff using the remaining cycles.
+                    remaining_cycles = 10 - iter_count;
+                    for (u16 j = iter_count; j <= i + (TimeSkipInc * remaining_cycles); j += TimeSkipInc) {
+                        GameInteractor::Instance->events.emplace_back(
+                            GIEventTrap{ .action = [j]() { UpdateGameTime(j); } });
+                    }
                     break;
                 }
                 GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = [i]() { VerifyTimeSkip(i); } });
+                iter_count += 1;
             }
             break;
         default:
