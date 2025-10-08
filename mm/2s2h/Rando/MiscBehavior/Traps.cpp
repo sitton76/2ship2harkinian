@@ -54,17 +54,20 @@ void ApplyTimeSkip() {
     u16 previous_time = gSaveContext.save.time;
     u16 new_time = gSaveContext.save.time + TimeSkipInc;
     u16 morning_time = 16429;
-    UpdateGameTime(new_time);
-    // Handles case where Night -> Day
     if (previous_time < morning_time && new_time >= morning_time) {
+        // Handles case where Night -> Day
         if (gSaveContext.save.day != 3) {
             gSaveContext.save.day++;
             gSaveContext.save.eventDayCount++;
+            UpdateGameTime(new_time);
             Interface_NewDay(gPlayState, CURRENT_DAY);
         } else {
-            // Sets the time to be 7s until moonfall. Prevents skipping past it.
+            // Hanldes Moonfall case, prevents skipping past it by setting time right before Moonfall.
             UpdateGameTime(morning_time - TimeSkipInc);
         }
+    } else {
+        // Every other case
+        UpdateGameTime(new_time);
     }
 }
 
