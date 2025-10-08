@@ -10,6 +10,8 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
                    s32 invincibilityTimer);
 }
 
+extern void UpdateGameTime(u16 gameTime);
+
 std::map<TrapTypes, const char*> trapToCvarMap = {
     { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
     { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "gRando.Traps.Time" },
@@ -29,7 +31,7 @@ std::vector<TrapTypes> getEnabledTrapTypes() {
 };
 
 int roll = TRAP_FREEZE;
-const u16 TimeSkipInc = 400;
+const u16 timeSkipInterval = 4000;
 
 int RollTrapType() {
     auto enabledTraps = getEnabledTrapTypes();
@@ -66,32 +68,6 @@ std::string GetTrapMessage() {
     RollTrapType();
     std::vector<std::string> trapMessages = trapMessageList.at((TrapTypes)roll);
     return trapMessages[rand() % trapMessages.size()];
-}
-
-void ApplyTimeSkip() {
-    u16 previous_time = gSaveContext.save.time;
-    u16 new_time = gSaveContext.save.time + TimeSkipInc;
-    u16 morning_time = 16429;
-    if (previous_time < morning_time && new_time >= morning_time) {
-        // Handles case where Night -> Day
-        if (gSaveContext.save.day != 3) {
-            gSaveContext.save.day++;
-            gSaveContext.save.eventDayCount++;
-            UpdateGameTime(new_time);
-            Interface_NewDay(gPlayState, CURRENT_DAY);
-            // Load environment values for new day
-            func_800FEAF4(&gPlayState->envCtx);
-            // Clear weather from day 2
-            gWeatherMode = WEATHER_MODE_CLEAR;
-            gPlayState->envCtx.lightningState = LIGHTNING_OFF;
-        } else {
-            // Handles Moonfall case, prevents skipping past it by setting time right before Moonfall.
-            UpdateGameTime(morning_time - TimeSkipInc);
-        }
-    } else {
-        // Every other case
-        UpdateGameTime(new_time);
-    }
 }
 
 void Rando::MiscBehavior::OfferTrapItem() {
@@ -132,9 +108,34 @@ void Rando::MiscBehavior::OfferTrapItem() {
             } });
             break;
         case TRAP_TIME:
-            for (u16 i = 0; i < 10; i++) {
-                GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() { ApplyTimeSkip(); } });
-            }
+            GameInteractor::Instance->events.emplace_back(GIEventTrap{ .action = []() {
+                u16 previous_time = gSaveContext.save.time;
+                u16 new_time = gSaveContext.save.time + timeSkipInterval;
+                u16 morning_time = 16429;
+                if (previous_time < morning_time && new_time >= morning_time) {
+                    // Handles case where Night -> Day
+                    if (gSaveContext.save.day != 3) {
+                        gSaveContext.save.day++;
+                        gSaveContext.save.eventDayCount++;
+                        UpdateGameTime(new_time);
+                        Interface_NewDay(gPlayState, CURRENT_DAY);
+                        // Load environment values for new day
+                        func_800FEAF4(&gPlayState->envCtx);
+                        // Clear weather from day 2
+                        gWeatherMode = WEATHER_MODE_CLEAR;
+                        gPlayState->envCtx.lightningState = LIGHTNING_OFF;
+                    } else {
+                        // Handles Moonfall case, prevents skipping past it by setting time right before Moonfall.
+                        UpdateGameTime(morning_time - (timeSkipInterval / 10));
+                    }
+                } else {
+                    // Every other case
+                    UpdateGameTime(new_time);
+                }
+                TransitionFade_SetColor(&gPlayState->unk_18E48, 0x000000);
+                R_TRANS_FADE_FLASH_ALPHA_STEP = -1;
+                Player_PlaySfx(GET_PLAYER(gPlayState), NA_SE_SY_TRANSFORM_MASK_FLASH);
+            } });
             break;
         default:
             break;
