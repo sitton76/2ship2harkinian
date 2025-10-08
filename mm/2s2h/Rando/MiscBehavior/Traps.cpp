@@ -53,12 +53,9 @@ std::vector<std::string> shockTrapMessages = {
 };
 
 std::vector<std::string> timeTrapMessages = {
-    "Time flashes before your eyes!",
-    "You have played the Sun's Song!",
-    "The Goddess of Time smites you!",
-    "Spent an hour and a half admiring this fake item.",
-    "You found a great place to take a nap!",
-    "Break time! Not like the world is ending right?",
+    "Time flashes before your eyes!",         "You have played the Sun's Song!",
+    "The Goddess of Time smites you!",        "Spent an hour and a half admiring this fake item.",
+    "You found a great place to take a nap!", "Break time! Not like the world is ending right?",
 };
 
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
