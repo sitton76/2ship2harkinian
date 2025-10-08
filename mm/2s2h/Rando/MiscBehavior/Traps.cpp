@@ -12,7 +12,7 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
 
 std::map<TrapTypes, const char*> trapToCvarMap = {
     { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
-    { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" },
+    { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "gRando.Traps.Time" },
 };
 
 std::vector<TrapTypes> getEnabledTrapTypes() {
