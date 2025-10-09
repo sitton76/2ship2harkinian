@@ -184,8 +184,7 @@ void Rando::MiscBehavior::OfferTrapItem() {
                         } else {
                             // Handles midnight crossing edgecases
                             if (reopen_time < close_time) {
-                                if (gSaveContext.save.time >= close_time &&
-                                    gSaveContext.save.time <= CLOCK_TIME(24, 0)) {
+                                if (gSaveContext.save.time >= close_time) {
                                     // For cases where it is triggered before midnight, but closes before midnight, but
                                     // reopens after midnight.
                                     triggered = true;
