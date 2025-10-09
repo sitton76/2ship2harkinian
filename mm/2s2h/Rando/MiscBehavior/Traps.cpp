@@ -26,6 +26,21 @@ std::map<TrapTypes, const char*> trapToCvarMap = {
     { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "gRando.Traps.Time" },
 };
 
+std::unordered_map<SceneId, std::pair<int, std::pair<s32, s32>>> kickOutMap {
+    { SCENE_8ITEMSHOP, { 0x1883 + ((TRADING_POST_ACTOR_PARAM & 0x1FE0) >> 0x5), {CLOCK_TIME(21, 0), CLOCK_TIME(22, 0) } } },
+    { SCENE_TAKARAKUJI, { 0x1887, {CLOCK_TIME(23, 0), CLOCK_TIME(6, 0) } } },
+    { SCENE_DOUJOU, { 0x1807, {CLOCK_TIME(23, 0), CLOCK_TIME(0, 30)} } }, // Special case added 30 mins to it because actor layout won't change until reload
+    { SCENE_YADOYA, { 0x1885, {CLOCK_TIME(20, 30), CLOCK_TIME(8, 0)} } },
+    { SCENE_MILK_BAR, { 0x1889, {CLOCK_TIME(22, 0), CLOCK_TIME(5, 0) } } },
+    { SCENE_BOWLING, { 0x1886, {CLOCK_TIME(22, 0), CLOCK_TIME(6, 0) } } },
+    { SCENE_TAKARAYA, { 0x1892, {CLOCK_TIME(22, 0), CLOCK_TIME(6, 0) } } },
+    { SCENE_SYATEKI_MIZU, { 0x188f, {CLOCK_TIME(22, 0), CLOCK_TIME(6, 0) } } },
+    { SCENE_SONCHONOIE, { 0x1889, {CLOCK_TIME(20, 0), CLOCK_TIME(10, 0) } } },
+    { SCENE_AYASHIISHOP, { 0x1889, {CLOCK_TIME(5, 0), CLOCK_TIME(22, 0) } } },
+    { SCENE_SYATEKI_MORI, { 0x1884, {CLOCK_TIME(22, 0), CLOCK_TIME(6, 0) } } },
+    { SCENE_POSTHOUSE, { 0x1889, {CLOCK_TIME(23, 59), CLOCK_TIME(9, 0) } } },
+};
+
 std::vector<TrapTypes> getEnabledTrapTypes() {
     std::vector<TrapTypes> enabledTrapTypes;
     for (auto& trap : trapToCvarMap) {
@@ -141,11 +156,50 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 R_TRANS_FADE_FLASH_ALPHA_STEP = -1;
                 Player_PlaySfx(GET_PLAYER(gPlayState), NA_SE_SY_TRANSFORM_MASK_FLASH);
 
-                if (gPlayState->sceneId == SCENE_8ITEMSHOP) {
-                    if (gSaveContext.save.time >= CLOCK_TIME(21, 0) && gSaveContext.save.time <= CLOCK_TIME(22, 0)) {
-                        Message_StartTextbox(gPlayState, 0x1883 + ((TRADING_POST_ACTOR_PARAM & 0x1FE0) >> 0x5), NULL);
-                        currentTrap = (TrapTypes)roll;
-                        trapDelay = 3;
+                for (auto& kick: kickOutMap) {
+                    SceneId checked_scene = kick.first;
+                    s32 close_time = kick.second.second.first;
+                    s32 reopen_time =  kick.second.second.second;
+                    int msg_id = kick.second.first;
+                    bool past_midnight = previous_time > new_time;
+                    bool triggered = false;
+                    if (gPlayState->sceneId == checked_scene) {
+                        if (checked_scene == SCENE_YADOYA) {
+                            //Special handling for Stock Pot Inn
+                            if (Flags_GetRandoInf(RANDO_INF_OBTAINED_ROOM_KEY) || CURRENT_DAY == 3) {
+                                // If you have the room key, or are on the 3rd day
+                                continue;
+                            } else {
+                                if (previous_time <= close_time) {
+                                    // You can enter the Inn through the top entrance after it closes, so we only want to trigger this if the close time trigger passes during the skip.
+                                    triggered = true;
+                                }
+                            }
+                        } else if (checked_scene == SCENE_POSTHOUSE && CURRENT_DAY == 3) {
+                            // You don't get kicked out on the 3rd day.
+                            continue;
+                        } else {
+                            // Handles midnight crossing edgecases
+                            if (reopen_time < close_time) {
+                                if (gSaveContext.save.time >= close_time && gSaveContext.save.time <= CLOCK_TIME(24, 0)) {
+                                    // For cases where it is triggered before midnight, but closes before midnight, but reopens after midnight.
+                                    triggered = true;
+                                } else if (previous_time <= close_time && gSaveContext.save.time <= reopen_time && past_midnight) {
+                                    // For cases where it is triggered through midnight, closes before midnight, but reopens after midnight.
+                                    triggered = true;
+                                }
+                            }
+                            if (gSaveContext.save.time >= close_time && gSaveContext.save.time <= reopen_time) {
+                                // For cases where it does not trigger through midnight, closes before midnight, and reopens before midnight.
+                                triggered = true;
+                            }
+                        }
+                        if (triggered) {
+                            Message_StartTextbox(gPlayState, msg_id, NULL);
+                            currentTrap = (TrapTypes)roll;
+                            trapDelay = 3;
+                            break;  
+                        }
                     }
                 }
             } });
