@@ -60,8 +60,11 @@ int RollTrapType() {
     return roll;
 }
 
+std::vector<std::string> defaultTrapMessages = { "This item is available in the %bRando DLC%w.",
+                                                 "This is what happens when %gCaladius%w is left unsupervised." };
+
 std::vector<std::string> freezeTrapMessages = {
-    "This item is available in the %bRando DLC%w.",
+    "%rOcarina of Time%w called, they want their %bIce Trap%w back.",
 };
 
 std::vector<std::string> blastTrapMessages = {
@@ -79,15 +82,19 @@ std::vector<std::string> timeTrapMessages = {
     "You found a great place to take a nap!", "Break time! Not like the world is ending right?",
 };
 
-std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
-    { TRAP_FREEZE, freezeTrapMessages }, { TRAP_BLAST, blastTrapMessages },  { TRAP_SHOCK, shockTrapMessages },
-    { TRAP_JINX, freezeTrapMessages },   { TRAP_ENEMY, freezeTrapMessages }, { TRAP_TIME, timeTrapMessages },
+std::map<TrapTypes, const char*> trapToCvarMap = {
+    { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
+    { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "timeTrapMessages" },
 };
 
 std::string GetTrapMessage() {
     RollTrapType();
-    std::vector<std::string> trapMessages = trapMessageList.at((TrapTypes)roll);
-    return trapMessages[rand() % trapMessages.size()];
+    auto findIt = trapMessageList.find((TrapTypes)roll);
+    if (findIt == trapMessageList.end()) {
+        return defaultTrapMessages[rand() % defaultTrapMessages.size()];
+    } else {
+        return findIt->second[rand() % findIt->second.size()];
+    }
 }
 
 void Rando::MiscBehavior::OfferTrapItem() {
