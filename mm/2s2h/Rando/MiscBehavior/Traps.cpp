@@ -82,11 +82,6 @@ std::vector<std::string> timeTrapMessages = {
     "You found a great place to take a nap!", "Break time! Not like the world is ending right?",
 };
 
-std::map<TrapTypes, const char*> trapToCvarMap = {
-    { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
-    { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "timeTrapMessages" },
-};
-
 std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
     { TRAP_FREEZE, freezeTrapMessages },
     { TRAP_BLAST, blastTrapMessages },
