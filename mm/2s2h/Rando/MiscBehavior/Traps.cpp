@@ -87,6 +87,13 @@ std::map<TrapTypes, const char*> trapToCvarMap = {
     { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "timeTrapMessages" },
 };
 
+std::map<TrapTypes, std::vector<std::string>> trapMessageList = {
+    { TRAP_FREEZE, freezeTrapMessages },
+    { TRAP_BLAST, blastTrapMessages },
+    { TRAP_SHOCK, shockTrapMessages },
+    { TRAP_TIME, timeTrapMessages },
+};
+
 std::string GetTrapMessage() {
     RollTrapType();
     auto findIt = trapMessageList.find((TrapTypes)roll);
