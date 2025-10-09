@@ -12,6 +12,15 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
 
 extern void UpdateGameTime(u16 gameTime);
 
+#define TRADING_POST_ACTOR_PARAM 256
+
+int roll = TRAP_FREEZE;
+const u16 timeSkipInterval = 4000;
+
+// Delays
+int trapDelay = -1;
+TrapTypes currentTrap = TRAP_MAX;
+
 std::map<TrapTypes, const char*> trapToCvarMap = {
     { TRAP_FREEZE, "gRando.Traps.Freeze" }, { TRAP_BLAST, "gRando.Traps.Blast" }, { TRAP_SHOCK, "gRando.Traps.Shock" },
     { TRAP_JINX, "gRando.Traps.Jinx" },     { TRAP_ENEMY, "gRando.Traps.Enemy" }, { TRAP_TIME, "gRando.Traps.Time" },
@@ -29,9 +38,6 @@ std::vector<TrapTypes> getEnabledTrapTypes() {
     }
     return enabledTrapTypes;
 };
-
-int roll = TRAP_FREEZE;
-const u16 timeSkipInterval = 4000;
 
 int RollTrapType() {
     auto enabledTraps = getEnabledTrapTypes();
@@ -135,9 +141,38 @@ void Rando::MiscBehavior::OfferTrapItem() {
                 TransitionFade_SetColor(&gPlayState->unk_18E48, 0x000000);
                 R_TRANS_FADE_FLASH_ALPHA_STEP = -1;
                 Player_PlaySfx(GET_PLAYER(gPlayState), NA_SE_SY_TRANSFORM_MASK_FLASH);
+
+                if (gPlayState->sceneId == SCENE_8ITEMSHOP) {
+                    if (gSaveContext.save.time >= CLOCK_TIME(21, 0) && gSaveContext.save.time <= CLOCK_TIME(22, 0)) {
+                        Message_StartTextbox(gPlayState, 0x1883 + ((TRADING_POST_ACTOR_PARAM & 0x1FE0) >> 0x5), NULL);
+                        currentTrap = (TrapTypes)roll;
+                        trapDelay = 3;
+                    }
+                }
             } });
             break;
         default:
             break;
     }
+}
+
+void Rando::MiscBehavior::InitTrapBehavior() {
+    COND_ID_HOOK(OnActorUpdate, ACTOR_PLAYER, RANDO_SAVE_OPTIONS[RO_SHUFFLE_TRAPS] == 1, [](Actor* actor) {
+        if (trapDelay == 0) {
+            switch (currentTrap) {
+                case TRAP_TIME:
+                    gPlayState->nextEntrance = gPlayState->setupExitList[256 & 0x1F];
+                    gPlayState->transitionTrigger = TRANS_TRIGGER_START;
+                    Actor_PlaySfx(&GET_PLAYER(gPlayState)->actor, NA_SE_OC_DOOR_OPEN);
+                    break;
+                default:
+                    break;
+            }
+            currentTrap = TRAP_MAX;
+            trapDelay--;
+        }
+        if (trapDelay > 0) {
+            trapDelay--;
+        }
+    })
 }
