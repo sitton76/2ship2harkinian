@@ -27,8 +27,7 @@ std::map<TrapTypes, const char*> trapToCvarMap = {
 };
 
 std::unordered_map<SceneId, std::pair<int, std::pair<s32, s32>>> kickOutMap{
-    { SCENE_8ITEMSHOP,
-      { 0x1883 + ((TRADING_POST_ACTOR_PARAM & 0x1FE0) >> 0x5), { CLOCK_TIME(21, 0), CLOCK_TIME(22, 0) } } },
+    { SCENE_8ITEMSHOP, { 0x1883, { CLOCK_TIME(21, 0), CLOCK_TIME(22, 0) } } },
     { SCENE_TAKARAKUJI, { 0x1887, { CLOCK_TIME(23, 0), CLOCK_TIME(6, 0) } } },
     { SCENE_DOUJOU, { 0x1807, { CLOCK_TIME(23, 0), CLOCK_TIME(0, 30) } } },
     { SCENE_MILK_BAR, { 0x1889, { CLOCK_TIME(22, 0), CLOCK_TIME(5, 0) } } },
