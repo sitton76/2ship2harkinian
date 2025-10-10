@@ -12,8 +12,6 @@ void func_80833B18(PlayState* play, Player* thisx, s32 arg2, f32 speed, f32 velo
 
 extern void UpdateGameTime(u16 gameTime);
 
-#define TRADING_POST_ACTOR_PARAM 256
-
 int roll = TRAP_FREEZE;
 const u16 timeSkipInterval = 4000;
 
