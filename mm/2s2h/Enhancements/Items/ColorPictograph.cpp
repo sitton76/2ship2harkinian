@@ -165,7 +165,7 @@ void RegisterColorPictograph() {
 
         // might need something better to check for existance
         if (pictoPhotoRGBABuffer[0] != 0) {
-            DrawPicto(sp2CC);
+            DrawPicto(*sp2CC);
             *should = false;
         }
     });
