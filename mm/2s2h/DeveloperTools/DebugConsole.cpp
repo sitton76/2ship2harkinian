@@ -1,8 +1,6 @@
 #include "DebugConsole.h"
 
-#include <libultraship/bridge/consolevariablebridge.h>
-#include <ship/window/Window.h>
-#include <ship/window/gui/ConsoleWindow.h>
+#include <libultraship/bridge.h>
 #include "2s2h/BenPort.h"
 #include <vector>
 #include <string>
@@ -219,7 +217,7 @@ static bool EntranceHandler(std::shared_ptr<Ship::Console> Console, const std::v
 static bool VoidHandler(std::shared_ptr<Ship::Console> Console, const std::vector<std::string>& args,
                         std::string* output) {
     if (gPlayState != nullptr) {
-        func_80169EFC(gPlayState);
+        func_80169EFC(&gPlayState->state);
     } else {
         ERROR_MESSAGE("gPlayState == nullptr");
         return 1;

@@ -8,14 +8,16 @@
 #include "z64quake.h"
 #include "objects/object_d_lift/object_d_lift.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjChikuwa*)thisx)
 
 void ObjChikuwa_Init(Actor* thisx, PlayState* play);
 void ObjChikuwa_Destroy(Actor* thisx, PlayState* play);
 void ObjChikuwa_Update(Actor* thisx, PlayState* play);
 void ObjChikuwa_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Chikuwa_Profile = {
+ActorInit Obj_Chikuwa_InitVars = {
     /**/ ACTOR_OBJ_CHIKUWA,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -28,9 +30,9 @@ ActorProfile Obj_Chikuwa_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 1500, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 1500, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 1500, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 1500, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
@@ -38,7 +40,7 @@ Vec3f D_809B1FD0 = { 0.0f, -0.3f, 0.0f };
 Vec3f D_809B1FDC = { 0.0f, 0.7f, 0.0f };
 
 void func_809B1550(Actor* thisx, PlayState* play) {
-    ObjChikuwa* this = (ObjChikuwa*)thisx;
+    ObjChikuwa* this = THIS;
     f32 sp18;
 
     if (this->unk_2A0 < this->unk_29C) {
@@ -52,7 +54,7 @@ void func_809B1550(Actor* thisx, PlayState* play) {
 }
 
 void ObjChikuwa_Init(Actor* thisx, PlayState* play) {
-    ObjChikuwa* this = (ObjChikuwa*)thisx;
+    ObjChikuwa* this = THIS;
     s32 i;
     s32 val;
     ObjChikuwaStruct* temp;
@@ -86,7 +88,7 @@ void ObjChikuwa_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjChikuwa_Destroy(Actor* thisx, PlayState* play) {
-    ObjChikuwa* this = (ObjChikuwa*)thisx;
+    ObjChikuwa* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -154,7 +156,7 @@ void func_809B1AA0(ObjChikuwa* this) {
 }
 
 void ObjChikuwa_Update(Actor* thisx, PlayState* play) {
-    ObjChikuwa* this = (ObjChikuwa*)thisx;
+    ObjChikuwa* this = THIS;
     ObjChikuwaStruct* temp;
     f32 temp_fs0;
     s16 quakeVerticalMag;
@@ -190,7 +192,7 @@ void ObjChikuwa_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjChikuwa_Draw(Actor* thisx, PlayState* play) {
-    ObjChikuwa* this = (ObjChikuwa*)thisx;
+    ObjChikuwa* this = THIS;
     ObjChikuwaStruct* temp;
     ObjChikuwaStruct2* temp2;
     s32 i;
@@ -207,7 +209,8 @@ void ObjChikuwa_Draw(Actor* thisx, PlayState* play) {
                                              &this->dyna.actor.shape.rot);
                 Matrix_Scale(0.15f, 0.2f, 0.05f, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_OPA_DISP++, gDampeGraveBrownElevatorDL);
             }
         }
@@ -220,7 +223,8 @@ void ObjChikuwa_Draw(Actor* thisx, PlayState* play) {
                 Matrix_SetTranslateRotateYXZ(temp2->unk_0C.x, temp2->unk_0C.y, temp2->unk_0C.z, &temp2->unk_28);
                 Matrix_Scale(temp2->unk_00.x, temp2->unk_00.y, temp2->unk_00.z, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_OPA_DISP++, gDampeGraveBrownElevatorDL);
             }
         }

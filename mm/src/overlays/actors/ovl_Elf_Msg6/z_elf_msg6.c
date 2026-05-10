@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Elf/z_en_elf.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ElfMsg6*)thisx)
 
 void ElfMsg6_Init(Actor* thisx, PlayState* play);
 void ElfMsg6_Destroy(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ void func_80BA2048(ElfMsg6* this, PlayState* play);
 void func_80BA215C(ElfMsg6* this, PlayState* play);
 void func_80BA21C4(ElfMsg6* this, PlayState* play);
 
-ActorProfile Elf_Msg6_Profile = {
+ActorInit Elf_Msg6_InitVars = {
     /**/ ACTOR_ELF_MSG6,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ ActorProfile Elf_Msg6_Profile = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 1000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 1000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 1000, ICHAIN_STOP),
 };
 
 s32 func_80BA15A0(void) {
@@ -123,7 +125,7 @@ s32 func_80BA16F4(ElfMsg6* this, PlayState* play) {
 }
 
 void ElfMsg6_Init(Actor* thisx, PlayState* play) {
-    ElfMsg6* this = (ElfMsg6*)thisx;
+    ElfMsg6* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
 
@@ -234,9 +236,9 @@ void ElfMsg6_Init(Actor* thisx, PlayState* play) {
 void ElfMsg6_Destroy(Actor* thisx, PlayState* play) {
 }
 
-bool func_80BA1C00(ElfMsg6* this) {
+s32 func_80BA1C00(ElfMsg6* this) {
     return GameInteractor_Should(
-        VB_TATL_INTERRUPT_MSG6,
+        VB_TATL_INTERUPT_MSG6,
         ((this->actor.xzDistToPlayer < (100.0f * this->actor.scale.x)) &&
          ((this->actor.playerHeightRel >= 0.0f) && (this->actor.playerHeightRel < (100.0f * this->actor.scale.y)))),
         this);
@@ -264,7 +266,7 @@ void func_80BA1CF8(ElfMsg6* this, PlayState* play) {
         return;
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         switch (this->actor.textId) {
             case 0x224:
                 SET_WEEKEVENTREG(WEEKEVENTREG_79_10);
@@ -298,7 +300,7 @@ void func_80BA1E30(ElfMsg6* this, PlayState* play) {
         return;
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         switch (this->actor.textId) {
             case 0x216:
                 SET_WEEKEVENTREG(WEEKEVENTREG_31_04);
@@ -353,7 +355,7 @@ void func_80BA2038(ElfMsg6* this, PlayState* play) {
 }
 
 void func_80BA2048(ElfMsg6* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         EnElf* sp20 = (EnElf*)GET_PLAYER(play)->tatlActor;
 
         sp20->unk_264 |= 0x20;
@@ -377,7 +379,7 @@ void func_80BA2048(ElfMsg6* this, PlayState* play) {
 }
 
 void func_80BA215C(ElfMsg6* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         Actor_Kill(&this->actor);
         return;
     }
@@ -388,7 +390,7 @@ void func_80BA215C(ElfMsg6* this, PlayState* play) {
 }
 
 void func_80BA21C4(ElfMsg6* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         EnElf* sp20 = (EnElf*)GET_PLAYER(play)->tatlActor;
 
         sp20->unk_264 |= 0x20;
@@ -411,7 +413,7 @@ void func_80BA21C4(ElfMsg6* this, PlayState* play) {
 }
 
 void ElfMsg6_Update(Actor* thisx, PlayState* play) {
-    ElfMsg6* this = (ElfMsg6*)thisx;
+    ElfMsg6* this = THIS;
 
     this->actionFunc(this, play);
 }

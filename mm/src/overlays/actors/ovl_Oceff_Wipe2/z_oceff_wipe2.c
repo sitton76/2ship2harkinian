@@ -7,14 +7,16 @@
 #include "z_oceff_wipe2.h"
 #include "BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((OceffWipe2*)thisx)
 
 void OceffWipe2_Init(Actor* thisx, PlayState* play);
 void OceffWipe2_Destroy(Actor* thisx, PlayState* play);
 void OceffWipe2_Update(Actor* thisx, PlayState* play);
 void OceffWipe2_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Oceff_Wipe2_Profile = {
+ActorInit Oceff_Wipe2_InitVars = {
     ACTOR_OCEFF_WIPE2,
     ACTORCAT_ITEMACTION,
     FLAGS,
@@ -28,10 +30,10 @@ ActorProfile Oceff_Wipe2_Profile = {
 
 #include "assets/overlays/ovl_Oceff_Wipe2/ovl_Oceff_Wipe2.h"
 
-static s32 sBssPad;
+s32 D_809879D0;
 
 void OceffWipe2_Init(Actor* thisx, PlayState* play) {
-    OceffWipe2* this = (OceffWipe2*)thisx;
+    OceffWipe2* this = THIS;
 
     Actor_SetScale(&this->actor, 0.1f);
     this->timer = 0;
@@ -39,14 +41,14 @@ void OceffWipe2_Init(Actor* thisx, PlayState* play) {
 }
 
 void OceffWipe2_Destroy(Actor* thisx, PlayState* play) {
-    OceffWipe2* this = (OceffWipe2*)thisx;
+    OceffWipe2* this = THIS;
 
     Magic_Reset(play);
     play->msgCtx.ocarinaSongEffectActive = false;
 }
 
 void OceffWipe2_Update(Actor* thisx, PlayState* play) {
-    OceffWipe2* this = (OceffWipe2*)thisx;
+    OceffWipe2* this = THIS;
 
     this->actor.world.pos = GET_ACTIVE_CAM(play)->eye;
     if (this->timer < 100) {
@@ -58,7 +60,7 @@ void OceffWipe2_Update(Actor* thisx, PlayState* play) {
 
 void OceffWipe2_Draw(Actor* thisx, PlayState* play) {
     u32 scroll = play->state.frames & 0xFF;
-    OceffWipe2* this = (OceffWipe2*)thisx;
+    OceffWipe2* this = THIS;
     f32 z;
     u8 alpha;
     s32 pad[2];
@@ -105,12 +107,12 @@ void OceffWipe2_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateXS(0x708, MTXMODE_APPLY);
     Matrix_Translate(0.0f, 0.0f, -z, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 170, 255);
     gDPSetEnvColor(POLY_XLU_DISP++, 255, 100, 0, 128);
     gSPDisplayList(POLY_XLU_DISP++, sEponaSongFrustumMaterialDL);
-    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 6, scroll * -6, 64,
-                                                       64, 1, scroll * -6, 0, 64, 64, 6, -6, -6, 0));
+    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 6, scroll * -6, 64,
+                                                     64, 1, scroll * -6, 0, 64, 64));
     gSPDisplayList(POLY_XLU_DISP++, sEponaSongFrustumModelDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

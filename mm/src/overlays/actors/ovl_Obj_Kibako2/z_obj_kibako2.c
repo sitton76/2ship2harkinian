@@ -11,6 +11,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjKibako2*)thisx)
+
 void ObjKibako2_Init(Actor* thisx, PlayState* play);
 void ObjKibako2_Destroy(Actor* thisx, PlayState* play);
 void ObjKibako2_Update(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void ObjKibako2_Draw(Actor* thisx, PlayState* play);
 void ObjKibako2_Idle(ObjKibako2* this, PlayState* play);
 void ObjKibako2_Kill(ObjKibako2* this, PlayState* play);
 
-ActorProfile Obj_Kibako2_Profile = {
+ActorInit Obj_Kibako2_InitVars = {
     /**/ ACTOR_OBJ_KIBAKO2,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile Obj_Kibako2_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -40,11 +42,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x80000508, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 31, 48, 0, { 0, 0, 0 } },
@@ -52,12 +54,12 @@ static ColliderCylinderInit sCylinderInit = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 2000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 200, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 200, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 2000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 200, ICHAIN_STOP),
 };
 
-bool ObjKibako2_ContainsSkulltula(ObjKibako2* this, PlayState* play) {
+s32 ObjKibako2_ContainsSkulltula(ObjKibako2* this, PlayState* play) {
     s32 actorSpawnParam = KIBAKO2_SKULLTULA_SPAWN_PARAM(&this->dyna.actor);
     s32 flag = -1;
 
@@ -145,7 +147,7 @@ void ObjKibako2_SpawnContents(ObjKibako2* this, PlayState* play) {
 }
 
 void ObjKibako2_Init(Actor* thisx, PlayState* play) {
-    ObjKibako2* this = (ObjKibako2*)thisx;
+    ObjKibako2* this = THIS;
     s32 pad;
     s32 contents = KIBAKO2_CONTENTS(&this->dyna.actor);
 
@@ -164,7 +166,7 @@ void ObjKibako2_Init(Actor* thisx, PlayState* play) {
         if (Item_CanDropBigFairy(play, KIBAKO2_COLLECTIBLE_ID(&this->dyna.actor),
                                  KIBAKO2_COLLECTIBLE_FLAG(&this->dyna.actor))) {
             this->unk_1AC = 1;
-            this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->dyna.actor.flags |= ACTOR_FLAG_10;
         }
     }
     if ((contents != OBJKIBAKO2_CONTENTS_SKULLTULA) || !ObjKibako2_ContainsSkulltula(this, play)) {
@@ -174,7 +176,7 @@ void ObjKibako2_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjKibako2_Destroy(Actor* thisx, PlayState* play) {
-    ObjKibako2* this = (ObjKibako2*)thisx;
+    ObjKibako2* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -188,17 +190,17 @@ s32 ObjKibako2_ShouldBreak(ObjKibako2* this) {
         Actor* ac = this->collider.base.ac;
         this->collider.base.acFlags = acFlags & ~AC_HIT;
         if (ac != NULL) {
-            if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & (1 << 31)) {
+            if (this->collider.info.acHitInfo->toucher.dmgFlags & (1 << 31)) {
                 // Powder Keg
                 if (Math3D_Vec3fDistSq(&this->dyna.actor.world.pos, &ac->world.pos) < SQ(160.0f)) {
                     shouldBreak = true;
                 }
-            } else if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & (1 << 3)) {
+            } else if (this->collider.info.acHitInfo->toucher.dmgFlags & (1 << 3)) {
                 // Explosives
                 if (Math3D_Vec3fDistSq(&this->dyna.actor.world.pos, &ac->world.pos) < SQ(100.0f)) {
                     shouldBreak = true;
                 }
-            } else if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & (1 << 8 | 1 << 10)) {
+            } else if (this->collider.info.acHitInfo->toucher.dmgFlags & (1 << 8 | 1 << 10)) {
                 // Goron Punch/Pound
                 shouldBreak = true;
             }
@@ -213,7 +215,7 @@ void ObjKibako2_Idle(ObjKibako2* this, PlayState* play) {
     if (ObjKibako2_ShouldBreak(this)) {
         ObjKibako2_Break(this, play);
         SoundSource_PlaySfxAtFixedWorldPos(play, &this->dyna.actor.world.pos, 20, NA_SE_EV_WOODBOX_BREAK);
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
         DynaPoly_DisableCollision(play, &play->colCtx.dyna, this->dyna.bgId);
         this->dyna.actor.draw = NULL;
         this->actionFunc = ObjKibako2_Kill;
@@ -228,7 +230,7 @@ void ObjKibako2_Kill(ObjKibako2* this, PlayState* play) {
 }
 
 void ObjKibako2_Update(Actor* thisx, PlayState* play) {
-    ObjKibako2* this = (ObjKibako2*)thisx;
+    ObjKibako2* this = THIS;
 
     if (this->unk_1AC != 0) {
         play->actorCtx.flags |= ACTORCTX_FLAG_3;

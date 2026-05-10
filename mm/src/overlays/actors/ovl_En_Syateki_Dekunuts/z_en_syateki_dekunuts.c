@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Syateki_Man/z_en_syateki_man.h"
 #include "overlays/effects/ovl_Effect_Ss_Hahen/z_eff_ss_hahen.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnSyatekiDekunuts*)thisx)
 
 void EnSyatekiDekunuts_Init(Actor* thisx, PlayState* play2);
 void EnSyatekiDekunuts_Destroy(Actor* thisx, PlayState* play);
@@ -38,7 +40,7 @@ typedef enum {
     /* 1 */ SG_DEKU_HEADDRESS_TYPE_FLIPPED_UP
 } ShootingGalleryDekuScrubHeaddressType;
 
-ActorProfile En_Syateki_Dekunuts_Profile = {
+ActorInit En_Syateki_Dekunuts_InitVars = {
     /**/ ACTOR_EN_SYATEKI_DEKUNUTS,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -53,7 +55,7 @@ ActorProfile En_Syateki_Dekunuts_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT6,
+        COLTYPE_HIT6,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -61,11 +63,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 48, 80, 0, { 0, 0, 0 } },
@@ -73,18 +75,17 @@ static ColliderCylinderInit sCylinderInit = {
 
 static Cylinder16 sBonusDekuScrubColliderDimensions[] = { { 24, 40, 0, { 0, 0, 0 } } };
 
-typedef enum ShootingGalleryDekuScrubAnimation {
+typedef enum {
     /* 0 */ SG_DEKU_ANIM_UP,
     /* 1 */ SG_DEKU_ANIM_BURROW,
     /* 2 */ SG_DEKU_ANIM_IDLE, // unused
     /* 3 */ SG_DEKU_ANIM_LOOK_AROUND,
     /* 4 */ SG_DEKU_ANIM_DAMAGE,
     /* 5 */ SG_DEKU_ANIM_DIE,
-    /* 6 */ SG_DEKU_ANIM_UNBURROW, // unused
-    /* 7 */ SG_DEKU_ANIM_MAX
+    /* 6 */ SG_DEKU_ANIM_UNBURROW // unused
 } ShootingGalleryDekuScrubAnimation;
 
-static AnimationInfo sAnimationInfo[SG_DEKU_ANIM_MAX] = {
+static AnimationInfo sAnimationInfo[] = {
     { &gDekuScrubUpAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -1.0f },         // SG_DEKU_ANIM_UP
     { &gDekuScrubBurrowAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -1.0f },     // SG_DEKU_ANIM_BURROW
     { &gDekuScrubIdleAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -1.0f },       // SG_DEKU_ANIM_IDLE
@@ -97,7 +98,7 @@ static AnimationInfo sAnimationInfo[SG_DEKU_ANIM_MAX] = {
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_MAD_SCRUB, ICHAIN_CONTINUE),
     ICHAIN_F32(gravity, 0, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 2600, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 2600, ICHAIN_STOP),
 };
 
 // #region 2S2H [Port]
@@ -107,7 +108,7 @@ static s32 sDrawFlowers = true; // This makes it so only one EnSyatekiDekunuts d
 void EnSyatekiDekunuts_Init(Actor* thisx, PlayState* play2) {
     // static s32 sDrawFlowers = true; // This makes it so only one EnSyatekiDekunuts draws all the flowers.
     // #endregion
-    EnSyatekiDekunuts* this = (EnSyatekiDekunuts*)thisx;
+    EnSyatekiDekunuts* this = THIS;
     PlayState* play = play2;
     s32 pathType;
     Path* path;
@@ -162,7 +163,7 @@ void EnSyatekiDekunuts_Init(Actor* thisx, PlayState* play2) {
 }
 
 void EnSyatekiDekunuts_Destroy(Actor* thisx, PlayState* play) {
-    EnSyatekiDekunuts* this = (EnSyatekiDekunuts*)thisx;
+    EnSyatekiDekunuts* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -426,7 +427,7 @@ void EnSyatekiDekunuts_Dead(EnSyatekiDekunuts* this, PlayState* play) {
 
 void EnSyatekiDekunuts_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnSyatekiDekunuts* this = (EnSyatekiDekunuts*)thisx;
+    EnSyatekiDekunuts* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -456,7 +457,7 @@ void EnSyatekiDekunuts_Update(Actor* thisx, PlayState* play) {
 
 s32 EnSyatekiDekunuts_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot,
                                        Actor* thisx) {
-    EnSyatekiDekunuts* this = (EnSyatekiDekunuts*)thisx;
+    EnSyatekiDekunuts* this = THIS;
 
     if ((limbIndex == DEKU_SCRUB_LIMB_HEADDRESS) && (this->headdressType == SG_DEKU_HEADDRESS_TYPE_FLIPPED_UP)) {
         rot->z += this->headdressRotZ;
@@ -466,7 +467,7 @@ s32 EnSyatekiDekunuts_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dLi
 }
 
 void EnSyatekiDekunuts_Draw(Actor* thisx, PlayState* play) {
-    EnSyatekiDekunuts* this = (EnSyatekiDekunuts*)thisx;
+    EnSyatekiDekunuts* this = THIS;
     Vec3f flowerPos;
     s32 i;
 
@@ -486,7 +487,7 @@ void EnSyatekiDekunuts_Draw(Actor* thisx, PlayState* play) {
             Gfx_SetupDL25_Opa(play->state.gfxCtx);
             Matrix_Translate(flowerPos.x, flowerPos.y, flowerPos.z, MTXMODE_NEW);
             Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_OPA_DISP++, gDekuScrubFlowerDL);
 
             CLOSE_DISPS(play->state.gfxCtx);

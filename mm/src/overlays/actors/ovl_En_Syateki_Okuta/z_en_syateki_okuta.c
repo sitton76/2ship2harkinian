@@ -7,7 +7,9 @@
 #include "z_en_syateki_okuta.h"
 #include "overlays/actors/ovl_En_Syateki_Man/z_en_syateki_man.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnSyatekiOkuta*)thisx)
 
 void EnSyatekiOkuta_Init(Actor* thisx, PlayState* play);
 void EnSyatekiOkuta_Destroy(Actor* thisx, PlayState* play);
@@ -26,7 +28,7 @@ void EnSyatekiOkuta_Hide(EnSyatekiOkuta* this, PlayState* play);
 void EnSyatekiOkuta_Die(EnSyatekiOkuta* this, PlayState* play);
 void EnSyatekiOkuta_UpdateHeadScale(EnSyatekiOkuta* this);
 
-ActorProfile En_Syateki_Okuta_Profile = {
+ActorInit En_Syateki_Okuta_InitVars = {
     /**/ ACTOR_EN_SYATEKI_OKUTA,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -40,7 +42,7 @@ ActorProfile En_Syateki_Okuta_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -48,17 +50,17 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 20, 40, -30, { 0, 0, 0 } },
 };
 
-typedef enum ShootingGalleryOctorokAnimation {
+typedef enum {
     /* 0 */ SG_OCTO_ANIM_SHOOT, // unused
     /* 1 */ SG_OCTO_ANIM_DIE,
     /* 2 */ SG_OCTO_ANIM_HIDE,
@@ -68,7 +70,7 @@ typedef enum ShootingGalleryOctorokAnimation {
     /* 6 */ SG_OCTO_ANIM_MAX
 } ShootingGalleryOctorokAnimation;
 
-static AnimationInfo sAnimationInfo[SG_OCTO_ANIM_MAX] = {
+static AnimationInfo sAnimationInfo[] = {
     { &gOctorokShootAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -1.0f },  // SG_OCTO_ANIM_SHOOT
     { &gOctorokDieAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -1.0f },    // SG_OCTO_ANIM_DIE
     { &gOctorokHideAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -1.0f },   // SG_OCTO_ANIM_HIDE
@@ -81,12 +83,12 @@ static AnimationInfo sAnimationInfo[SG_OCTO_ANIM_MAX] = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_OCTOROK, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 6500, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 6500, ICHAIN_STOP),
 };
 
 void EnSyatekiOkuta_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnSyatekiOkuta* this = (EnSyatekiOkuta*)thisx;
+    EnSyatekiOkuta* this = THIS;
     WaterBox* waterbox;
     f32 ySurface;
     s32 bgId;
@@ -100,8 +102,8 @@ void EnSyatekiOkuta_Init(Actor* thisx, PlayState* play) {
     this->actor.floorHeight =
         BgCheck_EntityRaycastFloor5(&play->colCtx, &this->actor.floorPoly, &bgId, &this->actor, &this->actor.world.pos);
 
-    if (!WaterBox_GetSurface1_2(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &ySurface,
-                                &waterbox) ||
+    if (!(WaterBox_GetSurface1_2(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &ySurface,
+                                 &waterbox)) ||
         (ySurface <= this->actor.floorHeight)) {
         Actor_Kill(&this->actor);
     } else {
@@ -114,7 +116,7 @@ void EnSyatekiOkuta_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnSyatekiOkuta_Destroy(Actor* thisx, PlayState* play) {
-    EnSyatekiOkuta* this = (EnSyatekiOkuta*)thisx;
+    EnSyatekiOkuta* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -122,11 +124,11 @@ void EnSyatekiOkuta_Destroy(Actor* thisx, PlayState* play) {
 /**
  * Spawns the puff of smoke that appears when the Octorok disappears when it dies.
  */
-void EnSyatekiOkuta_SpawnSmoke(Vec3f* pos, Vec3f* velocity, s16 scaleStep, PlayState* play) {
-    static Color_RGBA8 sSmokePrimColor = { 255, 255, 255, 255 };
-    static Color_RGBA8 sSmokeEnvColor = { 150, 150, 150, 255 };
+void EnSyatekiOkuta_SpawnDust(Vec3f* pos, Vec3f* velocity, s16 scaleStep, PlayState* play) {
+    static Color_RGBA8 sDustPrimColor = { 255, 255, 255, 255 };
+    static Color_RGBA8 sDustEnvColor = { 150, 150, 150, 255 };
 
-    func_800B0DE0(play, pos, velocity, &gZeroVec3f, &sSmokePrimColor, &sSmokeEnvColor, 400, scaleStep);
+    func_800B0DE0(play, pos, velocity, &gZeroVec3f, &sDustPrimColor, &sDustEnvColor, 400, scaleStep);
 }
 
 /**
@@ -286,7 +288,7 @@ void EnSyatekiOkuta_SetupDie(EnSyatekiOkuta* this) {
  * make it do nothing until the Shooting Gallery Man tells it to appear again.
  */
 void EnSyatekiOkuta_Die(EnSyatekiOkuta* this, PlayState* play) {
-    static Vec3f sBubbleAccel = { 0.0f, -0.5f, 0.0f };
+    static Vec3f sBubbleAccel = { 0.0f, -0.5, 0.0f };
     static Color_RGBA8 sBubblePrimColor = { 255, 255, 255, 255 };
     static Color_RGBA8 sBubbleEnvColor = { 150, 150, 150, 0 };
     Vec3f velocity;
@@ -306,7 +308,7 @@ void EnSyatekiOkuta_Die(EnSyatekiOkuta* this, PlayState* play) {
             velocity.x = 0.0f;
             velocity.y = -0.5f;
             velocity.z = 0.0f;
-            EnSyatekiOkuta_SpawnSmoke(&pos, &velocity, -20, play);
+            EnSyatekiOkuta_SpawnDust(&pos, &velocity, -20, play);
             Actor_PlaySfx(&this->actor, NA_SE_EN_OCTAROCK_DEAD2);
         }
 
@@ -368,7 +370,7 @@ void EnSyatekiOkuta_UpdateCollision(EnSyatekiOkuta* this, PlayState* play) {
     }
 
     this->collider.dim.pos.x = this->actor.world.pos.x;
-    // jointTable->y is the y-translation of the skeleton root, see `LIMB_ROOT_POS`
+    // jointTable->y is the y-translation of the skeleton root
     this->collider.dim.pos.y = this->actor.world.pos.y + (this->skelAnime.jointTable->y * this->actor.scale.y);
     this->collider.dim.pos.z = this->actor.world.pos.z;
     CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
@@ -415,7 +417,7 @@ void EnSyatekiOkuta_CheckForSignal(EnSyatekiOkuta* this, PlayState* play) {
 
 void EnSyatekiOkuta_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnSyatekiOkuta* this = (EnSyatekiOkuta*)thisx;
+    EnSyatekiOkuta* this = THIS;
     EnSyatekiMan* syatekiMan;
 
     this->actionFunc(this, play);
@@ -500,9 +502,8 @@ void EnSyatekiOkuta_UpdateHeadScale(EnSyatekiOkuta* this) {
 }
 
 /**
- * Gets the scaling factor for animating the snout limb. If the limb is not being transformed, no scale value is
- * returned. Returns true if the snout scale should be updated, false otherwise. The snout scale is returned via the
- * `scale` parameter.
+ * Returns true if the snout scale should be updated, false otherwise. The snout scale is returned via the scale
+ * parameter.
  */
 s32 EnSyatekiOkuta_GetSnoutScale(EnSyatekiOkuta* this, f32 curFrame, Vec3f* scale) {
     if (this->actionFunc == EnSyatekiOkuta_Appear) {
@@ -535,7 +536,7 @@ s32 EnSyatekiOkuta_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList,
     s32 pad;
     Vec3f scale;
     f32 curFrame;
-    EnSyatekiOkuta* this = (EnSyatekiOkuta*)thisx;
+    EnSyatekiOkuta* this = THIS;
 
     curFrame = this->skelAnime.curFrame;
     if (this->actionFunc == EnSyatekiOkuta_Die) {
@@ -553,7 +554,7 @@ s32 EnSyatekiOkuta_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList,
 }
 
 void EnSyatekiOkuta_Draw(Actor* thisx, PlayState* play) {
-    EnSyatekiOkuta* this = (EnSyatekiOkuta*)thisx;
+    EnSyatekiOkuta* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -579,7 +580,7 @@ void EnSyatekiOkuta_Draw(Actor* thisx, PlayState* play) {
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 210, 64, 32, this->hitResultAlpha);
         }
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
         if (this->type == SG_OCTO_TYPE_BLUE) {
             gSPDisplayList(POLY_XLU_DISP++, gShootingGalleryOctorokCrossDL);

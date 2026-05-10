@@ -10,6 +10,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjMine*)thisx)
+
 #define LINK_SIZE 12.0f
 #define ATTACH_OFFSET 10.0f
 #define PATH_RADIUS 32.0f
@@ -43,26 +45,26 @@ void ObjMine_DrawExplosion(Actor* thisx, PlayState* play);
 void ObjMine_Air_Draw(Actor* thisx, PlayState* play);
 void ObjMine_Water_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Mine_Profile = {
-    /**/ ACTOR_OBJ_MINE,
-    /**/ ACTORCAT_PROP,
-    /**/ FLAGS,
-    /**/ OBJECT_NY,
-    /**/ sizeof(ObjMine),
-    /**/ ObjMine_Init,
-    /**/ ObjMine_Destroy,
-    /**/ ObjMine_Path_Update,
-    /**/ ObjMine_Path_Draw,
+ActorInit Obj_Mine_InitVars = {
+    ACTOR_OBJ_MINE,
+    ACTORCAT_PROP,
+    FLAGS,
+    OBJECT_NY,
+    sizeof(ObjMine),
+    (ActorFunc)ObjMine_Init,
+    (ActorFunc)ObjMine_Destroy,
+    (ActorFunc)ObjMine_Path_Update,
+    (ActorFunc)ObjMine_Path_Draw,
 };
 
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK2,
+            ELEMTYPE_UNK2,
             { 0x00000000, 0x00, 0x00 },
             { 0x01CBFFBE, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_ON,
         },
         { 0, { { 0, 0, 0 }, 30 }, 100 },
@@ -71,7 +73,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER | OC1_TYPE_1,
@@ -93,9 +95,9 @@ static ObjMineMtxF3 sStandardBasis = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 1300, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 150, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 100, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 1300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 150, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 100, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 10, ICHAIN_STOP),
 };
 
@@ -180,12 +182,12 @@ void ObjMine_Air_CheckAC(ObjMine* this, s16* hitAngle, s16* torqueAngle) {
     yawToAttack = Math_Vec3f_Yaw(&attackActor->world.pos, &centerPos);
 
     // dmgFlag check is (DMG_DEKU_BUBBLE | DMG_FIRE_ARROW | DMG_ICE_ARROW | DMG_FIRE_ARROW | DMG_NORMAL_ARROW)
-    if (this->collider.elements[0].base.acHitElem->atDmgInfo.dmgFlags & 0x13820) {
+    if (this->collider.elements[0].info.acHitInfo->toucher.dmgFlags & 0x13820) {
         *hitAngle = attackActor->shape.rot.y;
         *torqueAngle = attackActor->shape.rot.y - yawToAttack;
     } else {
         Vec3f hitPos;
-        Vec3s* hitPos3s = &this->collider.elements[0].base.acDmgInfo.hitPos;
+        Vec3s* hitPos3s = &this->collider.elements[0].info.bumper.hitPos;
 
         Math_Vec3s_ToVec3f(&hitPos, hitPos3s);
         *hitAngle = Actor_WorldYawTowardActor(attackActor, &this->actor);
@@ -197,7 +199,7 @@ void ObjMine_Water_CheckAC(ObjMine* this, Vec3f* knockbackDir) {
     Actor* attackActor = this->collider.base.ac;
 
     // dmgFlag check is (DMG_DEKU_BUBBLE | DMG_LIGHT_ARROW | DMG_ICE_ARROW | DMG_FIRE_ARROW | DMG_NORMAL_ARROW)
-    if (this->collider.elements[0].base.acHitElem->atDmgInfo.dmgFlags & 0x13820) {
+    if (this->collider.elements[0].info.acHitInfo->toucher.dmgFlags & 0x13820) {
         Matrix_Push();
         Matrix_RotateYS(attackActor->shape.rot.y, MTXMODE_NEW);
         Matrix_RotateXS(attackActor->shape.rot.x, MTXMODE_APPLY);
@@ -220,7 +222,7 @@ void ObjMine_Water_CheckAC(ObjMine* this, Vec3f* knockbackDir) {
 void ObjMine_AirWater_Noop(ObjMine* this) {
 }
 
-void ObjMine_SetMatrixTranslation(Vec3f* translation) {
+void ObjMine_ReplaceTranslation(Vec3f* translation) {
     MtxF* matrix = Matrix_GetCurrent();
 
     matrix->xw = translation->x;
@@ -228,7 +230,7 @@ void ObjMine_SetMatrixTranslation(Vec3f* translation) {
     matrix->zw = translation->z;
 }
 
-void ObjMine_SetMatrixRotation(ObjMineMtxF3* basis) {
+void ObjMine_SetRotation(ObjMineMtxF3* basis) {
     MtxF* matrix = Matrix_GetCurrent();
 
     matrix->xx = basis->x.x;
@@ -285,7 +287,7 @@ void ObjMine_UpdateCollider(ObjMine* this) {
 }
 
 void ObjMine_Air_InitChain(ObjMine* this, s32 linkCount) {
-    f32 linkCountF = linkCount;
+    f32 linkCountF = (f32)linkCount;
     ObjMineAirChain* airChain = &this->chain.air;
     ObjMineAirLink* airLink;
     s32 i;
@@ -672,8 +674,8 @@ void ObjMine_Water_UpdateChain(ObjMine* this, PlayState* play) {
 
 void ObjMine_Init(Actor* thisx, PlayState* play) {
     s32 pad; // Can be playstate recast. Must be gamestate recast.
-    ObjMine* this = (ObjMine*)thisx;
-    s32 pathIndex = OBJMINE_GET_PATH_INDEX(&this->actor);
+    ObjMine* this = THIS;
+    s32 pathIndex = OBJMINE_GET_PATH(&this->actor);
     Path* path;
     s32 bgId; // not used
     s32 type = OBJMINE_GET_TYPE(&this->actor);
@@ -712,8 +714,8 @@ void ObjMine_Init(Actor* thisx, PlayState* play) {
         s32 linkCount = OBJMINE_GET_LINK_COUNT(&this->actor);
 
         this->actor.update = ObjMine_AirWater_Update;
-        this->actor.cullingVolumeScale = 150.0f + (linkCount * (LINK_SIZE * 1.75f));
-        this->actor.cullingVolumeDownward = 150.0f + (linkCount * (LINK_SIZE * 1.75f));
+        this->actor.uncullZoneScale = 150.0f + (linkCount * (LINK_SIZE * 1.75f));
+        this->actor.uncullZoneDownward = 150.0f + (linkCount * (LINK_SIZE * 1.75f));
         ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 45.0f);
         this->actor.shape.shadowAlpha = 140;
 
@@ -743,7 +745,8 @@ void ObjMine_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjMine_Destroy(Actor* thisx, PlayState* play) {
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
+    // PlayState* play = play2; // must be in this order to match with recast
 
     Collider_DestroyJntSph(play, &this->collider);
 }
@@ -756,12 +759,12 @@ void ObjMine_Path_Stationary(ObjMine* this, PlayState* play) {
 }
 
 void ObjMine_Path_SetupMove(ObjMine* this) {
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     this->actionFunc = ObjMine_Path_Move;
 }
 
 void ObjMine_Path_Move(ObjMine* this, PlayState* play) {
-    Actor* thisx = &this->actor;
+    Actor* thisx = &this->actor; // pos and velocity need this, though it can replace all `this->actor`s and match
     Vec3f nextWaypoint;
     f32 distToWaypoint;
     f32 step;
@@ -781,25 +784,26 @@ void ObjMine_Path_Move(ObjMine* this, PlayState* play) {
         target = this->pathSpeed;
         step = this->pathSpeed * 0.16f;
     }
-    Math_StepToF(&thisx->speed, target, step);
+    Math_StepToF(&this->actor.speed, target, step);
 
     // Checks if mine will reach the waypoint next frame
-    if ((thisx->speed + 0.05f) < distToWaypoint) {
+    if ((this->actor.speed + 0.05f) < distToWaypoint) {
         // Rescales thisx->velocity to be equal in magnitude to speed
-        Math_Vec3f_Scale(&thisx->velocity, thisx->speed / distToWaypoint);
-        thisx->world.pos.x += thisx->velocity.x;
-        thisx->world.pos.y += thisx->velocity.y;
-        thisx->world.pos.z += thisx->velocity.z;
+        Math_Vec3f_Scale(&thisx->velocity, this->actor.speed / distToWaypoint);
+        this->actor.world.pos.x += thisx->velocity.x;
+        this->actor.world.pos.y += thisx->velocity.y;
+        this->actor.world.pos.z += thisx->velocity.z;
     } else {
-        thisx->speed *= 0.4f;
+        this->actor.speed *= 0.4f;
         this->waypointIndex++;
         if (this->waypointIndex >= this->waypointCount) {
             this->waypointIndex = 0;
         }
         ObjMine_Path_MoveToWaypoint(this, this->waypointIndex);
     }
-    thisx->floorHeight = BgCheck_EntityRaycastFloor5(&play->colCtx, &thisx->floorPoly, &bgId, thisx, &thisx->world.pos);
-    if (thisx->flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) {
+    this->actor.floorHeight =
+        BgCheck_EntityRaycastFloor5(&play->colCtx, &this->actor.floorPoly, &bgId, &this->actor, &thisx->world.pos);
+    if (this->actor.flags & ACTOR_FLAG_40) {
         Vec3f rotAxis;
         Vec3f yhatCrossV;
         MtxF rotMtxF;
@@ -807,18 +811,18 @@ void ObjMine_Path_Move(ObjMine* this, PlayState* play) {
         // Makes mines appear to roll while traversing the path
         Math3D_Vec3f_Cross(&sStandardBasis.y, &thisx->velocity, &yhatCrossV);
         if (ObjMine_GetUnitVec3f(&yhatCrossV, &rotAxis)) {
-            Matrix_RotateAxisF(thisx->speed / PATH_RADIUS, &rotAxis, MTXMODE_NEW);
-            Matrix_RotateYS(thisx->shape.rot.y, MTXMODE_APPLY);
-            Matrix_RotateXS(thisx->shape.rot.x, MTXMODE_APPLY);
-            Matrix_RotateZS(thisx->shape.rot.z, MTXMODE_APPLY);
+            Matrix_RotateAxisF(this->actor.speed / PATH_RADIUS, &rotAxis, MTXMODE_NEW);
+            Matrix_RotateYS(this->actor.shape.rot.y, MTXMODE_APPLY);
+            Matrix_RotateXS(this->actor.shape.rot.x, MTXMODE_APPLY);
+            Matrix_RotateZS(this->actor.shape.rot.z, MTXMODE_APPLY);
             Matrix_Get(&rotMtxF);
-            Matrix_MtxFToYXZRot(&rotMtxF, &thisx->shape.rot, false);
+            Matrix_MtxFToYXZRot(&rotMtxF, &this->actor.shape.rot, false);
         }
     }
 }
 
 void ObjMine_SetupExplode(ObjMine* this) {
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     this->actor.draw = ObjMine_DrawExplosion;
     this->actor.shape.shadowDraw = NULL;
     this->actor.scale.x = 0.02f;
@@ -829,13 +833,12 @@ void ObjMine_SetupExplode(ObjMine* this) {
 
 void ObjMine_Explode(ObjMine* this, PlayState* play) {
     this->actor.scale.x *= 1.8f;
-    if (this->actor.scale.x > (0.02f * 1.5f * 5.832f)) { // 5.832 = 1.8^3
+    if (this->actor.scale.x > 0.02f * 1.5f * 5.832f) { // 5.832 = 1.8^3
         Actor_Kill(&this->actor);
-        return;
+    } else {
+        this->actor.scale.y = this->actor.scale.x;
+        this->actor.scale.z = this->actor.scale.x;
     }
-
-    this->actor.scale.y = this->actor.scale.x;
-    this->actor.scale.z = this->actor.scale.x;
 }
 
 void ObjMine_Air_SetupChained(ObjMine* this) {
@@ -925,7 +928,7 @@ void ObjMine_Air_Chained(ObjMine* this, PlayState* play) {
         if (airChain->wallCheckDistSq <= Math3D_Dist2DSq(this->actor.world.pos.x, this->actor.world.pos.z,
                                                          this->actor.home.pos.x, this->actor.home.pos.z)) {
 
-            Actor_UpdateBgCheckInfo(play, &this->actor, 0.0f, AIR_RADIUS, 0.0f, UPDBGCHECKINFO_FLAG_1);
+            Actor_UpdateBgCheckInfo(play, &this->actor, 0.0f, AIR_RADIUS, 0.0f, 1);
 
             if ((this->actor.bgCheckFlags & BGCHECKFLAG_WALL) && (this->actor.wallPoly != NULL)) {
                 Vec3f xzDir;
@@ -1063,7 +1066,7 @@ void ObjMine_Water_Stationary(ObjMine* this, PlayState* play) {
 
 void ObjMine_Path_Update(Actor* thisx, PlayState* play) {
     s32 pad; // Can be playstate recast.
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
 
     if ((this->collider.base.ocFlags2 & OC2_HIT_PLAYER) || (this->collider.base.acFlags & AC_HIT)) {
         ObjMine_Path_SpawnBomb(this, play);
@@ -1076,7 +1079,7 @@ void ObjMine_Path_Update(Actor* thisx, PlayState* play) {
         this->collider.base.ocFlags1 &= ~OC1_HIT;
         this->collider.base.acFlags &= ~AC_HIT;
         this->collider.base.ocFlags2 &= ~OC2_HIT_PLAYER;
-        if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) && (this->actionFunc != ObjMine_Explode)) {
+        if ((this->actor.flags & ACTOR_FLAG_40) && (this->actionFunc != ObjMine_Explode)) {
             CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
             CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
         }
@@ -1084,14 +1087,14 @@ void ObjMine_Path_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjMine_AirWater_Update(Actor* thisx, PlayState* play) {
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void ObjMine_Path_Draw(Actor* thisx, PlayState* play) {
     s32 pad; // Can be playstate recast
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -1102,7 +1105,7 @@ void ObjMine_Path_Draw(Actor* thisx, PlayState* play) {
     func_800B8050(&this->actor, play, true);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPSetRenderMode(POLY_OPA_DISP++, G_RM_PASS, G_RM_AA_ZB_OPA_SURF2);
     gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, 255);
     gSPDisplayList(POLY_OPA_DISP++, object_ny_DL_002068);
@@ -1121,7 +1124,7 @@ void ObjMine_DrawExplosion(Actor* thisx, PlayState* play) {
 
     gDPSetRenderMode(POLY_XLU_DISP++, G_RM_PASS, G_RM_AA_ZB_XLU_SURF2);
     gDPSetEnvColor(POLY_XLU_DISP++, 0, 0, 0, 75);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, object_ny_DL_002068);
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -1129,7 +1132,7 @@ void ObjMine_DrawExplosion(Actor* thisx, PlayState* play) {
 
 void ObjMine_Air_Draw(Actor* thisx, PlayState* play) {
     s32 pad; // Can be playstate recast
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
     s32 linkCount = OBJMINE_GET_LINK_COUNT(&this->actor);
     ObjMineAirChain* airChain = &this->chain.air;
     ObjMineAirLink* airLink;
@@ -1144,10 +1147,10 @@ void ObjMine_Air_Draw(Actor* thisx, PlayState* play) {
     gfx = POLY_OPA_DISP;
 
     gSPDisplayList(gfx++, &gSetupDLs[SETUPDL_25]);
-    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(gfx++, object_ny_DL_000030);
 
-    ObjMine_SetMatrixRotation(&airChain->basis);
+    ObjMine_SetRotation(&airChain->basis);
     Matrix_Scale(this->actor.scale.x, this->actor.scale.y, this->actor.scale.z, MTXMODE_APPLY);
     if (linkCount != 0) {
         // Sets pivot point to be half a chain link length below home
@@ -1162,17 +1165,17 @@ void ObjMine_Air_Draw(Actor* thisx, PlayState* play) {
             linkPos.x += linkOffset.x;
             linkPos.y += linkOffset.y;
             linkPos.z += linkOffset.z;
-            ObjMine_SetMatrixTranslation(&linkPos);
+            ObjMine_ReplaceTranslation(&linkPos);
 
-            MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+            gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(gfx++, object_ny_DL_000030);
         }
     }
 
     Matrix_RotateXS(0x2000, MTXMODE_APPLY);
-    ObjMine_SetMatrixTranslation(&this->actor.world.pos);
+    ObjMine_ReplaceTranslation(&this->actor.world.pos);
 
-    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPPipeSync(gfx++);
     gDPSetRenderMode(gfx++, G_RM_PASS, G_RM_AA_ZB_OPA_SURF2);
     gDPSetEnvColor(gfx++, 0, 0, 0, 255);
@@ -1186,7 +1189,7 @@ void ObjMine_Air_Draw(Actor* thisx, PlayState* play) {
 
 void ObjMine_Water_Draw(Actor* thisx, PlayState* play) {
     s32 pad; // Can be playstate recast
-    ObjMine* this = (ObjMine*)thisx;
+    ObjMine* this = THIS;
     s32 linkCount = OBJMINE_GET_LINK_COUNT(&this->actor);
     ObjMineWaterChain* waterChain = &this->chain.water;
     ObjMineWaterLink* waterLink;
@@ -1199,26 +1202,26 @@ void ObjMine_Water_Draw(Actor* thisx, PlayState* play) {
     gfx = POLY_OPA_DISP;
 
     gSPDisplayList(gfx++, &gSetupDLs[SETUPDL_25]);
-    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(gfx++, object_ny_DL_000030);
 
     for (i = 0, waterLink = waterChain->links; i < linkCount; i++, waterLink++) {
-        ObjMine_SetMatrixRotation(&waterLink->basis);
+        ObjMine_SetRotation(&waterLink->basis);
         Matrix_Scale(this->actor.scale.x, this->actor.scale.y, this->actor.scale.z, MTXMODE_APPLY);
         // Consecutive chain links are offset 90 degrees.
         if ((i % 2) == 0) {
             Matrix_RotateYS(0x4000, MTXMODE_APPLY);
         }
-        ObjMine_SetMatrixTranslation(&waterLink->pos);
+        ObjMine_ReplaceTranslation(&waterLink->pos);
 
-        MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+        gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(gfx++, object_ny_DL_000030);
     }
 
     Matrix_RotateXS(0x2000, MTXMODE_APPLY);
-    ObjMine_SetMatrixTranslation(&this->actor.world.pos);
+    ObjMine_ReplaceTranslation(&this->actor.world.pos);
 
-    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPPipeSync(gfx++);
     gDPSetRenderMode(gfx++, G_RM_PASS, G_RM_AA_ZB_OPA_SURF2);
     gDPSetEnvColor(gfx++, 0, 0, 0, 255);

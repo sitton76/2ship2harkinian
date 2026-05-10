@@ -9,7 +9,9 @@
 
 #include "2s2h/BenGui/CosmeticEditor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((ArrowLight*)thisx)
 
 void ArrowLight_Init(Actor* thisx, PlayState* play);
 void ArrowLight_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void ArrowLight_Fly(ArrowLight* this, PlayState* play);
 
 #include "overlays/ovl_Arrow_Light/ovl_Arrow_Light.h"
 
-ActorProfile Arrow_Light_Profile = {
+ActorInit Arrow_Light_InitVars = {
     /**/ ACTOR_ARROW_LIGHT,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -34,7 +36,7 @@ ActorProfile Arrow_Light_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 2000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 2000, ICHAIN_STOP),
 };
 
 void ArrowLight_SetupAction(ArrowLight* this, ArrowLightActionFunc actionFunc) {
@@ -168,7 +170,7 @@ void ArrowLight_Fly(ArrowLight* this, PlayState* play) {
 }
 
 void ArrowLight_Update(Actor* thisx, PlayState* play) {
-    ArrowLight* this = (ArrowLight*)thisx;
+    ArrowLight* this = THIS;
 
     if ((play->msgCtx.msgMode == MSGMODE_E) || (play->msgCtx.msgMode == MSGMODE_SONG_PLAYED)) {
         Actor_Kill(&this->actor);
@@ -206,8 +208,8 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
         gDPSetPrimColorOverride(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 170, this->alpha,
-                                COSMETIC_ID("Effects.LightArrowPrim"));
-        gDPSetEnvColorOverride(POLY_XLU_DISP++, 255, 255, 0, 128, COSMETIC_ID("Effects.LightArrowSec"));
+                                COSMETIC_ELEMENT_LIGHT_ARROW_PRIMARY);
+        gDPSetEnvColorOverride(POLY_XLU_DISP++, 255, 255, 0, 128, COSMETIC_ELEMENT_LIGHT_ARROW_SECONDARY);
 
         Matrix_RotateZYX(0x4000, 0, 0, MTXMODE_APPLY);
         if (this->timer != 0) {
@@ -218,11 +220,11 @@ void ArrowLight_Draw(Actor* thisx, PlayState* play) {
         Matrix_Scale(this->radius * 0.2f, this->height * 4.0f, this->radius * 0.2f, MTXMODE_APPLY);
         Matrix_Translate(0.0f, -700.0f, 0.0f, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gLightArrowMaterialDL);
-        gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 511 - ((frames * 5) % 512), 0, 4, 32,
-                                                           1, 511 - ((frames * 10) % 512), 511 - ((frames * 30) % 512),
-                                                           8, 16, -5, 0, -10, -30));
+        gSPDisplayList(POLY_XLU_DISP++,
+                       Gfx_TwoTexScroll(play->state.gfxCtx, 0, 511 - ((frames * 5) % 512), 0, 4, 32, 1,
+                                        511 - ((frames * 10) % 512), 511 - ((frames * 30) % 512), 8, 16));
         gSPDisplayList(POLY_XLU_DISP++, gLightArrowModelDL);
         CLOSE_DISPS(play->state.gfxCtx);
     }

@@ -7,14 +7,16 @@
 #include "z_en_test.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnTest*)thisx)
 
 void EnTest_Init(Actor* thisx, PlayState* play2);
 void EnTest_Destroy(Actor* thisx, PlayState* play);
 void EnTest_Update(Actor* thisx, PlayState* play);
 void EnTest_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_Test_Profile = {
+ActorInit En_Test_InitVars = {
     /**/ ACTOR_EN_TEST,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -147,7 +149,7 @@ void func_80863048(PlayState* play, EnTestStruct* arg1) {
         Matrix_RotateZYX(ptr->unk_30.x, ptr->unk_30.y, ptr->unk_30.z, MTXMODE_APPLY);
         Matrix_Scale(ptr->unk_2C, ptr->unk_2C, ptr->unk_2C, MTXMODE_APPLY);
 
-        mtx = Matrix_Finalize(play->state.gfxCtx);
+        mtx = Matrix_NewMtx(play->state.gfxCtx);
         gSPMatrix(POLY_OPA_DISP++, mtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gameplay_keep_DL_06AB30);
     }
@@ -157,7 +159,7 @@ void func_80863048(PlayState* play, EnTestStruct* arg1) {
 
 void EnTest_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnTest* this = (EnTest*)thisx;
+    EnTest* this = THIS;
     MtxF sp38;
     s32 bgId;
 
@@ -184,26 +186,26 @@ void EnTest_Init(Actor* thisx, PlayState* play2) {
         this->surfaceMaterial = SurfaceType_GetMaterial(&play->colCtx, thisx->floorPoly, bgId);
     }
 
-    Keyframe_InitFlex(&this->kfSkelAnime, gGameplayKeepKFSkel_6EB70, gGameplayKeepKFAnim_6BB0C, this->jointTable,
-                      this->morphTable, NULL);
-    Keyframe_FlexPlayOnce(&this->kfSkelAnime, gGameplayKeepKFAnim_6BB0C);
-    this->kfSkelAnime.frameCtrl.curTime = 9.0f;
+    Keyframe_InitFlex(&this->skeletonInfo, gGameplayKeepKFSkel_6EB70, gGameplayKeepKFAnim_6BB0C, this->unk_178,
+                      this->unk_1C0, NULL);
+    Keyframe_FlexPlayOnce(&this->skeletonInfo, gGameplayKeepKFAnim_6BB0C);
+    this->skeletonInfo.frameCtrl.curTime = 9.0f;
     func_80862B70(this->unk_20C);
 }
 
 void EnTest_Destroy(Actor* thisx, PlayState* play) {
-    EnTest* this = (EnTest*)thisx;
+    EnTest* this = THIS;
 
-    Keyframe_DestroyFlex(&this->kfSkelAnime);
+    Keyframe_DestroyFlex(&this->skeletonInfo);
 }
 
 void EnTest_Update(Actor* thisx, PlayState* play) {
-    EnTest* this = (EnTest*)thisx;
+    EnTest* this = THIS;
     s32 i;
 
-    this->unk_208 = this->kfSkelAnime.frameCtrl.curTime;
+    this->unk_208 = this->skeletonInfo.frameCtrl.curTime;
 
-    if (Keyframe_UpdateFlex(&this->kfSkelAnime) && (this->actor.parent == NULL) && (this->actor.params != -1)) {
+    if (Keyframe_UpdateFlex(&this->skeletonInfo) && (this->actor.parent == NULL) && (this->actor.params != -1)) {
         this->unk_209++;
         if (this->unk_209 > 20) {
             Actor_Kill(&this->actor);
@@ -222,9 +224,9 @@ void EnTest_Update(Actor* thisx, PlayState* play) {
     func_80862EDC(this->unk_20C);
 }
 
-s32 EnTest_OverrideLimbDraw(PlayState* play, KFSkelAnimeFlex* kfSkelAnime, s32 limbIndex, Gfx** dList, u8* flags,
-                            void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) {
-    EnTest* this = (EnTest*)thisx;
+s32 EnTest_OverrideKeyframeDraw(PlayState* play, KFSkelAnimeFlex* skeletonInfo, s32 limbIndex, Gfx** dList, u8* flags,
+                                void* thisx, Vec3f* scale, Vec3s* rot, Vec3f* pos) {
+    EnTest* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -247,8 +249,8 @@ s32 EnTest_OverrideLimbDraw(PlayState* play, KFSkelAnimeFlex* kfSkelAnime, s32 l
 }
 
 void EnTest_Draw(Actor* thisx, PlayState* play) {
-    EnTest* this = (EnTest*)thisx;
-    Mtx* mtxStack;
+    EnTest* this = THIS;
+    Mtx* mtx;
     s32 sp2C = this->unk_208 - 1;
 
     if (sp2C >= 29) {
@@ -262,11 +264,11 @@ void EnTest_Draw(Actor* thisx, PlayState* play) {
         AnimatedMat_DrawStep(play, Lib_SegmentedToVirtual(gameplay_keep_Matanimheader_06B6A0), sp2C);
     }
 
-    mtxStack = GRAPH_ALLOC(play->state.gfxCtx, this->kfSkelAnime.skeleton->dListCount * sizeof(Mtx));
+    mtx = GRAPH_ALLOC(play->state.gfxCtx, this->skeletonInfo.skeleton->dListCount * sizeof(Mtx));
 
-    if (mtxStack != NULL) {
+    if (mtx != NULL) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-        Keyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, EnTest_OverrideLimbDraw, NULL, thisx);
+        Keyframe_DrawFlex(play, &this->skeletonInfo, mtx, EnTest_OverrideKeyframeDraw, NULL, thisx);
         func_80863048(play, this->unk_20C);
     }
 }

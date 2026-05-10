@@ -1,9 +1,8 @@
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/bridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 #include "2s2h/CustomItem/CustomItem.h"
 #include "2s2h/Rando/Rando.h"
-#include "2s2h/CustomMessage/CustomMessage.h"
 
 extern "C" {
 #include "overlays/actors/ovl_En_Ma4/z_en_ma4.h"
@@ -54,7 +53,7 @@ void RegisterSkipLearningEponasSong() {
         Message_StartTextbox(gPlayState, 0x334C, &enMa4->actor);
         enMa4->textId = 0x334C;
         GET_PLAYER(gPlayState)->stateFlags1 &= ~PLAYER_STATE1_20;
-        enMa4->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        enMa4->actor.flags &= ~ACTOR_FLAG_10000;
         EnMa4_SetupDialogueHandler(enMa4);
     });
 }

@@ -25,7 +25,9 @@
 #include "objects/object_boss02/object_boss02.h"
 #include "overlays/actors/ovl_Boss_02/z_boss_02.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnTanron5*)thisx)
 
 void EnTanron5_Init(Actor* thisx, PlayState* play);
 void EnTanron5_Destroy(Actor* thisx, PlayState* play);
@@ -35,14 +37,14 @@ void EnTanron5_Draw(Actor* thisx, PlayState* play);
 void EnTanron5_RuinFragmentItemDrop_Update(Actor* thisx, PlayState* play2);
 void EnTanron5_ItemDrop_Draw(Actor* thisx, PlayState* play);
 
-typedef enum TwinmoldPropItemDropType {
+typedef enum {
     /* 0 */ TWINMOLD_PROP_ITEM_DROP_TYPE_10_ARROWS,
     /* 1 */ TWINMOLD_PROP_ITEM_DROP_TYPE_MAGIC_JAR_BIG
 } TwinmoldPropItemDropType;
 
 s32 sFragmentAndItemDropCount = 0;
 
-ActorProfile En_Tanron5_Profile = {
+ActorInit En_Tanron5_InitVars = {
     /**/ ACTOR_EN_TANRON5,
     /**/ ACTORCAT_BOSS,
     /**/ FLAGS,
@@ -56,7 +58,7 @@ ActorProfile En_Tanron5_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_ALL,
         AC_ON | AC_TYPE_PLAYER | AC_TYPE_ENEMY | AC_TYPE_OTHER,
         OC1_ON | OC1_TYPE_ALL,
@@ -64,11 +66,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0xF7CFFFFF, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 70, 450, 0, { 0, 0, 0 } },
@@ -212,7 +214,7 @@ void EnTanron5_SpawnEffectBlackDust(TwinmoldEffect* effect, Vec3f* pos, f32 scal
 }
 
 void EnTanron5_Init(Actor* thisx, PlayState* play) {
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
 
     if (TWINMOLD_PROP_GET_TYPE(&this->actor) >= TWINMOLD_PROP_TYPE_FRAGMENT_LARGE_1) {
         // This is a ruin fragment or item drop; if there are more than 60 fragments or drops
@@ -251,7 +253,7 @@ void EnTanron5_Init(Actor* thisx, PlayState* play) {
             this->dList = gRuinFragmentDL;
             this->timer = 150;
         }
-    } else if (TWINMOLD_PROP_GET_TYPE(&this->actor) == TWINMOLD_PROP_TYPE_SPAWN_HANDLER) {
+    } else if (TWINMOLD_PROP_GET_TYPE(&this->actor) == TWINMOLD_PROP_TYPE_STATIC) {
         EnTanron5* child;
         s32 i;
 
@@ -284,7 +286,7 @@ void EnTanron5_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnTanron5_Destroy(Actor* thisx, PlayState* play) {
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
 
     if (TWINMOLD_PROP_GET_TYPE(&this->actor) >= TWINMOLD_PROP_TYPE_FRAGMENT_LARGE_1) {
         sFragmentAndItemDropCount--;
@@ -296,7 +298,7 @@ void EnTanron5_Destroy(Actor* thisx, PlayState* play) {
  */
 void EnTanron5_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
     Boss02* boss02 = (Boss02*)this->actor.parent;
     Player* player = GET_PLAYER(play2);
     s32 i;
@@ -354,7 +356,7 @@ void EnTanron5_Update(Actor* thisx, PlayState* play2) {
 
     if (this->timer == 0) {
         if (this->collider.base.acFlags & AC_HIT) {
-            ColliderElement* acHitElem = this->collider.elem.acHitElem;
+            ColliderInfo* acHitInfo = this->collider.info.acHitInfo;
             Actor* ac = this->collider.base.ac;
 
             this->collider.base.acFlags &= ~AC_HIT;
@@ -370,7 +372,7 @@ void EnTanron5_Update(Actor* thisx, PlayState* play2) {
                 fragmentAndItemCount = (s32)Rand_ZeroFloat(2.99f) + 10;
             }
 
-            if ((KREG(19) != 0) || ((acHitElem->atDmgInfo.dmgFlags & 0x05000202) && (sGiantModeScaleFactor < 0.5f)) ||
+            if ((KREG(19) != 0) || ((acHitInfo->toucher.dmgFlags & 0x05000202) && (sGiantModeScaleFactor < 0.5f)) ||
                 (ac->id == ACTOR_BOSS_02)) {
                 if (this->dList == gTwinmoldRuinPillarDL) {
                     // To create the appearance of the pillar shrinking after being hit, push it further into the floor,
@@ -460,11 +462,11 @@ void EnTanron5_Update(Actor* thisx, PlayState* play2) {
                 // Something hit the ruin, but it wasn't Twinmold, and it wasn't the player while in giant
                 // mode. Play the reflect sound effect and spawn some sparks instead of breaking.
                 Vec3f hitPos;
-                ColliderElement* acHitElem = this->collider.elem.acHitElem;
+                ColliderInfo* info = this->collider.info.acHitInfo;
 
-                hitPos.x = acHitElem->acDmgInfo.hitPos.x;
-                hitPos.y = acHitElem->acDmgInfo.hitPos.y;
-                hitPos.z = acHitElem->acDmgInfo.hitPos.z;
+                hitPos.x = info->bumper.hitPos.x;
+                hitPos.y = info->bumper.hitPos.y;
+                hitPos.z = info->bumper.hitPos.z;
 
                 Actor_PlaySfx(&this->actor, NA_SE_IT_SHIELD_REFLECT_SW);
                 CollisionCheck_SpawnShieldParticlesMetal(play, &hitPos);
@@ -513,7 +515,7 @@ void EnTanron5_RuinFragmentItemDrop_Update(Actor* thisx, PlayState* play2) {
     f32 interactionDistSq;
     s32 i;
     Vec3f pos;
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
     PlayState* play = play2;
 
     // When a ruin fragment hits the floor, it will slowly sink into the sand. After sinking for 38 frames,
@@ -602,14 +604,14 @@ void EnTanron5_RuinFragmentItemDrop_Update(Actor* thisx, PlayState* play2) {
 }
 
 void EnTanron5_Draw(Actor* thisx, PlayState* play) {
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
 
     if ((-500.0f * sGiantModeScaleFactor) < this->actor.projectedPos.z) {
         OPEN_DISPS(play->state.gfxCtx);
 
         Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, this->dList);
 
         CLOSE_DISPS(play->state.gfxCtx);
@@ -617,7 +619,7 @@ void EnTanron5_Draw(Actor* thisx, PlayState* play) {
 }
 
 void EnTanron5_ItemDrop_Draw(Actor* thisx, PlayState* play) {
-    EnTanron5* this = (EnTanron5*)thisx;
+    EnTanron5* this = THIS;
     TexturePtr texture;
     s32 shouldDraw;
 
@@ -645,7 +647,7 @@ void EnTanron5_ItemDrop_Draw(Actor* thisx, PlayState* play) {
         Matrix_Translate(0.0f, 200.0f, 0.0f, MTXMODE_APPLY);
         Matrix_RotateZS(this->itemDropRotZ, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gItemDropDL);
 
         CLOSE_DISPS(play->state.gfxCtx);

@@ -5,11 +5,14 @@
  */
 
 #include "z_en_mm3.h"
+#include "objects/object_mm/object_mm.h"
 
 #include "2s2h/BenPort.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnMm3*)thisx)
 
 void EnMm3_Init(Actor* thisx, PlayState* play);
 void EnMm3_Destroy(Actor* thisx, PlayState* play);
@@ -29,7 +32,7 @@ void func_80A6FEEC(EnMm3* this, PlayState* play);
 s32 func_80A6FFAC(EnMm3* this, PlayState* play);
 void func_80A70084(EnMm3* this, PlayState* play);
 
-ActorProfile En_Mm3_Profile = {
+ActorInit En_Mm3_InitVars = {
     /**/ ACTOR_EN_MM3,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -43,7 +46,7 @@ ActorProfile En_Mm3_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -51,11 +54,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 63, 0, { 0, 0, 0 } },
@@ -63,27 +66,15 @@ static ColliderCylinderInit sCylinderInit = {
 
 static CollisionCheckInfoInit2 sColChkInfoInit = { 0, 0, 0, 0, MASS_IMMOVABLE };
 
-typedef enum EnMm3Animation {
-    /* 0 */ ENMM3_ANIM_0,
-    /* 1 */ ENMM3_ANIM_1,
-    /* 2 */ ENMM3_ANIM_2,
-    /* 3 */ ENMM3_ANIM_3,
-    /* 4 */ ENMM3_ANIM_4,
-    /* 5 */ ENMM3_ANIM_5,
-    /* 6 */ ENMM3_ANIM_6,
-    /* 7 */ ENMM3_ANIM_7,
-    /* 8 */ ENMM3_ANIM_MAX
-} EnMm3Animation;
-
-static AnimationInfo sAnimationInfo[ENMM3_ANIM_MAX] = {
-    { &object_mm_Anim_002238, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },   // ENMM3_ANIM_0
-    { &object_mm_Anim_00A4E0, -1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -7.0f },  // ENMM3_ANIM_1
-    { &object_mm_Anim_00C640, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },   // ENMM3_ANIM_2
-    { &object_mm_Anim_00A4E0, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -7.0f },   // ENMM3_ANIM_3
-    { &object_mm_Anim_000468, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },   // ENMM3_ANIM_4
-    { &object_mm_Anim_00CD90, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -12.0f },  // ENMM3_ANIM_5
-    { &object_mm_Anim_00DA50, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -12.0f },  // ENMM3_ANIM_6
-    { &object_mm_Anim_00DA50, 1.0f, 0.0f, 10.0f, ANIMMODE_ONCE, -10.0f }, // ENMM3_ANIM_7
+static AnimationInfo sAnimationInfo[] = {
+    { &object_mm_Anim_002238, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },
+    { &object_mm_Anim_00A4E0, -1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -7.0f },
+    { &object_mm_Anim_00C640, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },
+    { &object_mm_Anim_00A4E0, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -7.0f },
+    { &object_mm_Anim_000468, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -7.0f },
+    { &object_mm_Anim_00CD90, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -12.0f },
+    { &object_mm_Anim_00DA50, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -12.0f },
+    { &object_mm_Anim_00DA50, 1.0f, 0.0f, 10.0f, ANIMMODE_ONCE, -10.0f },
 };
 
 #include "overlays/ovl_En_Mm3/ovl_En_Mm3.h"
@@ -94,11 +85,11 @@ TexturePtr D_80A704FC[] = { object_mm_Tex_002950, object_mm_Tex_002750 };
 
 void EnMm3_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 21.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &object_mm_Skel_0096E8, &object_mm_Anim_00A4E0, this->jointTable,
-                       this->morphTable, OBJECT_MM_LIMB_MAX);
+                       this->morphTable, 16);
     Animation_Change(&this->skelAnime, &object_mm_Anim_00A4E0, -1.0f, Animation_GetLastFrame(&object_mm_Anim_00A4E0),
                      0.0f, ANIMMODE_ONCE, 0.0f);
     Collider_InitCylinder(play, &this->collider);
@@ -106,7 +97,7 @@ void EnMm3_Init(Actor* thisx, PlayState* play) {
     CollisionCheck_SetInfo2(&this->actor.colChkInfo, NULL, &sColChkInfoInit);
     Actor_UpdateBgCheckInfo(play, &this->actor, 0.0f, 0.0f, 0.0f, UPDBGCHECKINFO_FLAG_4);
     this->actor.parent = NULL;
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     this->unk_1DC = 1;
     this->unk_2B4 = 0;
     this->unk_2AE = 0;
@@ -116,7 +107,7 @@ void EnMm3_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnMm3_Destroy(Actor* thisx, PlayState* play) {
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
     CLEAR_WEEKEVENTREG(WEEKEVENTREG_KICKOUT_WAIT);
     Collider_DestroyCylinder(play, &this->collider);
@@ -135,12 +126,12 @@ s32 func_80A6F22C(EnMm3* this) {
 void func_80A6F270(EnMm3* this) {
     this->unk_1DC = 1;
     this->unk_2B0 &= ~1;
-    Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, ENMM3_ANIM_5);
+    Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, 5);
     this->actionFunc = func_80A6F2C8;
 }
 
 void func_80A6F2C8(EnMm3* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         Message_StartTextbox(play, 0x278A, &this->actor);
         this->unk_2B4 = 0x278A;
         func_80A6F9C8(this);
@@ -148,10 +139,10 @@ void func_80A6F2C8(EnMm3* this, PlayState* play) {
         Actor_OfferTalk(&this->actor, play, 100.0f);
     }
 
-    Math_SmoothStepToS(&this->headRot.x, 0, 5, 0x1000, 0x100);
-    Math_SmoothStepToS(&this->headRot.y, 0, 5, 0x1000, 0x100);
-    Math_SmoothStepToS(&this->torsoRot.x, 0, 5, 0x1000, 0x100);
-    Math_SmoothStepToS(&this->torsoRot.y, 0, 5, 0x1000, 0x100);
+    Math_SmoothStepToS(&this->unk_2A0.x, 0, 5, 0x1000, 0x100);
+    Math_SmoothStepToS(&this->unk_2A0.y, 0, 5, 0x1000, 0x100);
+    Math_SmoothStepToS(&this->unk_2A6.x, 0, 5, 0x1000, 0x100);
+    Math_SmoothStepToS(&this->unk_2A6.y, 0, 5, 0x1000, 0x100);
 }
 
 void func_80A6F3B4(EnMm3* this, PlayState* play) {
@@ -204,9 +195,6 @@ void func_80A6F3B4(EnMm3* this, PlayState* play) {
                     Message_BombersNotebookQueueEvent(play, BOMBERS_NOTEBOOK_EVENT_MET_POSTMAN);
                 }
                 break;
-
-            default:
-                break;
         }
     }
 }
@@ -231,7 +219,7 @@ void func_80A6F5E4(EnMm3* this, PlayState* play) {
                 }
                 this->unk_1DC = 0;
                 this->unk_2B0 |= 1;
-                Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, ENMM3_ANIM_7);
+                Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, 7);
                 break;
 
             case 0x278B:
@@ -314,9 +302,6 @@ void func_80A6F5E4(EnMm3* this, PlayState* play) {
                 Message_StartTextbox(play, 0x279A, &this->actor);
                 this->unk_2B4 = 0x279A;
                 break;
-
-            default:
-                break;
         }
     } else if ((this->unk_2AC > 0) && (this->unk_2B4 == 0x2791)) {
         this->unk_2AC--;
@@ -341,11 +326,11 @@ void func_80A6F9DC(EnMm3* this, PlayState* play) {
 
     switch (Message_GetState(&play->msgCtx)) {
         case TEXT_STATE_NONE:
-        case TEXT_STATE_NEXT:
+        case TEXT_STATE_1:
         case TEXT_STATE_CLOSING:
             break;
 
-        case TEXT_STATE_FADING:
+        case TEXT_STATE_3:
             this->unk_2B0 |= 2;
             break;
 
@@ -353,7 +338,7 @@ void func_80A6F9DC(EnMm3* this, PlayState* play) {
             func_80A6F3B4(this, play);
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             func_80A6F5E4(this, play);
             break;
 
@@ -379,13 +364,10 @@ void func_80A6F9DC(EnMm3* this, PlayState* play) {
                 }
             }
             break;
-
-        default:
-            break;
     }
 
-    if ((this->skelAnime.mode == ANIMMODE_ONCE) && Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame)) {
-        Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, ENMM3_ANIM_2);
+    if ((this->skelAnime.mode == 2) && Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame)) {
+        Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, 2);
     }
 
     if (((this->unk_2B4 == 0x279D) || (this->unk_2B4 == 0x27A0) || (this->unk_2B4 == 0x278B)) &&
@@ -409,7 +391,7 @@ void func_80A6FBFC(EnMm3* this, PlayState* play) {
 
     if (gSaveContext.timerStates[TIMER_ID_POSTMAN] == TIMER_STATE_POSTMAN_END) {
         player->stateFlags1 &= ~PLAYER_STATE1_20;
-        this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags |= ACTOR_FLAG_10000;
         if (gSaveContext.timerCurTimes[TIMER_ID_POSTMAN] > SECONDS_TO_TIMER(15)) {
             gSaveContext.timerCurTimes[TIMER_ID_POSTMAN] = SECONDS_TO_TIMER(15);
         } else if ((((void)0, gSaveContext.timerCurTimes[TIMER_ID_POSTMAN]) >=
@@ -423,19 +405,19 @@ void func_80A6FBFC(EnMm3* this, PlayState* play) {
         gSaveContext.postmanTimerStopOsTime = osGetTime();
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         AudioSfx_MuteBanks(0);
         Audio_SetMainBgmVolume(0x7F, 5);
         Message_StartTextbox(play, 0x2791, &this->actor);
         this->unk_2B4 = 0x2791;
         this->unk_2AC = 7;
         gSaveContext.timerStates[TIMER_ID_POSTMAN] = TIMER_STATE_OFF;
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         Audio_PlaySfx(NA_SE_SY_START_SHOT);
         func_80A6F9C8(this);
     } else {
         Actor_OfferTalk(&this->actor, play, this->actor.xzDistToPlayer + 10.0f);
-        Player_SetAutoLockOnActor(play, &this->actor);
+        func_80123E90(play, &this->actor);
         if (GameInteractor_Should(VB_CONSIDER_BUNNY_HOOD_EQUIPPED, Player_GetMask(play) == PLAYER_MASK_BUNNY, player)) {
             Audio_PlaySfx(NA_SE_SY_STOPWATCH_TIMER_INF - SFX_FLAG);
         } else {
@@ -450,12 +432,12 @@ void func_80A6FE1C(EnMm3* this) {
 
 void func_80A6FE30(EnMm3* this, PlayState* play) {
     if (Actor_HasParent(&this->actor, play)) {
-        if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_POSTMAN_COUNTING_GAME_HEART_PIECE)) {
-            SET_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_POSTMAN_COUNTING_GAME_HEART_PIECE);
+        if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_77_01)) {
+            SET_WEEKEVENTREG(WEEKEVENTREG_77_01);
         }
         this->actor.parent = NULL;
         func_80A6FED8(this);
-    } else if (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_POSTMAN_COUNTING_GAME_HEART_PIECE)) {
+    } else if (CHECK_WEEKEVENTREG(WEEKEVENTREG_77_01)) {
         Actor_OfferGetItem(&this->actor, play, GI_RUPEE_PURPLE, 500.0f, 100.0f);
     } else {
         Actor_OfferGetItem(&this->actor, play, GI_HEART_PIECE, 500.0f, 100.0f);
@@ -469,13 +451,13 @@ void func_80A6FED8(EnMm3* this) {
 void func_80A6FEEC(EnMm3* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         player->stateFlags1 &= ~PLAYER_STATE1_20;
         Message_StartTextbox(play, 0x2794, &this->actor);
         this->unk_2B4 = 0x2794;
         Message_BombersNotebookQueueEvent(play, BOMBERS_NOTEBOOK_EVENT_MET_POSTMAN);
         Message_BombersNotebookQueueEvent(play, BOMBERS_NOTEBOOK_EVENT_RECEIVED_POSTMAN_HP);
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         func_80A6F9C8(this);
     } else {
         Actor_OfferTalkExchangeEquiCylinder(&this->actor, play, 200.0f, PLAYER_IA_MINUS1);
@@ -551,14 +533,14 @@ void func_80A70084(EnMm3* this, PlayState* play) {
 
 void EnMm3_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
     this->actionFunc(this, play);
 
     SkelAnime_Update(&this->skelAnime);
 
     if (this->unk_2B0 & 1) {
-        Actor_TrackPlayer(play, &this->actor, &this->headRot, &this->torsoRot, this->actor.focus.pos);
+        Actor_TrackPlayer(play, &this->actor, &this->unk_2A0, &this->unk_2A6, this->actor.focus.pos);
     }
 
     Collider_UpdateCylinder(&this->actor, &this->collider);
@@ -566,14 +548,14 @@ void EnMm3_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnMm3_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
-    if (limbIndex == OBJECT_MM_LIMB_08) {
-        rot->x += this->torsoRot.y;
-        rot->y -= this->torsoRot.x;
-    } else if (limbIndex == OBJECT_MM_LIMB_0F) {
-        rot->x += this->headRot.y;
-        rot->z += this->headRot.x;
+    if (limbIndex == 8) {
+        rot->x += this->unk_2A6.y;
+        rot->y -= this->unk_2A6.x;
+    } else if (limbIndex == 15) {
+        rot->x += this->unk_2A0.y;
+        rot->z += this->unk_2A0.x;
         if ((this->unk_2B0 & 2) && ((play->gameplayFrames % 3) == 0)) {
             Matrix_Translate(40.0f, 0.0f, 0.0f, MTXMODE_APPLY);
         }
@@ -582,15 +564,15 @@ s32 EnMm3_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
 }
 
 void EnMm3_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
-    if (limbIndex == OBJECT_MM_LIMB_0F) {
+    if (limbIndex == 15) {
         Matrix_MultVec3f(&D_80A704F0, &this->actor.focus.pos);
     }
 }
 
 void EnMm3_Draw(Actor* thisx, PlayState* play) {
-    EnMm3* this = (EnMm3*)thisx;
+    EnMm3* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

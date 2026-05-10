@@ -1,4 +1,5 @@
 #include "Logic.h"
+#include <libultraship/libultraship.h>
 
 extern "C" {
 #include "variables.h"
@@ -9,15 +10,16 @@ namespace Rando {
 
 namespace Logic {
 
-void ApplyNearlyNoLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std::vector<RandoItemId>& itemPool) {
+void ApplyNearlyNoLogicToSaveContext(std::unordered_map<RandoCheckId, bool>& checkPool,
+                                     std::vector<RandoItemId>& itemPool) {
     for (size_t i = 0; i < itemPool.size(); i++) {
         std::swap(itemPool[i], itemPool[Ship_Random(0, itemPool.size() - 1)]);
     }
 
-    std::map<RandoItemId, RandoCheckId> importantItems;
+    std::unordered_map<RandoItemId, RandoCheckId> importantItems;
     std::vector<RandoCheckId> safeChecks;
 
-    std::map<RandoItemId, std::vector<SceneId>> itemToSceneBlacklist = {
+    std::unordered_map<RandoItemId, std::vector<SceneId>> itemToSceneBlacklist = {
         { RI_MASK_DEKU,
           { SCENE_MITURIN, SCENE_MITURIN_BS, SCENE_LAST_DEKU, SCENE_LAST_GORON, SCENE_LAST_ZORA, SCENE_LAST_LINK,
             SCENE_SOUGEN, SCENE_LAST_BS } },
@@ -42,7 +44,7 @@ void ApplyNearlyNoLogicToSaveContext(std::vector<RandoCheckId>& checkPool, std::
           { SCENE_LAST_DEKU, SCENE_LAST_GORON, SCENE_LAST_ZORA, SCENE_LAST_LINK, SCENE_SOUGEN, SCENE_LAST_BS } },
     };
 
-    for (auto& randoCheckId : checkPool) {
+    for (auto& [randoCheckId, _] : checkPool) {
         if (randoCheckId == RC_UNKNOWN) {
             continue;
         }

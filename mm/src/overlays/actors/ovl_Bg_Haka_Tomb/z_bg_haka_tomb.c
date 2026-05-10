@@ -9,6 +9,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgHakaTomb*)thisx)
+
 void BgHakaTomb_Init(Actor* thisx, PlayState* play);
 void BgHakaTomb_Destroy(Actor* thisx, PlayState* play);
 void BgHakaTomb_Update(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void func_80BD6768(BgHakaTomb* this, PlayState* play);
 void BgHakaTomb_SetupDoNothing(BgHakaTomb* this);
 void BgHakaTomb_DoNothing(BgHakaTomb* this, PlayState* play);
 
-ActorProfile Bg_Haka_Tomb_Profile = {
+ActorInit Bg_Haka_Tomb_InitVars = {
     /**/ ACTOR_BG_HAKA_TOMB,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -40,7 +42,7 @@ static InitChainEntry sInitChain[] = {
 static Vec3f D_80BD68A4 = { 30.0f, 90.0f, 0.0f };
 
 void BgHakaTomb_Init(Actor* thisx, PlayState* play) {
-    BgHakaTomb* this = (BgHakaTomb*)thisx;
+    BgHakaTomb* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -50,7 +52,7 @@ void BgHakaTomb_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgHakaTomb_Destroy(Actor* thisx, PlayState* play) {
-    BgHakaTomb* this = (BgHakaTomb*)thisx;
+    BgHakaTomb* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -65,7 +67,7 @@ s32 func_80BD6638(s16* csId, s16* csIdList, s32 numCutscenes) {
     s32 i;
 
     *csId = CutsceneManager_GetCurrentCsId();
-    if (*csId > CS_ID_NONE) {
+    if (*csId >= 0) {
         for (i = 0; i < numCutscenes; i++) {
             if (*csId == csIdList[i]) {
                 retVal = true;
@@ -81,16 +83,16 @@ void func_80BD66AC(BgHakaTomb* this, PlayState* play) {
     s16 csId;
 
     if (Flags_GetClear(play, this->dyna.actor.room)) {
-        this->dyna.actor.flags |= (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+        this->dyna.actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
     }
     if (!func_80BD6638(&csId, this->csIdList, ARRAY_COUNT(this->csIdList)) && (csId <= CS_ID_NONE) &&
         Flags_GetClear(play, this->dyna.actor.room)) {
-        this->dyna.actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_TARGETABLE;
         if (this->dyna.actor.isLockedOn) {
             func_80BD6754(this);
         }
     } else {
-        this->dyna.actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+        this->dyna.actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     }
 }
 
@@ -112,7 +114,7 @@ void BgHakaTomb_DoNothing(BgHakaTomb* this, PlayState* play) {
 }
 
 void BgHakaTomb_Update(Actor* thisx, PlayState* play) {
-    BgHakaTomb* this = (BgHakaTomb*)thisx;
+    BgHakaTomb* this = THIS;
     s32 pad;
     Vec3f vec;
 

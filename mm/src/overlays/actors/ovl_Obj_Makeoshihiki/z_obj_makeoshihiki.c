@@ -6,12 +6,14 @@
 
 #include "z_obj_makeoshihiki.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjMakeoshihiki*)thisx)
 
 void ObjMakeoshihiki_Init(Actor* thisx, PlayState* play);
 void ObjMakeoshihiki_Update(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Makeoshihiki_Profile = {
+ActorInit Obj_Makeoshihiki_InitVars = {
     /**/ ACTOR_OBJ_MAKEOSHIHIKI,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -54,7 +56,7 @@ void ObjMakeoshihiki_SetSwitchFlags(ObjMakeoshihiki* this, PlayState* play, s32 
 }
 
 void ObjMakeoshihiki_Init(Actor* thisx, PlayState* play) {
-    ObjMakeoshihiki* this = (ObjMakeoshihiki*)thisx;
+    ObjMakeoshihiki* this = THIS;
     Vec3s* childPoint;
     Path* path;
     s32 childPointIndex;
@@ -71,7 +73,7 @@ void ObjMakeoshihiki_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjMakeoshihiki_Update(Actor* thisx, PlayState* play) {
-    ObjMakeoshihiki* this = (ObjMakeoshihiki*)thisx;
+    ObjMakeoshihiki* this = THIS;
     Actor* child;
     s32 loopPathIndex;
     Vec3f pathPointF;

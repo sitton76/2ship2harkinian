@@ -8,7 +8,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "overlays/actors/ovl_En_Bom/z_en_bom.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_200)
+
+#define THIS ((EnRat*)thisx)
 
 void EnRat_Init(Actor* thisx, PlayState* play);
 void EnRat_Destroy(Actor* thisx, PlayState* play);
@@ -33,7 +35,7 @@ typedef enum {
     /* -1 */ EN_RAT_HOOKED
 } EnRatHookedState;
 
-ActorProfile En_Rat_Profile = {
+ActorInit En_Rat_InitVars = {
     /**/ ACTOR_EN_RAT,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -47,7 +49,7 @@ ActorProfile En_Rat_Profile = {
 
 static ColliderSphereInit sSphereInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -55,11 +57,11 @@ static ColliderSphereInit sSphereInit = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x08 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_HARD,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_HARD,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 1, { { 0, 0, 0 }, 23 }, 100 },
@@ -118,30 +120,19 @@ static TexturePtr sSparkTextures[] = {
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_REAL_BOMBCHU, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 15, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 5000, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 5000, ICHAIN_STOP),
 };
 
 static EffectBlureInit2 sBlureInit = {
-    0,
-    0,
-    0,
-    { 250, 0, 0, 250 },
-    { 200, 0, 0, 130 },
-    { 150, 0, 0, 100 },
-    { 100, 0, 0, 50 },
-    16,
-    0,
-    EFF_BLURE_DRAW_MODE_SIMPLE,
-    0,
-    { 0, 0, 0, 0 },
-    { 0, 0, 0, 0 },
+    0, 0, 0, { 250, 0, 0, 250 }, { 200, 0, 0, 130 }, { 150, 0, 0, 100 }, { 100, 0, 0, 50 }, 16,
+    0, 0, 0, { 0, 0, 0, 0 },     { 0, 0, 0, 0 },
 };
 
 static s32 sTexturesDesegmented = false;
 
 void EnRat_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
     s32 attackRange;
     s32 i;
 
@@ -192,7 +183,7 @@ void EnRat_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnRat_Destroy(Actor* thisx, PlayState* play) {
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
 
     if (EN_RAT_GET_TYPE(&this->actor) == EN_RAT_TYPE_DUNGEON) {
         Effect_Destroy(play, this->blure1Index);
@@ -333,9 +324,9 @@ void EnRat_ChooseDirection(EnRat* this) {
                 angle -= 0x8000;
             }
 
-            angle += TRUNCF_BINANG(Rand_CenteredFloat(0x800));
+            angle += (s16)(s32)Rand_CenteredFloat(0x800);
         } else {
-            angle = (Rand_ZeroOne() < 0.1f) ? TRUNCF_BINANG(Rand_CenteredFloat(0x800)) : 0;
+            angle = (Rand_ZeroOne() < 0.1f) ? (s16)(s32)Rand_CenteredFloat(0x800) : 0;
         }
     }
 
@@ -544,7 +535,7 @@ void EnRat_SetupRevive(EnRat* this) {
     this->actor.shape.rot.z = this->actor.home.rot.z;
     EnRat_InitializeAxes(this);
     EnRat_UpdateRotation(this);
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actor.speed = 0.0f;
     Animation_PlayLoopSetSpeed(&this->skelAnime, &gRealBombchuSpotAnim, 0.0f);
     this->revivePosY = 2666.6667f;
@@ -561,7 +552,7 @@ void EnRat_Revive(EnRat* this, PlayState* play) {
     if (this->timer > 0) {
         this->timer--;
         if (this->timer == 0) {
-            this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags |= ACTOR_FLAG_TARGETABLE;
             this->actor.draw = EnRat_Draw;
             this->skelAnime.playSpeed = 1.0f;
         }
@@ -573,7 +564,7 @@ void EnRat_Revive(EnRat* this, PlayState* play) {
         }
 
         if (Animation_OnFrame(&this->skelAnime, 0.0f)) {
-            this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->actor.flags &= ~ACTOR_FLAG_10;
             this->timer = 150;
             EnRat_SetupIdle(this);
         }
@@ -613,7 +604,7 @@ void EnRat_Idle(EnRat* this, PlayState* play) {
 }
 
 void EnRat_SetupSpottedPlayer(EnRat* this) {
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     Animation_MorphToLoop(&this->skelAnime, &gRealBombchuSpotAnim, -5.0f);
     this->animLoopCounter = 3;
     this->actor.speed = 0.0f;
@@ -779,7 +770,7 @@ void EnRat_PostDetonation(EnRat* this, PlayState* play) {
 
 void EnRat_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
 
     this->shouldRotateOntoSurfaces = false;
     if (this->damageReaction.stunTimer == 0) {
@@ -833,7 +824,7 @@ void EnRat_Update(Actor* thisx, PlayState* play) {
             if (this->damageReaction.hookedState == EN_RAT_HOOK_STARTED) {
                 // The player just hit the Real Bombchu with the Hookshot.
                 this->damageReaction.hookedState = EN_RAT_HOOKED;
-            } else if (!CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
+            } else if (!CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
                 // The player has hooked the Real Bombchu for more than one frame, but
                 // the actor flag indicating that the Hookshot is attached is *not* set.
                 EnRat_Explode(this, play);
@@ -891,7 +882,7 @@ void EnRat_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnRat_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
 
     if (limbIndex == REAL_BOMBCHU_LIMB_BODY) {
         pos->y -= this->revivePosY;
@@ -906,7 +897,7 @@ s32 EnRat_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
 
 void EnRat_PostLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     PlayState* play = play2;
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
     MtxF* currentMatrixState;
     Vec3f* ptr;
     f32 redModifier;
@@ -931,7 +922,8 @@ void EnRat_PostLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3s* rot
                 currentMatrixState->mf[3][0] = this->smokePos.x + ptr->x;
                 currentMatrixState->mf[3][1] = this->smokePos.y + ptr->y;
                 currentMatrixState->mf[3][2] = this->smokePos.z + ptr->z;
-                MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPSegment(POLY_XLU_DISP++, 0x08, sSparkTextures[(play->gameplayFrames + i) & 3]);
                 gSPDisplayList(POLY_XLU_DISP++, gEffSparkDL);
             }
@@ -942,7 +934,7 @@ void EnRat_PostLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3s* rot
             currentMatrixState->mf[3][2] = this->smokePos.z;
         }
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gBombCapDL);
         if (EN_RAT_GET_TYPE(&this->actor) == EN_RAT_TYPE_DUNGEON) {
             redModifier = fabsf(Math_CosF(this->timer * (M_PIf / 30.f)));
@@ -959,7 +951,7 @@ void EnRat_PostLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3s* rot
         gDPSetEnvColor(POLY_OPA_DISP++, (s32)((1.0f - redModifier) * 255.0f), 0, 40, 255);
         gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, (s32)((1.0f - redModifier) * 255.0f), 0, 40, 255);
         Matrix_RotateZYX(0x4000, 0, 0, MTXMODE_APPLY);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gBombBodyDL);
 
         CLOSE_DISPS(play->state.gfxCtx);
@@ -967,7 +959,7 @@ void EnRat_PostLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3s* rot
 }
 
 void EnRat_Draw(Actor* thisx, PlayState* play) {
-    EnRat* this = (EnRat*)thisx;
+    EnRat* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Gfx_SetupDL60_XluNoCD(play->state.gfxCtx);

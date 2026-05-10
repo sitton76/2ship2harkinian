@@ -7,7 +7,9 @@
 #include "z_en_syateki_wf.h"
 #include "overlays/actors/ovl_En_Syateki_Man/z_en_syateki_man.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnSyatekiWf*)thisx)
 
 void EnSyatekiWf_Init(Actor* thisx, PlayState* play);
 void EnSyatekiWf_Destroy(Actor* thisx, PlayState* play);
@@ -31,11 +33,11 @@ void EnSyatekiWf_Dead(EnSyatekiWf* this, PlayState* play);
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0xF7CFFFFF, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_ON,
         },
         { WOLFOS_NORMAL_LIMB_HEAD, { { 800, 0, 0 }, 25 }, 100 },
@@ -44,7 +46,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderCylinderInit sBodyCylinderInit = {
     {
-        COL_MATERIAL_HIT5,
+        COLTYPE_HIT5,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -52,11 +54,11 @@ static ColliderCylinderInit sBodyCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 40, 60, 0, { 0, 0, 0 } },
@@ -64,7 +66,7 @@ static ColliderCylinderInit sBodyCylinderInit = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_HIT5,
+        COLTYPE_HIT5,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -77,7 +79,7 @@ static ColliderJntSphInit sJntSphInit = {
 
 static ColliderCylinderInit sTailCylinderInit = {
     {
-        COL_MATERIAL_HIT5,
+        COLTYPE_HIT5,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -85,11 +87,11 @@ static ColliderCylinderInit sTailCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 15, 20, -15, { 0, 0, 0 } },
@@ -99,7 +101,7 @@ static Vec3f sVelocity = { 0.0f, 20.0f, 0.0f };
 
 static Vec3f sAccel = { 0.0f, 0.0f, 0.0f };
 
-ActorProfile En_Syateki_Wf_Profile = {
+ActorInit En_Syateki_Wf_InitVars = {
     /**/ ACTOR_EN_SYATEKI_WF,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -111,18 +113,17 @@ ActorProfile En_Syateki_Wf_Profile = {
     /**/ EnSyatekiWf_Draw,
 };
 
-typedef enum ShootingGalleryWolfosAnimation {
+typedef enum {
     /* 0 */ SG_WOLFOS_ANIM_WAIT, // unused
     /* 1 */ SG_WOLFOS_ANIM_RUN,
     /* 2 */ SG_WOLFOS_ANIM_JUMP,
     /* 3 */ SG_WOLFOS_ANIM_LAND,
     /* 4 */ SG_WOLFOS_ANIM_BACKFLIP, // unused
     /* 5 */ SG_WOLFOS_ANIM_DAMAGED,
-    /* 6 */ SG_WOLFOS_ANIM_REAR_UP_FALL_OVER,
-    /* 7 */ SG_WOLFOS_ANIM_MAX
+    /* 6 */ SG_WOLFOS_ANIM_REAR_UP_FALL_OVER
 } ShootingGalleryWolfosAnimation;
 
-static AnimationInfo sAnimationInfo[SG_WOLFOS_ANIM_MAX] = {
+static AnimationInfo sAnimationInfo[] = {
     { &gWolfosWaitAnim, 2.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -1.0f },           // SG_WOLFOS_ANIM_WAIT
     { &gWolfosRunAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -8.0f },            // SG_WOLFOS_ANIM_RUN
     { &gWolfosRunAnim, 1.0f, 0.0f, 4.0f, ANIMMODE_ONCE, 1.0f },             // SG_WOLFOS_ANIM_JUMP
@@ -133,13 +134,13 @@ static AnimationInfo sAnimationInfo[SG_WOLFOS_ANIM_MAX] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(lockOnArrowOffset, 2000, ICHAIN_CONTINUE),
+    ICHAIN_F32(targetArrowOffset, 2000, ICHAIN_CONTINUE),
     ICHAIN_F32_DIV1000(gravity, -2000, ICHAIN_STOP),
 };
 
 void EnSyatekiWf_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnSyatekiWf* this = (EnSyatekiWf*)thisx;
+    EnSyatekiWf* this = THIS;
     Path* path;
     EnSyatekiMan* syatekiMan = (EnSyatekiMan*)this->actor.parent;
     s32 i;
@@ -179,7 +180,7 @@ void EnSyatekiWf_Init(Actor* thisx, PlayState* play) {
     Collider_SetCylinder(play, &this->tailCollider, &this->actor, &sTailCylinderInit);
     Collider_InitJntSph(play, &this->headCollider);
     Collider_SetJntSph(play, &this->headCollider, &this->actor, &sJntSphInit, this->headColliderElements);
-    this->headCollider.elements[0].dim.worldSphere.radius = sJntSphInit.elements[0].dim.modelSphere.radius;
+    this->headCollider.elements->dim.worldSphere.radius = sJntSphInit.elements[0].dim.modelSphere.radius;
 
     SkelAnime_InitFlex(play, &this->skelAnime, &gWolfosNormalSkel, &gWolfosWaitAnim, this->jointTable, this->morphTable,
                        WOLFOS_NORMAL_LIMB_MAX);
@@ -190,7 +191,7 @@ void EnSyatekiWf_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnSyatekiWf_Destroy(Actor* thisx, PlayState* play) {
-    EnSyatekiWf* this = (EnSyatekiWf*)thisx;
+    EnSyatekiWf* this = THIS;
 
     Collider_DestroyCylinder(play, &this->bodyCollider);
     Collider_DestroyCylinder(play, &this->tailCollider);
@@ -310,7 +311,7 @@ void EnSyatekiWf_Run(EnSyatekiWf* this, PlayState* play) {
             this->actor.shape.rot.y = this->actor.world.rot.y;
             if (distToTarget < 50.0f) {
                 if (this->actor.speed > 3.0f) {
-                    this->actor.speed -= 0.5f;
+                    this->actor.speed = this->actor.speed - 0.5f;
                 } else {
                     this->actor.speed = this->actor.speed;
                 }
@@ -330,7 +331,7 @@ void EnSyatekiWf_Run(EnSyatekiWf* this, PlayState* play) {
         }
 
         if (Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame)) {
-            Actor_SpawnFloorDustRing(play, &this->actor, &this->actor.world.pos, 10.0f, 3, 2.0f, 0, 0, false);
+            Actor_SpawnFloorDustRing(play, &this->actor, &this->actor.world.pos, 10.0f, 3, 2.0f, 0, 0, 0);
         }
     }
 }
@@ -417,7 +418,7 @@ void EnSyatekiWf_Dead(EnSyatekiWf* this, PlayState* play) {
 
 void EnSyatekiWf_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnSyatekiWf* this = (EnSyatekiWf*)thisx;
+    EnSyatekiWf* this = THIS;
 
     if (this->actionFunc != EnSyatekiWf_WaitForSignal) {
         SkelAnime_Update(&this->skelAnime);
@@ -483,7 +484,7 @@ s32 EnSyatekiWf_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Ve
 
 void EnSyatekiWf_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     static Vec3f sTailColliderOffset = { 1200.0f, 0.0f, 0.0f };
-    EnSyatekiWf* this = (EnSyatekiWf*)thisx;
+    EnSyatekiWf* this = THIS;
     Vec3f tailColliderPos;
 
     Collider_UpdateSpheres(limbIndex, &this->headCollider);
@@ -502,7 +503,7 @@ void EnSyatekiWf_Draw(Actor* thisx, PlayState* play) {
         gWolfosNormalEyeNarrowTex,
         gWolfosNormalEyeHalfTex,
     };
-    EnSyatekiWf* this = (EnSyatekiWf*)thisx;
+    EnSyatekiWf* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

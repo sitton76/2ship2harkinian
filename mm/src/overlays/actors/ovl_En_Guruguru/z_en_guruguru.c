@@ -6,7 +6,9 @@
 
 #include "z_en_guruguru.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnGuruguru*)thisx)
 
 void EnGuruguru_Init(Actor* thisx, PlayState* play);
 void EnGuruguru_Destroy(Actor* thisx, PlayState* play);
@@ -24,7 +26,7 @@ void func_80BC7520(EnGuruguru* this, PlayState* play);
 
 extern ColliderCylinderInit D_80BC79A0;
 
-ActorProfile En_Guruguru_Profile = {
+ActorInit En_Guruguru_InitVars = {
     /**/ ACTOR_EN_GURUGURU,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -41,7 +43,7 @@ static u16 textIDs[] = { 0x292A, 0x292B, 0x292C, 0x292D, 0x292E, 0x292F, 0x2930,
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -49,11 +51,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 15, 20, 0, { 0, 0, 0 } },
@@ -84,13 +86,13 @@ static TexturePtr sEyeTextures[] = { gGuruGuruEyeClosedTex, gGuruGuruEyeAngryTex
 static TexturePtr sMouthTextures[] = { gGuruGuruMouthOpenTex, gGuruGuruMouthAngryTex };
 
 void EnGuruguru_Init(Actor* thisx, PlayState* play) {
-    EnGuruguru* this = (EnGuruguru*)thisx;
+    EnGuruguru* this = THIS;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 19.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gGuruGuruSkel, &gGuruGuruPlayStillAnim, this->jointTable,
                        this->morphTable, GURU_GURU_LIMB_MAX);
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     if (this->actor.params != 2) {
         Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     }
@@ -98,9 +100,9 @@ void EnGuruguru_Init(Actor* thisx, PlayState* play) {
         if (this->actor.params == 0) {
             func_80BC6E10(this);
         } else if (this->actor.params == 2) {
-            this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
+            this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
             this->actor.draw = NULL;
-            this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             this->actionFunc = EnGuruguru_DoNothing;
         } else {
             Actor_Kill(&this->actor);
@@ -113,7 +115,7 @@ void EnGuruguru_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnGuruguru_Destroy(Actor* thisx, PlayState* play) {
-    EnGuruguru* this = (EnGuruguru*)thisx;
+    EnGuruguru* this = THIS;
 
     if (this->actor.params != 2) {
         Collider_DestroyCylinder(play, &this->collider);
@@ -179,7 +181,7 @@ void func_80BC6F14(EnGuruguru* this, PlayState* play) {
     yawTemp = this->actor.yawTowardsPlayer - this->actor.world.rot.y;
     yaw = ABS_ALT(yawTemp);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80BC701C(this, play);
     } else if (yaw <= 0x2890) {
         Actor_OfferTalk(&this->actor, play, 60.0f);
@@ -206,7 +208,7 @@ void func_80BC7068(EnGuruguru* this, PlayState* play) {
         SkelAnime_Update(&this->skelAnime);
     } else if (this->unusedTimer == 0) {
         this->unusedTimer = 6;
-        if (Message_GetState(&play->msgCtx) != TEXT_STATE_EVENT) {
+        if (Message_GetState(&play->msgCtx) != TEXT_STATE_5) {
             if (this->unk266 == 0) {
                 if (this->headZRotTarget != 0) {
                     this->headZRotTarget = 0;
@@ -222,7 +224,7 @@ void func_80BC7068(EnGuruguru* this, PlayState* play) {
             }
         }
     }
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         this->headZRotTarget = 0;
         if ((this->textIdIndex == 13) || (this->textIdIndex == 14)) {
@@ -321,7 +323,7 @@ void func_80BC7440(EnGuruguru* this, PlayState* play) {
 
 void func_80BC7520(EnGuruguru* this, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->actionFunc = func_80BC7068;
     } else {
         Actor_OfferTalkExchange(&this->actor, play, 400.0f, 400.0f, PLAYER_IA_MINUS1);
@@ -329,7 +331,7 @@ void func_80BC7520(EnGuruguru* this, PlayState* play) {
 }
 
 void EnGuruguru_Update(Actor* thisx, PlayState* play) {
-    EnGuruguru* this = (EnGuruguru*)thisx;
+    EnGuruguru* this = THIS;
     s32 yaw;
     Player* player = GET_PLAYER(play);
     s16 yawTemp;
@@ -376,8 +378,8 @@ void EnGuruguru_Update(Actor* thisx, PlayState* play) {
     Actor_SetScale(&this->actor, 0.01f);
     Actor_SetFocus(&this->actor, 50.0f);
     Actor_MoveWithGravity(&this->actor);
-    Math_SmoothStepToS(&this->headXRot, this->headXRotTarget, 1, 0xBB8, 0);
-    Math_SmoothStepToS(&this->headZRot, this->headZRotTarget, 1, 0x3E8, 0);
+    Math_SmoothStepToS(&this->headXRot, this->headXRotTarget, 1, 3000, 0);
+    Math_SmoothStepToS(&this->headZRot, this->headZRotTarget, 1, 1000, 0);
     Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, 20.0f, 50.0f,
                             UPDBGCHECKINFO_FLAG_1 | UPDBGCHECKINFO_FLAG_4 | UPDBGCHECKINFO_FLAG_8 |
                                 UPDBGCHECKINFO_FLAG_10);
@@ -386,7 +388,7 @@ void EnGuruguru_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnGuruguru_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnGuruguru* this = (EnGuruguru*)thisx;
+    EnGuruguru* this = THIS;
 
     if (limbIndex == GURU_GURU_LIMB_HEAD) {
         rot->x += this->headXRot;
@@ -397,7 +399,7 @@ s32 EnGuruguru_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
 }
 
 void EnGuruguru_Draw(Actor* thisx, PlayState* play) {
-    EnGuruguru* this = (EnGuruguru*)thisx;
+    EnGuruguru* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

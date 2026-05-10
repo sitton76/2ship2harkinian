@@ -7,14 +7,16 @@
 #include "z_mir_ray3.h"
 #include "objects/object_mir_ray/object_mir_ray.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((MirRay3*)thisx)
 
 void MirRay3_Init(Actor* thisx, PlayState* play);
 void MirRay3_Destroy(Actor* thisx, PlayState* play);
 void MirRay3_Update(Actor* thisx, PlayState* play);
 void MirRay3_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Mir_Ray3_Profile = {
+ActorInit Mir_Ray3_InitVars = {
     /**/ ACTOR_MIR_RAY3,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile Mir_Ray3_Profile = {
 
 static ColliderQuadInit sQuadInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_PLAYER,
         AC_NONE,
         OC1_NONE,
@@ -36,11 +38,11 @@ static ColliderQuadInit sQuadInit = {
         COLSHAPE_QUAD,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00200000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_NONE,
     },
     { { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } } },
@@ -48,7 +50,7 @@ static ColliderQuadInit sQuadInit = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER | AC_TYPE_OTHER,
         OC1_NONE,
@@ -56,11 +58,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00200000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 10, 10, 0, { 0, 0, 0 } },
@@ -75,7 +77,7 @@ typedef struct {
 
 void MirRay3_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    MirRay3* this = (MirRay3*)thisx;
+    MirRay3* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 0.0f);
     Actor_SetScale(&this->actor, 1.0f);
@@ -106,7 +108,7 @@ void MirRay3_Init(Actor* thisx, PlayState* play) {
 }
 
 void MirRay3_Destroy(Actor* thisx, PlayState* play) {
-    MirRay3* this = (MirRay3*)thisx;
+    MirRay3* this = THIS;
 
     Collider_DestroyQuad(play, &this->colliderQuad);
     Collider_DestroyCylinder(play, &this->colliderCylinder);
@@ -114,7 +116,7 @@ void MirRay3_Destroy(Actor* thisx, PlayState* play) {
 
 void MirRay3_Update(Actor* thisx, PlayState* play) {
     s32 pad[2];
-    MirRay3* this = (MirRay3*)thisx;
+    MirRay3* this = THIS;
     Player* player = GET_PLAYER(play);
 
     this->unk_210 &= ~1;
@@ -137,7 +139,7 @@ void MirRay3_Update(Actor* thisx, PlayState* play) {
     }
 
     if (this->unk_214 > 0.1f) {
-        Actor_PlaySfx_Flagged2(&player->actor, NA_SE_IT_SHIELD_BEAM - SFX_FLAG);
+        Actor_PlaySfx_FlaggedCentered1(&player->actor, NA_SE_IT_SHIELD_BEAM - SFX_FLAG);
     }
 
     Math_ApproachZeroF(&this->unk_214, 1.0f, 0.1f);
@@ -320,7 +322,7 @@ void func_80B9E8D4(MirRay3* this, PlayState* play, MirRay3Struct* ptr) {
     {
         CollisionPoly* spC4;
 
-        if (!BgCheck_AnyLineTest1(&play->colCtx, &sp140, &sp134, &sp128, &spC4, true)) {
+        if (!BgCheck_AnyLineTest1(&play->colCtx, &sp140, &sp134, &sp128, &spC4, 1)) {
             Math_Vec3f_Copy(&sp128, &sp134);
         }
 
@@ -342,7 +344,7 @@ void func_80B9E8D4(MirRay3* this, PlayState* play, MirRay3Struct* ptr) {
 
 void MirRay3_Draw(Actor* thisx, PlayState* play) {
     s32 pad[2];
-    MirRay3* this = (MirRay3*)thisx;
+    MirRay3* this = THIS;
     MirRay3Struct sp8C[6];
     Player* player = GET_PLAYER(play);
     s32 i;
@@ -362,10 +364,10 @@ void MirRay3_Draw(Actor* thisx, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Matrix_Scale(1.0f, 1.0f, this->unk_214, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
         if (MIRRAY3_GET_F(&this->actor) == MIRRAY3_F_1) {
-            time = CURRENT_TIME;
+            time = gSaveContext.save.time;
 
             if (time > CLOCK_TIME(12, 0)) {
                 time = (DAY_LENGTH - 1) - time;
@@ -406,7 +408,8 @@ void MirRay3_Draw(Actor* thisx, PlayState* play) {
                 Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
                 Matrix_Mult(&sp8C[i].unk_0C, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gDPPipeSync(POLY_XLU_DISP++);
                 gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 255, sp8C[0].unk_50);
                 gSPDisplayList(POLY_XLU_DISP++, object_mir_ray_DL_0004B0);

@@ -9,6 +9,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgKin2Shelf*)thisx)
+
 void BgKin2Shelf_Init(Actor* thisx, PlayState* play);
 void BgKin2Shelf_Destroy(Actor* thisx, PlayState* play);
 void BgKin2Shelf_Update(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void func_80B70230(BgKin2Shelf* this, PlayState* play);
 void func_80B70498(BgKin2Shelf* this);
 void func_80B704B4(BgKin2Shelf* this, PlayState* play);
 
-ActorProfile Bg_Kin2_Shelf_Profile = {
+ActorInit Bg_Kin2_Shelf_InitVars = {
     /**/ ACTOR_BG_KIN2_SHELF,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -46,7 +48,7 @@ f32 D_80B70770[] = { 10.0f, 15.0f };
 u8 D_80B70778[] = { 0x0F, 0x0A };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_STOP),
 };
 
 CollisionHeader* D_80B70780[] = { &gOceanSpiderHouseChestOfDrawersCol, &gOceanSpiderHouseBookshelfCol };
@@ -65,7 +67,7 @@ s32 func_80B6FB30(BgKin2Shelf* this, PlayState* play) {
     Vec3f sp64;
     Vec3f sp58;
     CollisionPoly* sp54;
-    s32 bgId;
+    s32 sp50;
 
     if (this->unk_164 & 2) {
         spA2 = 0x4000;
@@ -92,7 +94,7 @@ s32 func_80B6FB30(BgKin2Shelf* this, PlayState* play) {
     Matrix_MultVec3f(&sp94, &sp7C);
     Matrix_MultVec3f(&sp88, &sp70);
 
-    return BgCheck_EntityLineTest3(&play->colCtx, &sp7C, &sp70, &sp64, &sp54, true, false, false, true, &bgId,
+    return BgCheck_EntityLineTest3(&play->colCtx, &sp7C, &sp70, &sp64, &sp54, true, false, false, true, &sp50,
                                    &this->dyna.actor, 0.0f);
 }
 
@@ -107,7 +109,7 @@ s32 func_80B6FCA4(BgKin2Shelf* this, PlayState* play) {
     Vec3f sp60;
     Vec3f sp54;
     CollisionPoly* sp50;
-    s32 bgId;
+    s32 sp4C;
 
     if (this->unk_164 & 1) {
         sp9E = 0;
@@ -134,7 +136,7 @@ s32 func_80B6FCA4(BgKin2Shelf* this, PlayState* play) {
     Matrix_MultVec3f(&sp90, &sp78);
     Matrix_MultVec3f(&sp84, &sp6C);
 
-    return BgCheck_EntityLineTest3(&play->colCtx, &sp78, &sp6C, &sp60, &sp50, true, false, false, true, &bgId,
+    return BgCheck_EntityLineTest3(&play->colCtx, &sp78, &sp6C, &sp60, &sp50, true, false, false, true, &sp4C,
                                    &this->dyna.actor, 0.0f);
 }
 
@@ -183,26 +185,26 @@ s32 func_80B6FEBC(BgKin2Shelf* this, PlayState* play) {
     return false;
 }
 
-bool func_80B6FF28(BgKin2Shelf* this, PlayState* play) {
+s32 func_80B6FF28(BgKin2Shelf* this, PlayState* play) {
     return (this->unk_165 > 8) && func_80B6FE48(this, play) && func_80B6FEBC(this, play) && !func_80B6FE08(this, play);
 }
 
 void BgKin2Shelf_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgKin2Shelf* this = (BgKin2Shelf*)thisx;
+    BgKin2Shelf* this = THIS;
     s32 sp24 = BGKIN2SHELF_GET_1(&this->dyna.actor);
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
 
     if (sp24 == 0) {
-        this->dyna.actor.cullingVolumeScale = 150.0f;
-        this->dyna.actor.cullingVolumeDownward = 140.0f;
+        this->dyna.actor.uncullZoneScale = 150.0f;
+        this->dyna.actor.uncullZoneDownward = 140.0f;
         Actor_SetScale(&this->dyna.actor, 0.1f);
     } else {
-        this->dyna.actor.cullingVolumeScale = 250.0f;
-        this->dyna.actor.cullingVolumeDownward = 300.0f;
+        this->dyna.actor.uncullZoneScale = 250.0f;
+        this->dyna.actor.uncullZoneDownward = 300.0f;
         Actor_SetScale(&this->dyna.actor, 1.0f);
-        this->dyna.actor.flags |= ACTOR_FLAG_UCODE_POINT_LIGHT_ENABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10000000;
     }
 
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -211,7 +213,7 @@ void BgKin2Shelf_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgKin2Shelf_Destroy(Actor* thisx, PlayState* play) {
-    BgKin2Shelf* this = (BgKin2Shelf*)thisx;
+    BgKin2Shelf* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -366,7 +368,7 @@ void func_80B704B4(BgKin2Shelf* this, PlayState* play) {
 }
 
 void BgKin2Shelf_Update(Actor* thisx, PlayState* play) {
-    BgKin2Shelf* this = (BgKin2Shelf*)thisx;
+    BgKin2Shelf* this = THIS;
 
     this->actionFunc(this, play);
 }

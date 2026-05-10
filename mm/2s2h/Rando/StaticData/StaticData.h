@@ -2,7 +2,6 @@
 #define RANDO_STATIC_DATA_H
 
 #include <map>
-#include <array>
 #include "Rando/Types.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
@@ -10,8 +9,6 @@ extern "C" {
 #include "z64item.h"
 #include "z64scene.h"
 }
-
-#define DEFAULT_TRIFORCE_PIECES_MAX 15
 
 namespace Rando {
 
@@ -28,12 +25,9 @@ struct RandoStaticCheck {
 };
 
 extern std::map<RandoCheckId, RandoStaticCheck> Checks;
-extern std::array<std::string, RC_MAX> CheckNames;
 
 RandoStaticCheck GetCheckFromFlag(FlagType flagType, s32 flag, s16 sceneId = SCENE_MAX);
 RandoCheckId GetCheckIdFromName(const char* name);
-void PopulateCheckNames();
-std::string GetLocationNameForHint(RandoCheckId randoCheckId, bool exact);
 
 struct RandoStaticItem {
     RandoItemId randoItemId;
@@ -47,16 +41,13 @@ struct RandoStaticItem {
 };
 
 extern std::map<RandoItemId, RandoStaticItem> Items;
-extern std::map<StartingItemCategory, std::vector<RandoItemId>> StartingItemsMap;
-extern std::map<RandoItemId, u8> MaxStartingItemsMap;
+extern std::vector<RandoItemId> StartingItemsMap;
 
 RandoItemId GetItemIdFromName(const char* name);
-RandoItemId GetItemIdFromVanillaItemId(u32 itemId);
 u8 GetIconForZMessage(RandoItemId itemId);
 const char* GetIconTexturePath(RandoItemId itemId);
 bool ShouldShowGetItemCutscene(RandoItemId itemId);
-std::string GetItemName(RandoItemId randoItemId, bool includeArticle = true, RandoCheckId randoCheckId = RC_UNKNOWN);
-std::string GetTrapMessage();
+std::string GetItemName(RandoItemId randoItemId, bool includeArticle = true);
 
 struct RandoStaticOption {
     RandoOptionId randoOptionId;
@@ -68,6 +59,16 @@ struct RandoStaticOption {
 extern std::map<RandoOptionId, RandoStaticOption> Options;
 
 RandoOptionId GetOptionIdFromName(const char* name);
+
+struct RandoStaticRegion {
+    RandoRegionId randoRegionId;
+    const char* name;
+    SceneId sceneId;
+    std::unordered_map<RandoCheckId, std::function<bool()>> checks;
+    std::unordered_map<RandoRegionId, std::function<bool()>> regions;
+};
+
+extern std::map<RandoRegionId, RandoStaticRegion> Regions;
 
 } // namespace StaticData
 

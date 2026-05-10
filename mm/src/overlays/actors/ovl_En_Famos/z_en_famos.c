@@ -9,7 +9,9 @@
 #include "overlays/actors/ovl_En_Bom/z_en_bom.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY)
+
+#define THIS ((EnFamos*)thisx)
 
 void EnFamos_Init(Actor* thisx, PlayState* play);
 void EnFamos_Destroy(Actor* thisx, PlayState* play);
@@ -45,7 +47,7 @@ void EnFamos_DeathExplosion(EnFamos* this, PlayState* play);
 void EnFamos_SetupDeathFade(EnFamos* this);
 void EnFamos_DeathFade(EnFamos* this, PlayState* play);
 
-ActorProfile En_Famos_Profile = {
+ActorInit En_Famos_InitVars = {
     /**/ ACTOR_EN_FAMOS,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -59,7 +61,7 @@ ActorProfile En_Famos_Profile = {
 
 static ColliderCylinderInit sCylinderInit1 = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE | AT_TYPE_ENEMY,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -67,11 +69,11 @@ static ColliderCylinderInit sCylinderInit1 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x20000000, 0x04, 0x10 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 20, 80, 0, { 0, 0, 0 } },
@@ -79,7 +81,7 @@ static ColliderCylinderInit sCylinderInit1 = {
 
 static ColliderCylinderInit sCylinderInit2 = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE | AT_TYPE_ENEMY,
         AC_NONE,
         OC1_NONE,
@@ -87,11 +89,11 @@ static ColliderCylinderInit sCylinderInit2 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x04, 0x08 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_NONE,
     },
     { 70, 10, 0, { 0, 0, 0 } },
@@ -102,22 +104,22 @@ static ColliderCylinderInit sCylinderInit2 = {
 static ColliderJntSphElementInit sJntSphElementsInit[2] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00002000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { FAMOS_LIMB_EMBLEM, { { 2500, 0, 0 }, 20 }, 100 },
     },
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00002000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { FAMOS_LIMB_EMBLEM, { { -1500, 0, 0 }, 20 }, 100 },
@@ -126,7 +128,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[2] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -149,13 +151,13 @@ static AnimatedMaterial* sEmblemAnimatedMats[] = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_DEATH_ARMOS, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 3500, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 3500, ICHAIN_STOP),
 };
 
 static s32 sAnimatedMaterialsDesgmented = false;
 
 void EnFamos_Init(Actor* thisx, PlayState* play) {
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
     Path* path;
     s32 i;
 
@@ -200,7 +202,7 @@ void EnFamos_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnFamos_Destroy(Actor* thisx, PlayState* play) {
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider1);
     Collider_DestroyCylinder(play, &this->collider2);
@@ -671,7 +673,7 @@ void EnFamos_SetupDeathExplosion(EnFamos* this) {
     Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 4);
     this->stateTimer = 25;
     Math_Vec3f_Copy(&this->targetDest, &this->actor.world.pos);
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     this->actionFunc = EnFamos_DeathExplosion;
 }
 
@@ -704,7 +706,7 @@ void EnFamos_DeathExplosion(EnFamos* this, PlayState* play) {
 
 void EnFamos_SetupDeathFade(EnFamos* this) {
     EnFamos_SetupDeathDebris(this);
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actor.shape.shadowDraw = NULL;
     this->actionFunc = EnFamos_DeathFade;
     this->actor.speed = 0.0f;
@@ -738,7 +740,7 @@ void EnFamos_UpdateDebrisPosRot(EnFamos* this) {
 
 void EnFamos_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
     f32 oldHeight;
     s32 oldHoverTimer; // save old value to test if changed
 
@@ -791,7 +793,7 @@ void EnFamos_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnFamos_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
 
     if (limbIndex == FAMOS_LIMB_BODY) {
         Matrix_Translate(0.0f, 4000.0f, 0.0f, MTXMODE_APPLY);
@@ -808,7 +810,7 @@ s32 EnFamos_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f*
 }
 
 void EnFamos_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
 
     if (limbIndex == FAMOS_LIMB_EMBLEM) {
         Matrix_MultZero(&this->actor.focus.pos);
@@ -839,7 +841,8 @@ void EnFamos_DrawDebris(EnFamos* this, PlayState* play) {
             Matrix_SetTranslateRotateYXZ(rock->pos.x, rock->pos.y, rock->pos.z, &rock->rot);
             Matrix_Scale(rock->scale, rock->scale, rock->scale, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(&dispOpa[3 + i * 2], play->state.gfxCtx);
+            gSPMatrix(&dispOpa[3 + i * 2], Matrix_NewMtx(play->state.gfxCtx),
+                      G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
             gSPDisplayList(&dispOpa[4 + i * 2], &gameplay_keep_DL_06AB30); // greenish brown rock DL
         }
@@ -851,7 +854,7 @@ void EnFamos_DrawDebris(EnFamos* this, PlayState* play) {
 }
 
 void EnFamos_Draw(Actor* thisx, PlayState* play) {
-    EnFamos* this = (EnFamos*)thisx;
+    EnFamos* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     if (this->actionFunc != EnFamos_DeathFade) {

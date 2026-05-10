@@ -6,7 +6,9 @@
 #include "z_bg_kin2_bombwall.h"
 #include "objects/object_kin2_obj/object_kin2_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UCODE_POINT_LIGHT_ENABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_10000000)
+
+#define THIS ((BgKin2Bombwall*)thisx)
 
 void BgKin2Bombwall_Init(Actor* thisx, PlayState* play);
 void BgKin2Bombwall_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +22,7 @@ void BgKin2Bombwall_PlayCutscene(BgKin2Bombwall* this, PlayState* play);
 void BgKin2Bombwall_SetupEndCutscene(BgKin2Bombwall* this);
 void BgKin2Bombwall_EndCutscene(BgKin2Bombwall* this, PlayState* play);
 
-ActorProfile Bg_Kin2_Bombwall_Profile = {
+ActorInit Bg_Kin2_Bombwall_InitVars = {
     /**/ ACTOR_BG_KIN2_BOMBWALL,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -34,7 +36,7 @@ ActorProfile Bg_Kin2_Bombwall_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -42,11 +44,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000008, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 60, 60, 0, { 0, 0, 0 } },
@@ -85,7 +87,7 @@ void BgKin2Bombwall_SpawnEffects(BgKin2Bombwall* this, PlayState* play) {
     s16 phi_s0;
     s16 phi_s1;
 
-    Matrix_RotateYS(this->dyna.actor.shape.rot.y, MTXMODE_NEW);
+    Matrix_RotateYS(this->dyna.actor.shape.rot.y, 0);
 
     for (i = 0, k = 0; i < 6; i++) {
         temp_a0 = (i + 1) * 15.f;
@@ -129,14 +131,14 @@ void BgKin2Bombwall_SpawnEffects(BgKin2Bombwall* this, PlayState* play) {
 }
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 200, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 300, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 1000, ICHAIN_STOP),
 };
 
 void BgKin2Bombwall_Init(Actor* thisx, PlayState* play) {
-    BgKin2Bombwall* this = (BgKin2Bombwall*)thisx;
+    BgKin2Bombwall* this = THIS;
     ColliderCylinder* bombwallCollider;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
@@ -156,7 +158,7 @@ void BgKin2Bombwall_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgKin2Bombwall_Destroy(Actor* thisx, PlayState* play) {
-    BgKin2Bombwall* this = (BgKin2Bombwall*)thisx;
+    BgKin2Bombwall* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     Collider_DestroyCylinder(play, &this->collider);
@@ -209,13 +211,13 @@ void BgKin2Bombwall_EndCutscene(BgKin2Bombwall* this, PlayState* play) {
 }
 
 void BgKin2Bombwall_Update(Actor* thisx, PlayState* play) {
-    BgKin2Bombwall* this = (BgKin2Bombwall*)thisx;
+    BgKin2Bombwall* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void BgKin2Bombwall_Draw(Actor* thisx, PlayState* play) {
-    BgKin2Bombwall* this = (BgKin2Bombwall*)thisx;
+    BgKin2Bombwall* this = THIS;
 
     Gfx_DrawDListOpa(play, gOceanSpiderHouseBombableWallDL);
     Gfx_DrawDListXlu(play, gOceanSpiderHouseBombableWallCrackDL);

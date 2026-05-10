@@ -8,7 +8,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_REACT_TO_LENS)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_REACT_TO_LENS)
+
+#define THIS ((EnGg*)thisx)
 
 void EnGg_Init(Actor* thisx, PlayState* play);
 void EnGg_Destroy(Actor* thisx, PlayState* play);
@@ -24,7 +26,7 @@ void func_80B359DC(EnGg* this, PlayState* play);
 void func_80B363E8(EnGgStruct* ptr, PlayState* play, Vec3f* arg1, Vec3f* arg2, Vec3f* arg3);
 void func_80B364D4(EnGgStruct* ptr, PlayState* play);
 
-ActorProfile En_Gg_Profile = {
+ActorInit En_Gg_InitVars = {
     /**/ ACTOR_EN_GG,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -38,7 +40,7 @@ ActorProfile En_Gg_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -46,11 +48,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 24, 72, 0, { 0, 0, 0 } },
@@ -257,7 +259,7 @@ void func_80B35450(EnGg* this, PlayState* play) {
         func_80B359DC(this, play);
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_REACT_TO_LENS)) {
             Actor_DeactivateLens(play);
         }
@@ -275,7 +277,7 @@ void func_80B35450(EnGg* this, PlayState* play) {
 }
 
 void func_80B3556C(EnGg* this, PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         if (this->animIndex == ENGG_ANIM_4) {
             play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
             play->msgCtx.stateTimer = 4;
@@ -420,11 +422,11 @@ void func_80B359DC(EnGg* this, PlayState* play) {
 
     if (this->actor.xzDistToPlayer < 200.0f) {
         if (this->unk_306 == 0) {
-            if (player->stateFlags2 & PLAYER_STATE2_USING_OCARINA) {
+            if (player->stateFlags2 & PLAYER_STATE2_8000000) {
                 this->unk_306 = 1;
                 Audio_PlaySfx(NA_SE_SY_TRE_BOX_APPEAR);
             }
-        } else if (!(player->stateFlags2 & PLAYER_STATE2_USING_OCARINA)) {
+        } else if (!(player->stateFlags2 & PLAYER_STATE2_8000000)) {
             this->unk_306 = 0;
         }
 
@@ -514,19 +516,23 @@ void func_80B35B44(EnGgStruct* ptr, PlayState* play) {
 void func_80B35C84(EnGgStruct* ptr, PlayState* play) {
     s32 sp74;
     s32 phi_s7;
+    f32 temp_f22;
+    f32 temp_f24;
+    f32 temp_f26;
+    f32 temp_f20;
     s32 i;
-    s32 ten = 10;
+    s32 temp = 10;
 
     if (ptr->unk_48 != 0) {
-        sp74 = ptr->unk_40 % ten;
+        sp74 = ptr->unk_40 % temp;
         ptr->unk_40 = sp74;
-        phi_s7 = 70;
+        phi_s7 = 0x46;
     } else if (ptr->animIndex == ENGG_ANIM_13) {
         sp74 = ptr->unk_40;
-        phi_s7 = 70;
+        phi_s7 = 0x46;
     } else {
         phi_s7 = ptr->unk_40 - ptr->unk_44;
-        sp74 = ptr->unk_40 % ten;
+        sp74 = ptr->unk_40 % temp;
     }
 
     if (phi_s7 <= 0) {
@@ -537,12 +543,15 @@ void func_80B35C84(EnGgStruct* ptr, PlayState* play) {
 
     Matrix_Push();
 
-    for (i = sp74; i < phi_s7; i += ten) {
-        f32 temp = i * 0.14f;
-        f32 temp_f22 = ptr->unk_00.x + (ptr->unk_18.x * temp) + (0.5f * ptr->unk_24.x * temp * temp);
-        f32 temp_f24 = ptr->unk_00.y - Math_SinS((i * 0x27FFB) / 70);
-        f32 temp_f26 = ptr->unk_00.z + (ptr->unk_18.z * temp) + (0.5f * ptr->unk_24.z * temp * temp);
-        f32 temp_f20 = Rand_ZeroOne() * 0.003f;
+    for (i = sp74; i < phi_s7; i += temp) {
+        temp_f20 = i * 0.14f;
+        temp_f22 = ptr->unk_00.x + (ptr->unk_18.x * temp_f20) + (0.5f * ptr->unk_24.x * temp_f20 * temp_f20);
+        temp_f24 = ptr->unk_00.y - Math_SinS((i * 0x27FFB) / 70);
+        temp_f26 = ptr->unk_00.z + (ptr->unk_18.z * temp_f20) + (0.5f * ptr->unk_24.z * temp_f20 * temp_f20);
+        temp_f20 = Rand_ZeroOne() * 0.003f;
+
+        //! FAKE:
+        if (1) {}
 
         Matrix_Translate(temp_f22, temp_f24, temp_f26, MTXMODE_NEW);
         Matrix_Scale(temp_f20, temp_f20, temp_f20, MTXMODE_APPLY);
@@ -553,7 +562,7 @@ void func_80B35C84(EnGgStruct* ptr, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
     }
 
@@ -561,12 +570,12 @@ void func_80B35C84(EnGgStruct* ptr, PlayState* play) {
 
     Matrix_Push();
 
-    for (i = sp74; i < phi_s7; i += ten) {
-        f32 temp = i * 0.14f;
-        f32 temp_f22 = ptr->unk_0C.x + ((ptr->unk_18.x * temp) + (0.5f * ptr->unk_24.x * temp * temp));
-        f32 temp_f24 = ptr->unk_0C.y - Math_SinS((i * 0x27FFB) / 70);
-        f32 temp_f26 = ptr->unk_0C.z + (ptr->unk_18.z * temp) + (0.5f * ptr->unk_24.z * temp * temp);
-        f32 temp_f20 = Rand_ZeroOne() * 0.003f;
+    for (i = sp74; i < phi_s7; i += temp) {
+        temp_f20 = i * 0.14f;
+        temp_f22 = ptr->unk_0C.x + ((ptr->unk_18.x * temp_f20) + (0.5f * ptr->unk_24.x * temp_f20 * temp_f20));
+        temp_f24 = ptr->unk_0C.y - Math_SinS((i * 0x27FFB) / 70);
+        temp_f26 = ptr->unk_0C.z + (ptr->unk_18.z * temp_f20) + (0.5f * ptr->unk_24.z * temp_f20 * temp_f20);
+        temp_f20 = Rand_ZeroOne() * 0.003f;
 
         Matrix_Translate(temp_f22, temp_f24, temp_f26, MTXMODE_NEW);
         Matrix_Scale(temp_f20, temp_f20, temp_f20, MTXMODE_APPLY);
@@ -577,7 +586,7 @@ void func_80B35C84(EnGgStruct* ptr, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
     }
 
@@ -630,7 +639,7 @@ void func_80B3610C(EnGgStruct* ptr, PlayState* play) {
             Gfx_SetupDL25_Xlu(play->state.gfxCtx);
             Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
         }
 
@@ -668,7 +677,7 @@ void func_80B364D4(EnGgStruct* ptr, PlayState* play) {
 
 void EnGg_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGg* this = (EnGg*)thisx;
+    EnGg* this = THIS;
 
     if (GameInteractor_Should(VB_CONSIDER_DARMANI_HEALED, INV_CONTENT(ITEM_MASK_GORON) == ITEM_MASK_GORON)) {
         Actor_Kill(&this->actor);
@@ -690,12 +699,12 @@ void EnGg_Init(Actor* thisx, PlayState* play) {
     this->actor.flags &= ~ACTOR_FLAG_REACT_TO_LENS;
     this->unk_310 = this->actor.home.pos.y;
     this->csId = this->actor.csId;
-    this->actor.flags |= ACTOR_FLAG_UPDATE_DURING_OCARINA;
+    this->actor.flags |= ACTOR_FLAG_2000000;
     this->unk_308 = 0;
     this->unk_309 = 0;
     this->unk_304 = 0;
     this->unk_30A = 0;
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     func_80B35B24(&this->unk_344, play);
     func_80B35250(this);
 }
@@ -704,21 +713,21 @@ void EnGg_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void EnGg_Update(Actor* thisx, PlayState* play) {
-    EnGg* this = (EnGg*)thisx;
+    EnGg* this = THIS;
 
     if (play->actorCtx.lensMaskSize == LENS_MASK_ACTIVE_SIZE) {
         this->actor.flags |= ACTOR_FLAG_REACT_TO_LENS;
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     } else {
         this->actor.flags &= ~ACTOR_FLAG_REACT_TO_LENS;
-        this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     }
 
     if (CHECK_WEEKEVENTREG(WEEKEVENTREG_19_80)) {
         if (play->csCtx.state == CS_STATE_IDLE) {
-            this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags |= ACTOR_FLAG_TARGETABLE;
         } else {
-            this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
         }
     }
 
@@ -755,13 +764,13 @@ void EnGg_Update(Actor* thisx, PlayState* play) {
     }
 
     func_80B35634(this, play);
-    Actor_TrackPlayer(play, &this->actor, &this->headRot, &this->torsoRot, this->actor.focus.pos);
+    Actor_TrackPlayer(play, &this->actor, &this->unk_1D8, &this->unk_1DE, this->actor.focus.pos);
     func_80B351A4(this);
 }
 
 s32 EnGg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
                           Gfx** gfx) {
-    EnGg* this = (EnGg*)thisx;
+    EnGg* this = THIS;
 
     if (limbIndex == OBJECT_GG_LIMB_02) {
         Matrix_RotateZS(this->unk_2E8, MTXMODE_APPLY);
@@ -771,7 +780,7 @@ s32 EnGg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* po
 
 void EnGg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx, Gfx** gfx) {
     static Vec3f D_80B36DF0 = { 1800.0f, 300.0f, 200.0f };
-    EnGg* this = (EnGg*)thisx;
+    EnGg* this = THIS;
     Vec3f sp30 = { 0.0f, 0.0f, 0.0f };
     Vec3f sp24 = { 0.0f, 0.0f, 0.0f };
 
@@ -808,7 +817,7 @@ TexturePtr D_80B36DFC[] = {
 
 void EnGg_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGg* this = (EnGg*)thisx;
+    EnGg* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

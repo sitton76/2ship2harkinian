@@ -8,6 +8,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((EnInvisibleRuppe*)thisx)
+
 void EnInvisibleRuppe_Init(Actor* thisx, PlayState* play);
 void EnInvisibleRuppe_Destroy(Actor* thisx, PlayState* play);
 void EnInvisibleRuppe_Update(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void func_80C258A0(EnInvisibleRuppe* this, PlayState* play);
 void func_80C2590C(EnInvisibleRuppe* this, PlayState* play);
 void func_80C259E8(EnInvisibleRuppe* this, PlayState* play);
 
-ActorProfile En_Invisible_Ruppe_Profile = {
+ActorInit En_Invisible_Ruppe_InitVars = {
     /**/ ACTOR_EN_INVISIBLE_RUPPE,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -30,7 +32,7 @@ ActorProfile En_Invisible_Ruppe_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_NO_PUSH | OC1_TYPE_PLAYER,
@@ -39,11 +41,11 @@ static ColliderCylinderInit sCylinderInit = {
     },
 
     {
-        ELEM_MATERIAL_UNK4,
+        ELEMTYPE_UNK4,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
 
@@ -92,7 +94,7 @@ void func_80C259E8(EnInvisibleRuppe* this, PlayState* play) {
 
 void EnInvisibleRuppe_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnInvisibleRuppe* this = (EnInvisibleRuppe*)thisx;
+    EnInvisibleRuppe* this = THIS;
 
     this->switchFlag = INVISIBLERUPPE_GET_SWITCH_FLAG(&this->actor);
 
@@ -112,13 +114,13 @@ void EnInvisibleRuppe_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnInvisibleRuppe_Destroy(Actor* thisx, PlayState* play) {
-    EnInvisibleRuppe* this = (EnInvisibleRuppe*)thisx;
+    EnInvisibleRuppe* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnInvisibleRuppe_Update(Actor* thisx, PlayState* play) {
-    EnInvisibleRuppe* this = (EnInvisibleRuppe*)thisx;
+    EnInvisibleRuppe* this = THIS;
 
     this->actionFunc(this, play);
     func_80C258A0(this, play);

@@ -9,7 +9,9 @@
 #include "overlays/actors/ovl_Obj_Etcetera/z_obj_etcetera.h"
 #include "overlays/effects/ovl_Effect_Ss_Hahen/z_eff_ss_hahen.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY)
+
+#define THIS ((EnDekunuts*)thisx)
 
 void EnDekunuts_Init(Actor* thisx, PlayState* play);
 void EnDekunuts_Destroy(Actor* thisx, PlayState* play);
@@ -38,7 +40,7 @@ void func_808BE4D4(EnDekunuts* this, PlayState* play);
 void func_808BE680(EnDekunuts* this);
 void func_808BE6C4(EnDekunuts* this, PlayState* play);
 
-ActorProfile En_Dekunuts_Profile = {
+ActorInit En_Dekunuts_InitVars = {
     /**/ ACTOR_EN_DEKUNUTS,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -52,7 +54,7 @@ ActorProfile En_Dekunuts_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT6,
+        COLTYPE_HIT6,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -60,11 +62,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 32, 0, { 0, 0, 0 } },
@@ -110,11 +112,11 @@ static DamageTable sDamageTable = {
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_MAD_SCRUB, ICHAIN_CONTINUE),
     ICHAIN_F32(gravity, -1, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 2600, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 2600, ICHAIN_STOP),
 };
 
 void EnDekunuts_Init(Actor* thisx, PlayState* play) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 35.0f);
@@ -129,19 +131,18 @@ void EnDekunuts_Init(Actor* thisx, PlayState* play) {
     }
 
     if (this->actor.params == ENDEKUNUTS_GET_FF00_1) {
-        this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
-        this->collider.base.colMaterial = COL_MATERIAL_NONE;
-        this->collider.elem.acElemFlags |=
-            (ACELEM_NO_HITMARK | ACELEM_NO_SWORD_SFX | ACELEM_NO_DAMAGE | ACELEM_NO_AT_INFO);
+        this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
+        this->collider.base.colType = COLTYPE_NONE;
+        this->collider.info.bumperFlags |= (BUMP_NO_HITMARK | BUMP_NO_SWORD_SFX | BUMP_NO_DAMAGE | BUMP_NO_AT_INFO);
     } else if (this->actor.params == ENDEKUNUTS_GET_FF00_2) {
-        this->actor.attentionRangeType = ATTENTION_RANGE_0;
+        this->actor.targetMode = TARGET_MODE_0;
     }
 
     func_808BD428(this);
 }
 
 void EnDekunuts_Destroy(Actor* thisx, PlayState* play) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -151,7 +152,7 @@ void func_808BD348(EnDekunuts* this) {
     this->drawDmgEffScale = 0.55f;
     this->drawDmgEffFrozenSteamScale = 825.0f * 0.001f;
     this->drawDmgEffAlpha = 1.0f;
-    this->collider.base.colMaterial = COL_MATERIAL_HIT3;
+    this->collider.base.colType = COLTYPE_HIT3;
     this->unk_190 = 80;
     Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_RED, 255, COLORFILTER_BUFFLAG_OPA, 80);
 }
@@ -159,7 +160,7 @@ void func_808BD348(EnDekunuts* this) {
 void func_808BD3B4(EnDekunuts* this, PlayState* play) {
     if (this->drawDmgEffType == ACTOR_DRAW_DMGEFF_FROZEN_NO_SFX) {
         this->drawDmgEffType = ACTOR_DRAW_DMGEFF_FIRE;
-        this->collider.base.colMaterial = COL_MATERIAL_HIT6;
+        this->collider.base.colType = COLTYPE_HIT6;
         this->drawDmgEffAlpha = 0.0f;
         Actor_SpawnIceEffects(play, &this->actor, this->bodyPartsPos, ENDEKUNUTS_BODYPART_MAX, 2, 0.2f, 0.2f);
     }
@@ -371,7 +372,7 @@ void func_808BDE7C(EnDekunuts* this) {
     this->actor.colChkInfo.mass = 50;
     Actor_PlaySfx(&this->actor, NA_SE_EN_NUTS_DAMAGE);
     this->actor.world.rot.x = 0;
-    this->actor.flags |= ACTOR_FLAG_DRAW_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_20;
     this->collider.base.acFlags &= ~AC_ON;
     this->actionFunc = func_808BDEF8;
 }
@@ -434,7 +435,7 @@ void func_808BDFB8(EnDekunuts* this, PlayState* play) {
     if ((this->unk_18D == 0) && (Actor_WorldDistXZToPoint(&this->actor, &this->actor.home.pos) < 20.0f) &&
         (fabsf(this->actor.world.pos.y - this->actor.home.pos.y) < 2.0f)) {
         this->actor.colChkInfo.mass = MASS_IMMOVABLE;
-        this->actor.flags &= ~ACTOR_FLAG_DRAW_CULLING_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_20;
         this->actor.speed = 0.0f;
         func_808BDC9C(this);
     } else if (this->unk_190 == 0) {
@@ -469,7 +470,7 @@ void func_808BE294(EnDekunuts* this, s32 arg1) {
     Animation_MorphToPlayOnce(&this->skelAnime, &gDekuScrubDamageAnim, -3.0f);
     if (this->actor.params == ENDEKUNUTS_GET_FF00_0) {
         this->actor.speed = 10.0f;
-        if (arg1) {
+        if (arg1 != 0) {
             func_800BE504(&this->actor, &this->collider);
         }
     }
@@ -510,7 +511,7 @@ void func_808BE3FC(EnDekunuts* this, PlayState* play) {
         if (this->actor.params == ENDEKUNUTS_GET_FF00_1) {
             func_808BDCF0(this);
         } else if (this->actor.colChkInfo.health == 0) {
-            func_808BE294(this, false);
+            func_808BE294(this, 0);
         } else {
             this->actor.world.rot.y = this->actor.shape.rot.y;
             func_808BDF60(this);
@@ -568,9 +569,9 @@ void func_808BE6C4(EnDekunuts* this, PlayState* play) {
 void func_808BE73C(EnDekunuts* this, PlayState* play) {
     if (this->collider.base.acFlags & AC_HIT) {
         this->collider.base.acFlags &= ~AC_HIT;
-        Actor_SetDropFlag(&this->actor, &this->collider.elem);
+        Actor_SetDropFlag(&this->actor, &this->collider.info);
         if ((this->drawDmgEffType != ACTOR_DRAW_DMGEFF_FROZEN_NO_SFX) ||
-            !(this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0xDB0B3)) {
+            !(this->collider.info.acHitInfo->toucher.dmgFlags & 0xDB0B3)) {
             func_808BD3B4(this, play);
             if ((this->actor.colChkInfo.mass == 50) || (this->actor.params != ENDEKUNUTS_GET_FF00_0)) {
                 if ((this->actor.params != ENDEKUNUTS_GET_FF00_1) && !Actor_ApplyDamage(&this->actor)) {
@@ -608,8 +609,8 @@ void func_808BE73C(EnDekunuts* this, PlayState* play) {
                     this->drawDmgEffAlpha = 4.0f;
                     this->drawDmgEffScale = 0.55f;
                     this->drawDmgEffType = ACTOR_DRAW_DMGEFF_LIGHT_ORBS;
-                    Actor_Spawn(&play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->collider.elem.acDmgInfo.hitPos.x,
-                                this->collider.elem.acDmgInfo.hitPos.y, this->collider.elem.acDmgInfo.hitPos.z, 0, 0, 0,
+                    Actor_Spawn(&play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->collider.info.bumper.hitPos.x,
+                                this->collider.info.bumper.hitPos.y, this->collider.info.bumper.hitPos.z, 0, 0, 0,
                                 CLEAR_TAG_PARAMS(CLEAR_TAG_SMALL_LIGHT_RAYS));
                 } else if (this->actor.colChkInfo.damageEffect == 5) {
                     this->drawDmgEffType = ACTOR_DRAW_DMGEFF_ELECTRIC_SPARKS_LARGE;
@@ -617,7 +618,7 @@ void func_808BE73C(EnDekunuts* this, PlayState* play) {
                     this->drawDmgEffScale = 0.55f;
                 }
 
-                func_808BE294(this, true);
+                func_808BE294(this, 1);
             } else if (this->actor.params == ENDEKUNUTS_GET_FF00_0) {
                 func_808BDE7C(this);
             }
@@ -631,13 +632,13 @@ void func_808BE73C(EnDekunuts* this, PlayState* play) {
         } else if (this->actor.colChkInfo.health != 0) {
             this->actor.colChkInfo.health = 0;
             Enemy_StartFinishingBlow(play, &this->actor);
-            func_808BE294(this, false);
+            func_808BE294(this, 0);
         }
     }
 }
 
 void EnDekunuts_Update(Actor* thisx, PlayState* play) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
     s32 pad;
 
     func_808BE73C(this, play);
@@ -666,7 +667,7 @@ void EnDekunuts_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnDekunuts_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
     f32 arg1;
     f32 arg2;
     f32 arg3;
@@ -720,7 +721,7 @@ static Vec3f D_808BEFA4[] = {
 };
 
 void EnDekunuts_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
     s32 i;
     Vec3f* ptr1;
     Vec3f* ptr2;
@@ -747,7 +748,7 @@ void EnDekunuts_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s*
 }
 
 void EnDekunuts_Draw(Actor* thisx, PlayState* play) {
-    EnDekunuts* this = (EnDekunuts*)thisx;
+    EnDekunuts* this = THIS;
 
     SkelAnime_DrawOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, EnDekunuts_OverrideLimbDraw,
                       EnDekunuts_PostLimbDraw, &this->actor);

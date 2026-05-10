@@ -16,7 +16,6 @@
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include <stdlib.h>
-#include <libultraship/bridge/consolevariablebridge.h>
 
 #define dgShipLogoDL "__OTR__misc/nintendo_rogo_static/gShipLogoDL"
 static const ALIGN_ASSET(2) char gShipLogoDL[] = dgShipLogoDL;
@@ -157,8 +156,8 @@ void ConsoleLogo_Draw(GameState* thisx) {
     Matrix_Scale(1.0f, 1.0f, 1.0f, MTXMODE_APPLY);
     Matrix_RotateZYX(0, sTitleRotation, 0, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
-    gSPDisplayList(POLY_OPA_DISP++, gNintendo64LogoNDL);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_LOAD);
+    gSPDisplayList(POLY_OPA_DISP++, logoDL);
 
     Gfx_SetupDL39_Opa(this->state.gfxCtx);
 

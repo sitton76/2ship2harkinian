@@ -1,5 +1,5 @@
 #include "ActorBehavior.h"
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/libultraship.h>
 
 extern "C" {
 #include "variables.h"
@@ -30,8 +30,7 @@ void EnElforg_DrawCustom(Actor* thisx, PlayState* play) {
         return;
     }
 
-    Rando::DrawItem(Rando::ConvertItem(randoSaveCheck.randoItemId, (RandoCheckId)CUSTOM_PARAM),
-                    (RandoCheckId)CUSTOM_PARAM, thisx);
+    Rando::DrawItem(Rando::ConvertItem(randoSaveCheck.randoItemId, (RandoCheckId)CUSTOM_PARAM));
 }
 
 void EnElforg_Setup(EnElforg* enElforg) {

@@ -8,7 +8,9 @@
 #include "objects/object_numa_obj/object_numa_obj.h"
 #include "objects/object_dekucity_obj/object_dekucity_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjPurify*)thisx)
 
 void ObjPurify_Init(Actor* thisx, PlayState* play);
 void ObjPurify_Destroy(Actor* thisx, PlayState* play);
@@ -39,7 +41,7 @@ typedef struct ObjPurifyInfo {
     /* 0x24 */ s32 isDekuCity;
 } ObjPurifyInfo; // size = 0x28
 
-ActorProfile Obj_Purify_Profile = {
+ActorInit Obj_Purify_InitVars = {
     /**/ ACTOR_OBJ_PURIFY,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -120,7 +122,7 @@ s32 ObjPurify_IsPurified(ObjPurify* this) {
 
 void ObjPurify_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjPurify* this = (ObjPurify*)thisx;
+    ObjPurify* this = THIS;
     ObjPurifyInfo* info = &sObjPurifyInfo[OBJPURIFY_GET_INFO_INDEX(&this->dyna.actor)];
     s32 sp20 = OBJPURIFY_GET_UNK_FLAG(thisx);
 
@@ -141,7 +143,7 @@ void ObjPurify_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjPurify_Destroy(Actor* thisx, PlayState* play) {
-    ObjPurify* this = (ObjPurify*)thisx;
+    ObjPurify* this = THIS;
     if (OBJPURIFY_GET_UNK_FLAG(&this->dyna.actor) == 1) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     }
@@ -224,7 +226,7 @@ void func_80A850E8(ObjPurify* this, PlayState* play) {
 }
 
 void func_80A8515C(ObjPurify* this) {
-    this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->dyna.actor.flags &= ~ACTOR_FLAG_10;
     this->dyna.actor.draw = func_80A851C8;
     this->gfxIndex = 1;
     this->actionFunc = ObjPurify_DoNothing;
@@ -234,14 +236,14 @@ void ObjPurify_DoNothing(ObjPurify* this, PlayState* play) {
 }
 
 void ObjPurify_Update(Actor* thisx, PlayState* play) {
-    ObjPurify* this = (ObjPurify*)thisx;
+    ObjPurify* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void func_80A851C8(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjPurify* this = (ObjPurify*)thisx;
+    ObjPurify* this = THIS;
     ObjPurifyInfo* info = &sObjPurifyInfo[OBJPURIFY_GET_INFO_INDEX(&this->dyna.actor)];
     Gfx* opaDList = info->opaDLists[this->gfxIndex];
     Gfx* xluDList = info->xluDLists[this->gfxIndex];
@@ -254,12 +256,12 @@ void func_80A851C8(Actor* thisx, PlayState* play) {
     }
     if (opaDList != NULL) {
         Gfx_SetupDL25_Opa(play->state.gfxCtx);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, opaDList);
     }
     if (xluDList != NULL) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, xluDList);
     }
 
@@ -268,7 +270,7 @@ void func_80A851C8(Actor* thisx, PlayState* play) {
 
 void func_80A85304(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjPurify* this = (ObjPurify*)thisx;
+    ObjPurify* this = THIS;
     ObjPurifyInfo* info = &sObjPurifyInfo[OBJPURIFY_GET_INFO_INDEX(&this->dyna.actor)];
     s32 sp6C[2];
     s32 i;
@@ -289,7 +291,7 @@ void func_80A85304(Actor* thisx, PlayState* play) {
         index = sp6C[i];
         AnimatedMat_Draw(play, Lib_SegmentedToVirtual(info->animMat[index]));
         ObjPurify_SetSysMatrix(this->unk168[index]);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, info->xluDLists[index]);
     };
 

@@ -1,4 +1,5 @@
 #include "CustomItem.h"
+#include <libultraship/libultraship.h>
 #include "2s2h/CustomMessage/CustomMessage.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
@@ -12,7 +13,7 @@ extern "C" {
 // #region These were copied from z_en_item00.c
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AT_TYPE_PLAYER,
         OC1_NONE,
@@ -20,18 +21,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000010, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 10, 30, 0, { 0, 0, 0 } },
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(lockOnArrowOffset, 2000, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 2000, ICHAIN_STOP),
 };
 // #endregion
 

@@ -6,9 +6,10 @@
 
 #include "z_en_snowwd.h"
 #include "objects/object_snowwd/object_snowwd.h"
-#include "GameInteractor/GameInteractor.h"
 
 #define FLAGS 0x00000000
+
+#define THIS ((EnSnowwd*)thisx)
 
 void EnSnowwd_Init(Actor* thisx, PlayState* play);
 void EnSnowwd_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +18,7 @@ void EnSnowwd_Draw(Actor* thisx, PlayState* play);
 
 void EnSnowwd_Idle(EnSnowwd* this, PlayState* play);
 
-ActorProfile En_Snowwd_Profile = {
+ActorInit En_Snowwd_InitVars = {
     /**/ ACTOR_EN_SNOWWD,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -31,7 +32,7 @@ ActorProfile En_Snowwd_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_TREE,
+        COLTYPE_TREE,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -39,32 +40,32 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK5,
+        ELEMTYPE_UNK5,
         { 0x00000000, 0x00, 0x00 },
         { 0x0100020A, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 60, 0, { 0, 0, 0 } },
 };
 
 void EnSnowwd_Init(Actor* thisx, PlayState* play) {
-    EnSnowwd* this = (EnSnowwd*)thisx;
+    EnSnowwd* this = THIS;
 
     SNOWWD_DROPPED_COLLECTIBLE(thisx) = false;
     this->actor.home.rot.y = 0;
     this->timer = 0;
-    this->actor.cullingVolumeDistance = 4000.0f;
-    this->actor.cullingVolumeScale = 2000.0f;
-    this->actor.cullingVolumeDownward = 2400.0f;
+    this->actor.uncullZoneForward = 4000.0f;
+    this->actor.uncullZoneScale = 2000.0f;
+    this->actor.uncullZoneDownward = 2400.0f;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     Actor_SetScale(&this->actor, 1.0f);
     this->actionFunc = EnSnowwd_Idle;
 }
 
 void EnSnowwd_Destroy(Actor* thisx, PlayState* play) {
-    EnSnowwd* this = (EnSnowwd*)thisx;
+    EnSnowwd* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -86,7 +87,7 @@ void EnSnowwd_Idle(EnSnowwd* this, PlayState* play) {
     if (thisx->home.rot.y != 0) {
         this->timer = 21;
         thisx->home.rot.y = 0;
-        if (GameInteractor_Should(VB_TREE_DROP_COLLECTIBLE, !SNOWWD_DROPPED_COLLECTIBLE(&this->actor), this->actor)) {
+        if (!SNOWWD_DROPPED_COLLECTIBLE(&this->actor)) {
             if (SNOWWD_GET_DROP_TABLE(&this->actor) < 16) {
                 pos = thisx->world.pos;
                 pos.y += 200.0f;
@@ -116,7 +117,7 @@ void EnSnowwd_Idle(EnSnowwd* this, PlayState* play) {
 }
 
 void EnSnowwd_Update(Actor* thisx, PlayState* play) {
-    EnSnowwd* this = (EnSnowwd*)thisx;
+    EnSnowwd* this = THIS;
 
     this->actionFunc(this, play);
 }
@@ -124,7 +125,7 @@ void EnSnowwd_Update(Actor* thisx, PlayState* play) {
 void EnSnowwd_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(gSnowTreeSnowLeavesTex));
     gSPDisplayList(POLY_OPA_DISP++, gSnowTreeDL);

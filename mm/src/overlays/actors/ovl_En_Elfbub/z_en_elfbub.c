@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Elforg/z_en_elforg.h"
 #include "objects/object_bubble/object_bubble.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE)
+
+#define THIS ((EnElfbub*)thisx)
 
 void EnElfbub_Init(Actor* thisx, PlayState* play);
 void EnElfbub_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void EnElfbub_Draw(Actor* thisx, PlayState* play2);
 void EnElfbub_Pop(EnElfbub* this, PlayState* play);
 void EnElfbub_Idle(EnElfbub* this, PlayState* play);
 
-ActorProfile En_Elfbub_Profile = {
+ActorInit En_Elfbub_InitVars = {
     /**/ ACTOR_EN_ELFBUB,
     /**/ ACTORCAT_MISC,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile En_Elfbub_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -40,18 +42,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 16, 32, 0, { 0, 0, 0 } },
 };
 
 void EnElfbub_Init(Actor* thisx, PlayState* play) {
-    EnElfbub* this = (EnElfbub*)thisx;
+    EnElfbub* this = THIS;
     Actor* childActor;
 
     if (Flags_GetSwitch(play, ENELFBUB_GET_SWITCH_FLAG(&this->actor))) {
@@ -60,7 +62,6 @@ void EnElfbub_Init(Actor* thisx, PlayState* play) {
     }
 
     ActorShape_Init(&this->actor.shape, 16.0f, ActorShadow_DrawCircle, 0.2f);
-    //! @bug: hint Id not correctly migrated from OoT `NAVI_ENEMY_SHABOM`
     this->actor.hintId = TATL_HINT_ID_IGOS_DU_IKANA;
     Actor_SetScale(&this->actor, 1.25f);
 
@@ -82,11 +83,11 @@ void EnElfbub_Init(Actor* thisx, PlayState* play) {
     }
 
     this->oscillationAngle = 0;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
 }
 
 void EnElfbub_Destroy(Actor* thisx, PlayState* play) {
-    EnElfbub* this = (EnElfbub*)thisx;
+    EnElfbub* this = THIS;
     Collider_DestroyCylinder(play, &this->collider);
 }
 
@@ -139,7 +140,7 @@ void EnElfbub_Idle(EnElfbub* this, PlayState* play) {
 }
 
 void EnElfbub_Update(Actor* thisx, PlayState* play) {
-    EnElfbub* this = (EnElfbub*)thisx;
+    EnElfbub* this = THIS;
 
     Collider_UpdateCylinder(&this->actor, &this->collider);
     this->actionFunc(this, play);
@@ -148,7 +149,7 @@ void EnElfbub_Update(Actor* thisx, PlayState* play) {
 
 void EnElfbub_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnElfbub* this = (EnElfbub*)thisx;
+    EnElfbub* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -161,7 +162,7 @@ void EnElfbub_Draw(Actor* thisx, PlayState* play2) {
     Matrix_Scale(this->xScale + 1.0f, 1.0f, 1.0f, MTXMODE_APPLY);
     Matrix_RotateZS(this->zRot * -1, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, gBubbleDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

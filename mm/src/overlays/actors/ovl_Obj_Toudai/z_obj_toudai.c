@@ -8,7 +8,9 @@
 #include "objects/object_f53_obj/object_f53_obj.h"
 #include <string.h>
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjToudai*)thisx)
 
 void ObjToudai_Init(Actor* thisx, PlayState* play);
 void ObjToudai_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void ObjToudai_Draw(Actor* thisx, PlayState* play);
 
 #include "BenPort.h"
 
-ActorProfile Obj_Toudai_Profile = {
+ActorInit Obj_Toudai_InitVars = {
     ACTOR_OBJ_TOUDAI,
     ACTORCAT_PROP,
     FLAGS,
@@ -41,7 +43,7 @@ void func_80A33B00(ObjToudai* this, PlayState* play) {
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_f53_obj_DL_0024E8);
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -75,7 +77,7 @@ void func_80A33BB4(ObjToudai* this, PlayState* play) {
         gSPSegment(POLY_XLU_DISP++, 0x08,
                    Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, sp57, 0x20, 0x80, 1, 0, sp56, 0x20, 0x20));
         gSPSegment(POLY_XLU_DISP++, 0x09, Lib_SegmentedToVirtual(this->unk_148));
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, object_f53_obj_DL_0023B0);
 
         CLOSE_DISPS(play->state.gfxCtx);
@@ -84,7 +86,7 @@ void func_80A33BB4(ObjToudai* this, PlayState* play) {
 
 u8 func_80A342F4(s16 arg0) {
     u8 var_v1 = 0;
-    s16 minutes = TIME_TO_MINUTES_F(CURRENT_TIME);
+    s16 minutes = TIME_TO_MINUTES_F(gSaveContext.save.time);
     s32 hours = minutes / 60;
 
     if (hours >= 17) {
@@ -102,7 +104,7 @@ u8 func_80A342F4(s16 arg0) {
 }
 
 void ObjToudai_Init(Actor* thisx, PlayState* play) {
-    ObjToudai* this = (ObjToudai*)thisx;
+    ObjToudai* this = THIS;
     ovl_Obj_Toudai_Vtx_D_80A34590data = ResourceMgr_LoadVtxByName(ovl_Obj_Toudai_Vtx_D_80A34590);
 
     memcpy(this->unk_148, ovl_Obj_Toudai_Vtx_D_80A34590data,
@@ -113,7 +115,7 @@ void ObjToudai_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void ObjToudai_Update(Actor* thisx, PlayState* play) {
-    ObjToudai* this = (ObjToudai*)thisx;
+    ObjToudai* this = THIS;
     u8 temp_v0 = func_80A342F4(this->unk_238);
 
     if (temp_v0 != this->unk_236) {
@@ -123,11 +125,11 @@ void ObjToudai_Update(Actor* thisx, PlayState* play) {
 
     Math_ApproachF(&this->unk_228, (this->unk_236 == 0) ? 0.0f : 1.0f, 0.01f, 1000.0f);
     this->unk_234 += 100;
-    thisx->shape.rot.y = TRUNCF_BINANG(Math_SinS(this->unk_234) * 16000.0f) + thisx->world.rot.y;
+    thisx->shape.rot.y = (s16)(Math_SinS(this->unk_234) * 16000.0f) + thisx->world.rot.y;
 }
 
 void ObjToudai_Draw(Actor* thisx, PlayState* play) {
-    ObjToudai* this = (ObjToudai*)thisx;
+    ObjToudai* this = THIS;
 
     func_80A33B00(this, play);
     func_80A33BB4(this, play);

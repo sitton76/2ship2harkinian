@@ -6,9 +6,10 @@
 
 #include "z_obj_vspinyroll.h"
 #include "objects/object_spinyroll/object_spinyroll.h"
-#include "overlays/effects/ovl_Effect_Ss_Hitmark/z_eff_ss_hitmark.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjVspinyroll*)thisx)
 
 void ObjVspinyroll_Init(Actor* thisx, PlayState* play);
 void ObjVspinyroll_Destroy(Actor* thisx, PlayState* play);
@@ -26,7 +27,7 @@ void func_80A3D0E8(ObjVspinyroll* this);
 void func_80A3D0FC(ObjVspinyroll* this, PlayState* play);
 void func_80A3D2C0(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Vspinyroll_Profile = {
+ActorInit Obj_Vspinyroll_InitVars = {
     /**/ ACTOR_OBJ_VSPINYROLL,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -46,7 +47,7 @@ s16 D_80A3D478[] = { 1, 10, 20, 30, 40, 50, 60, 70 };
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -54,11 +55,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x20000000, 0x00, 0x04 },
         { 0x01C37BB6, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 30, 120, 0, { 0, 0, 0 } },
@@ -69,8 +70,8 @@ f32 D_80A3D4B4[] = { 1.0f, 1.0f, -1.0f, -1.0f };
 f32 D_80A3D4C4[] = { 29.0f, -29.0f, 29.0f, -29.0f };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 500, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 500, ICHAIN_STOP),
 };
 
 s16 D_80A3D4DC[] = { 0xFA0, -0xFA0 };
@@ -195,7 +196,7 @@ s32 func_80A3C8D8(ObjVspinyroll* this, PlayState* play, Vec3f* arg2, s32 arg3) {
 
         if (BgCheck_EntityLineTest3(&play->colCtx, &spD8, &spCC, &spC0, &unk_1A8->unk_000[i].collisionPoly, true, false,
                                     false, true, &unk_1A8->unk_000[i].bgId, &this->dyna.actor, 0.0f)) {
-            if ((arg3 != 0) && (this->dyna.actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME)) {
+            if ((arg3 != 0) && (this->dyna.actor.flags & ACTOR_FLAG_40)) {
                 spA8.x = ptr->unk_00.x * 0.2f;
                 spA8.y = ptr->unk_00.y;
                 spA8.z = 20.0f;
@@ -206,7 +207,7 @@ s32 func_80A3C8D8(ObjVspinyroll* this, PlayState* play, Vec3f* arg2, s32 arg3) {
                 spB4.y += this->dyna.actor.world.pos.y;
                 spB4.z += this->dyna.actor.world.pos.z;
 
-                EffectSsHitmark_SpawnFixedScale(play, EFFECT_HITMARK_METAL, &spB4);
+                EffectSsHitmark_SpawnFixedScale(play, 3, &spB4);
                 Actor_PlaySfx(&this->dyna.actor, NA_SE_IT_SHIELD_REFLECT_SW);
             }
 
@@ -258,7 +259,7 @@ void func_80A3CC84(f32 arg0) {
 
 void ObjVspinyroll_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjVspinyroll* this = (ObjVspinyroll*)thisx;
+    ObjVspinyroll* this = THIS;
     s32 params = OBJVSPINYROLL_GET_4000(&this->dyna.actor);
     f32 sp40 = D_80A3D450[params];
     s32 pad2;
@@ -275,7 +276,7 @@ void ObjVspinyroll_Init(Actor* thisx, PlayState* play) {
     this->dyna.actor.shape.rot.z = 0;
     this->dyna.actor.scale.y = 0.1f * sp40;
     this->dyna.actor.scale.z = 0.1f;
-    this->dyna.actor.cullingVolumeScale = 300.0f * sp40;
+    this->dyna.actor.uncullZoneScale = 300.0f * sp40;
     this->dyna.actor.scale.x = 0.1f;
 
     DynaPolyActor_Init(&this->dyna, 0);
@@ -289,7 +290,7 @@ void ObjVspinyroll_Init(Actor* thisx, PlayState* play) {
         this->collider.dim.height = 240;
     }
 
-    if (OBJVSPINYROLL_GET_PATH_INDEX(&this->dyna.actor) == OBJVSPINYROLL_PATH_INDEX_NONE) {
+    if (OBJVSPINYROLL_GET_7F(&this->dyna.actor) == OBJVSPINYROLL_7F_7F) {
         func_80A3CEC4(this);
         return;
     }
@@ -298,7 +299,7 @@ void ObjVspinyroll_Init(Actor* thisx, PlayState* play) {
     func_80A3C7E8(this);
     this->unk_394 = D_80A3D458[OBJVSPINYROLL_GET_380(thisx)];
 
-    path = &play->setupPathList[OBJVSPINYROLL_GET_PATH_INDEX(&this->dyna.actor)];
+    path = &play->setupPathList[OBJVSPINYROLL_GET_7F(&this->dyna.actor)];
     points = Lib_SegmentedToVirtual(path->points);
     point1 = &points[0];
     point2 = &points[1];
@@ -314,7 +315,7 @@ void ObjVspinyroll_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjVspinyroll_Destroy(Actor* thisx, PlayState* play) {
-    ObjVspinyroll* this = (ObjVspinyroll*)thisx;
+    ObjVspinyroll* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     Collider_DestroyCylinder(play, &this->collider);
@@ -401,7 +402,7 @@ void func_80A3D0FC(ObjVspinyroll* this, PlayState* play) {
 
 void ObjVspinyroll_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjVspinyroll* this = (ObjVspinyroll*)thisx;
+    ObjVspinyroll* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -413,7 +414,7 @@ void ObjVspinyroll_Update(Actor* thisx, PlayState* play2) {
 }
 
 void ObjVspinyroll_Draw(Actor* thisx, PlayState* play) {
-    ObjVspinyroll* this = (ObjVspinyroll*)thisx;
+    ObjVspinyroll* this = THIS;
 
     Matrix_Translate(this->dyna.actor.world.pos.x, this->dyna.actor.world.pos.y + 60.0f, this->dyna.actor.world.pos.z,
                      MTXMODE_NEW);
@@ -425,7 +426,7 @@ void ObjVspinyroll_Draw(Actor* thisx, PlayState* play) {
 }
 
 void func_80A3D2C0(Actor* thisx, PlayState* play) {
-    ObjVspinyroll* this = (ObjVspinyroll*)thisx;
+    ObjVspinyroll* this = THIS;
     Vec3s sp3C;
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -442,12 +443,12 @@ void func_80A3D2C0(Actor* thisx, PlayState* play) {
     Matrix_RotateXS(sp3C.x, MTXMODE_APPLY);
     Matrix_Scale(0.1f, 0.1f, 0.1f, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_spinyroll_DL_000460);
 
     func_80A3CC84(120.0f);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_spinyroll_DL_000460);
 
     CLOSE_DISPS(play->state.gfxCtx);

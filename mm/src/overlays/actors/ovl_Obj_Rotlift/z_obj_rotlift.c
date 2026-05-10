@@ -10,6 +10,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjRotlift*)thisx)
+
 void ObjRotlift_Init(Actor* thisx, PlayState* play2);
 void ObjRotlift_Destroy(Actor* thisx, PlayState* play);
 void ObjRotlift_Update(Actor* thisx, PlayState* play);
@@ -23,7 +25,7 @@ typedef struct ObjRotliftModelInfo {
     /* 0x8 */ CollisionHeader* colHeader;
 } ObjRotliftModelInfo; // size = 0xC
 
-ActorProfile Obj_Rotlift_Profile = {
+ActorInit Obj_Rotlift_InitVars = {
     /**/ ACTOR_OBJ_ROTLIFT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -50,9 +52,9 @@ struct ObjRotliftModelInfo sModelInfo[] = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 800, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 800, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 800, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 800, ICHAIN_STOP),
 };
 
 void ObjRotlift_MoveDekuFlowers(ObjRotlift* this) {
@@ -81,7 +83,7 @@ void ObjRotlift_MoveDekuFlowers(ObjRotlift* this) {
 
 void ObjRotlift_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjRotlift* this = (ObjRotlift*)thisx;
+    ObjRotlift* this = THIS;
     s32 type = OBJROTLIFT_GET_TYPE(&this->dyna.actor);
     s32 dekuFlowerParams;
     s32 i;
@@ -117,13 +119,13 @@ void ObjRotlift_Init(Actor* thisx, PlayState* play2) {
 }
 
 void ObjRotlift_Destroy(Actor* thisx, PlayState* play) {
-    ObjRotlift* this = (ObjRotlift*)thisx;
+    ObjRotlift* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
 
 void ObjRotlift_Update(Actor* thisx, PlayState* play) {
-    ObjRotlift* this = (ObjRotlift*)thisx;
+    ObjRotlift* this = THIS;
     s16 angShift;
     s32 angVelocity;
 
@@ -143,7 +145,7 @@ void ObjRotlift_Update(Actor* thisx, PlayState* play) {
 
 void ObjRotlift_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjRotlift* this = (ObjRotlift*)thisx;
+    ObjRotlift* this = THIS;
     ObjRotliftModelInfo* modelInfo = &sModelInfo[OBJROTLIFT_GET_TYPE(&this->dyna.actor)];
 
     // Neither of the displaylists reference other segments, so this call is ultimately pointless.

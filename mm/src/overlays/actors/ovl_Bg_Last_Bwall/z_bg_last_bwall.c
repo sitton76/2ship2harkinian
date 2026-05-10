@@ -8,6 +8,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgLastBwall*)thisx)
+
 typedef struct {
     /* 0x0 */ Vec3s* posOffsets;
     /* 0x4 */ s16* indices;
@@ -35,7 +37,7 @@ void func_80C18884(BgLastBwall* this, PlayState* play);
 void func_80C188C4(BgLastBwall* this, PlayState* play);
 void BgLastBwall_DoNothing(BgLastBwall* this, PlayState* play);
 
-ActorProfile Bg_Last_Bwall_Profile = {
+ActorInit Bg_Last_Bwall_InitVars = {
     /**/ ACTOR_BG_LAST_BWALL,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -50,22 +52,22 @@ ActorProfile Bg_Last_Bwall_Profile = {
 static ColliderTrisElementInit sTrisElementsInit[] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000008, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -70.0f, 0.0f, 3.0f }, { 70.0f, 0.0f, 3.0f }, { -70.0f, 200.0f, 3.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000008, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 70.0f, 0.0f, 3.0f }, { 70.0f, 200.0f, 3.0f }, { -70.0f, 200.0f, 3.0f } } },
@@ -74,7 +76,7 @@ static ColliderTrisElementInit sTrisElementsInit[] = {
 
 static ColliderTrisInit sTrisInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -143,7 +145,7 @@ void BgLastBwall_InitCollider(ColliderTrisInit* init, Vec3f* pos, Vec3s* rot, Co
 
 void BgLastBwall_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgLastBwall* this = (BgLastBwall*)thisx;
+    BgLastBwall* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, D_80C18AC8);
     this->type = BGLASTBWALL_GET_TYPE(&this->dyna.actor);
@@ -167,7 +169,7 @@ void BgLastBwall_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgLastBwall_Destroy(Actor* thisx, PlayState* play) {
-    BgLastBwall* this = (BgLastBwall*)thisx;
+    BgLastBwall* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -254,14 +256,14 @@ void BgLastBwall_DoNothing(BgLastBwall* this, PlayState* play) {
 }
 
 void BgLastBwall_Update(Actor* thisx, PlayState* play) {
-    BgLastBwall* this = (BgLastBwall*)thisx;
+    BgLastBwall* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void BgLastBwall_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    BgLastBwall* this = (BgLastBwall*)thisx;
+    BgLastBwall* this = THIS;
 
     Gfx_DrawDListOpa(play, D_80C18A48[this->type].dList);
 }

@@ -8,14 +8,16 @@
 #include "z_oceff_wipe3.h"
 #include "BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((OceffWipe3*)thisx)
 
 void OceffWipe3_Init(Actor* thisx, PlayState* play);
 void OceffWipe3_Destroy(Actor* thisx, PlayState* play);
 void OceffWipe3_Update(Actor* thisx, PlayState* play);
 void OceffWipe3_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Oceff_Wipe3_Profile = {
+ActorInit Oceff_Wipe3_InitVars = {
     ACTOR_OCEFF_WIPE3,
     ACTORCAT_ITEMACTION,
     FLAGS,
@@ -29,10 +31,10 @@ ActorProfile Oceff_Wipe3_Profile = {
 
 #include "assets/overlays/ovl_Oceff_Wipe3/ovl_Oceff_Wipe3.h"
 
-static s32 sBssPad;
+s32 D_80989130;
 
 void OceffWipe3_Init(Actor* thisx, PlayState* play) {
-    OceffWipe3* this = (OceffWipe3*)thisx;
+    OceffWipe3* this = THIS;
 
     Actor_SetScale(&this->actor, 0.1f);
     this->counter = 0;
@@ -40,14 +42,14 @@ void OceffWipe3_Init(Actor* thisx, PlayState* play) {
 }
 
 void OceffWipe3_Destroy(Actor* thisx, PlayState* play) {
-    OceffWipe3* this = (OceffWipe3*)thisx;
+    OceffWipe3* this = THIS;
 
     Magic_Reset(play);
     play->msgCtx.ocarinaSongEffectActive = false;
 }
 
 void OceffWipe3_Update(Actor* thisx, PlayState* play) {
-    OceffWipe3* this = (OceffWipe3*)thisx;
+    OceffWipe3* this = THIS;
 
     this->actor.world.pos = GET_ACTIVE_CAM(play)->eye;
     if (this->counter < 100) {
@@ -59,7 +61,7 @@ void OceffWipe3_Update(Actor* thisx, PlayState* play) {
 
 void OceffWipe3_Draw(Actor* thisx, PlayState* play) {
     u32 scroll = play->state.frames & 0xFFF;
-    OceffWipe3* this = (OceffWipe3*)thisx;
+    OceffWipe3* this = THIS;
     f32 z;
     u8 alpha;
     s32 pad[2];
@@ -105,12 +107,12 @@ void OceffWipe3_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateXS(0x708, MTXMODE_APPLY);
     Matrix_Translate(0.0f, 0.0f, -z, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 170, 255);
     gDPSetEnvColor(POLY_XLU_DISP++, 100, 200, 0, 128);
     gSPDisplayList(POLY_XLU_DISP++, &sSariaSongFrustrumMaterialDL);
-    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, scroll * 12, scroll * -12, 64, 64, 1,
-                                                       scroll * 8, scroll * -8, 64, 64, 12, -12, 8, -8));
+    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScroll(play->state.gfxCtx, 0, scroll * 12, scroll * -12, 64, 64, 1,
+                                                     scroll * 8, scroll * -8, 64, 64));
     gSPDisplayList(POLY_XLU_DISP++, &sSariaSongFrustumModelDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

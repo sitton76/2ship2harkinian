@@ -1,14 +1,15 @@
 ﻿#include "BenPort.h"
+#include <libultraship/libultraship.h>
 #include "global.h"
-#include <ship/resource/type/Blob.h>
+#include <Blob.h>
 #include <memory>
 #include <cassert>
-#include <ship/utils/StringHelper.h>
-#include <fast/resource/type/DisplayList.h>
-#include <libultraship/bridge/resourcebridge.h>
+#include <utils/StringHelper.h>
+#include <DisplayList.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/resource/type/Scene.h"
 #include "2s2h/resource/type/CollisionHeader.h"
+#include "2s2h/resource/type/Cutscene.h"
 #include "2s2h/resource/type/Path.h"
 #include "2s2h/resource/type/scenecommand/SetCameraSettings.h"
 #include "2s2h/resource/type/scenecommand/SetCutscenes.h"
@@ -49,9 +50,9 @@ void Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
 
     play->linkActorEntry = &entries[play->setupEntranceList[play->curSpawn].spawn];
 
-    if ((PLAYER_GET_START_MODE(play->linkActorEntry) == PLAYER_START_MODE_TELESCOPE) ||
-        ((gSaveContext.respawnFlag == 2) && (gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams ==
-                                             PLAYER_PARAMS(0xFF, PLAYER_START_MODE_TELESCOPE)))) {
+    if ((PLAYER_GET_INITMODE(play->linkActorEntry) == PLAYER_INITMODE_TELESCOPE) ||
+        ((gSaveContext.respawnFlag == 2) &&
+         (gSaveContext.respawn[RESPAWN_MODE_RETURN].playerParams == PLAYER_PARAMS(0xFF, PLAYER_INITMODE_TELESCOPE)))) {
         // Skull Kid Object
         Object_SpawnPersistent(&play->objectCtx, OBJECT_STK);
         return;
@@ -62,7 +63,7 @@ void Scene_CommandSpawnList(PlayState* play, SOH::ISceneCommand* cmd) {
     play->objectCtx.numEntries = loadedCount;
     play->objectCtx.numPersistentEntries = loadedCount;
     playerObjectId = gPlayerFormObjectIds[GET_PLAYER_FORM];
-    gActorOverlayTable[0].profile->objectId = playerObjectId;
+    gActorOverlayTable[0].initInfo->objectId = playerObjectId;
     Object_SpawnPersistent(&play->objectCtx, playerObjectId);
 
     play->objectCtx.slots[play->objectCtx.numEntries].segment = objectPtr;
@@ -89,8 +90,8 @@ void Scene_CommandCollisionHeader(PlayState* play, SOH::ISceneCommand* cmd) {
 
 void Scene_CommandRoomList(PlayState* play, SOH::ISceneCommand* cmd) {
     SOH::SetRoomList* list = (SOH::SetRoomList*)cmd;
-    play->roomList.count = list->numRooms;
-    play->roomList.romFiles = (RomFile*)list->GetPointer();
+    play->numRooms = list->numRooms;
+    play->roomList = (RomFile*)list->GetPointer();
 }
 
 void Scene_CommandWindSettings(PlayState* play, SOH::ISceneCommand* cmd) {
@@ -132,14 +133,14 @@ void Scene_CommandSpecialFiles(PlayState* play, SOH::ISceneCommand* cmd) {
 void Scene_CommandRoomBehavior(PlayState* play, SOH::ISceneCommand* cmd) {
     SOH::SetRoomBehaviorMM* behavior = (SOH::SetRoomBehaviorMM*)cmd;
 
-    play->roomCtx.curRoom.type = behavior->roomBehavior.gameplayFlags;
-    play->roomCtx.curRoom.environmentType = behavior->roomBehavior.currRoomUnk2;
+    play->roomCtx.curRoom.behaviorType1 = behavior->roomBehavior.gameplayFlags;
+    play->roomCtx.curRoom.behaviorType2 = behavior->roomBehavior.currRoomUnk2;
     play->roomCtx.curRoom.lensMode = behavior->roomBehavior.currRoomUnk5;
     play->msgCtx.unk12044 = behavior->roomBehavior.msgCtxUnk;
     play->roomCtx.curRoom.enablePosLights = behavior->roomBehavior.enablePointLights;
     play->envCtx.stormState = behavior->roomBehavior.kankyoContextUnkE2;
-    // play->roomCtx.curRoom.type = behavior->roomBehavior.gameplayFlags;
-    // play->roomCtx.curRoom.environmentType = behavior->roomBehavior.gameplayFlags2 & 0xFF;
+    // play->roomCtx.curRoom.behaviorType1 = behavior->roomBehavior.gameplayFlags;
+    // play->roomCtx.curRoom.behaviorType2 = behavior->roomBehavior.gameplayFlags2 & 0xFF;
     // play->roomCtx.curRoom.lensMode = (behavior->roomBehavior.gameplayFlags2 >> 8) & 1;
     // play->msgCtx.unk12044 = (behavior->roomBehavior.gameplayFlags2 >> 0xA) & 1;
     // play->roomCtx.curRoom.enablePosLights = (behavior->roomBehavior.gameplayFlags2 >> 0xB) & 1;
@@ -292,12 +293,12 @@ void Scene_CommandTimeSettings(PlayState* play, SOH::ISceneCommand* cmd) {
         R_TIME_SPEED = play->envCtx.sceneTimeSpeed;
     }
 
-    play->envCtx.sunPos.x = -(Math_SinS(CURRENT_TIME - CLOCK_TIME(12, 0)) * 120.0f) * 25.0f;
-    play->envCtx.sunPos.y = (Math_CosS(CURRENT_TIME - CLOCK_TIME(12, 0)) * 120.0f) * 25.0f;
-    play->envCtx.sunPos.z = (Math_CosS(CURRENT_TIME - CLOCK_TIME(12, 0)) * 20.0f) * 25.0f;
+    play->envCtx.sunPos.x = -(Math_SinS(((void)0, gSaveContext.save.time) - CLOCK_TIME(12, 0)) * 120.0f) * 25.0f;
+    play->envCtx.sunPos.y = (Math_CosS(((void)0, gSaveContext.save.time) - CLOCK_TIME(12, 0)) * 120.0f) * 25.0f;
+    play->envCtx.sunPos.z = (Math_CosS(((void)0, gSaveContext.save.time) - CLOCK_TIME(12, 0)) * 20.0f) * 25.0f;
 
     if ((play->envCtx.sceneTimeSpeed == 0) && (gSaveContext.save.cutsceneIndex < 0xFFF0)) {
-        gSaveContext.skyboxTime = CURRENT_TIME;
+        gSaveContext.skyboxTime = gSaveContext.save.time;
 
         if ((gSaveContext.skyboxTime >= CLOCK_TIME(4, 0)) && (gSaveContext.skyboxTime < CLOCK_TIME(6, 30))) {
             gSaveContext.skyboxTime = CLOCK_TIME(5, 0);
@@ -336,8 +337,8 @@ void Scene_CommandExitList(PlayState* play, SOH::ISceneCommand* cmd) {
 void Scene_CommandSoundSettings(PlayState* play, SOH::ISceneCommand* cmd) {
     SOH::SetSoundSettings* settings = (SOH::SetSoundSettings*)cmd;
 
-    play->sceneSequences.seqId = settings->settings.seqId;
-    play->sceneSequences.ambienceId = settings->settings.natureAmbienceId;
+    play->sequenceCtx.seqId = settings->settings.seqId;
+    play->sequenceCtx.ambienceId = settings->settings.natureAmbienceId;
 
     if (gSaveContext.seqId == NA_BGM_DISABLED || AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN) == NA_BGM_FINAL_HOURS) {
         Audio_SetSpec(settings->settings.reverb); // BENTODO Verify if this should be reverb
@@ -500,25 +501,24 @@ extern "C" s32 OTRfunc_8009728C(PlayState* play, RoomContext* roomCtx, s32 roomN
         roomCtx->curRoom.segment = NULL;
         roomCtx->status = 1;
 
-        // assert(roomNum < play->roomList.count);
+        // assert(roomNum < play->numRooms);
 
-        if (roomNum >= play->roomList.count)
+        if (roomNum >= play->numRooms)
             return 0; // UH OH
 
-        size = play->roomList.romFiles[roomNum].vromEnd - play->roomList.romFiles[roomNum].vromStart;
-        // roomCtx->roomRequestAddr =
-        //     (void*)((uintptr_t)roomCtx->roomMemPages[roomCtx->activeBufPage] - ((size + 8) * roomCtx->activeBufPage +
+        size = play->roomList[roomNum].vromEnd - play->roomList[roomNum].vromStart;
+        // roomCtx->activeRoomVram =
+        //     (void*)((uintptr_t)roomCtx->roomMemPages[roomCtx->activeMemPage] - ((size + 8) * roomCtx->activeMemPage +
         //     7));
 
-        // DmaMgr_SendRequest2(&roomCtx->dmaRequest, roomCtx->unk_34, play->roomList.romFiles[roomNum].vromStart, size,
-        // 0,
+        // DmaMgr_SendRequest2(&roomCtx->dmaRequest, roomCtx->unk_34, play->roomList[roomNum].vromStart, size, 0,
         //&roomCtx->loadQueue, NULL, __FILE__, __LINE__);
-        printf("File Name %s\n", play->roomList.romFiles[roomNum].fileName);
-        auto roomData = std::static_pointer_cast<SOH::Scene>(ResourceLoad(play->roomList.romFiles[roomNum].fileName));
+        printf("File Name %s\n", play->roomList[roomNum].fileName);
+        auto roomData = std::static_pointer_cast<SOH::Scene>(ResourceLoad(play->roomList[roomNum].fileName));
         roomCtx->status = 1;
-        roomCtx->roomRequestAddr = roomData.get();
+        roomCtx->activeRoomVram = roomData.get();
 
-        roomCtx->activeBufPage ^= 1;
+        roomCtx->activeMemPage ^= 1;
 
         GameInteractor_ExecuteOnRoomInit(play->sceneId, roomCtx->curRoom.num);
 

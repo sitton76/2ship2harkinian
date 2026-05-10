@@ -4,11 +4,12 @@
  * Description: Bombers - Jim
  */
 
+#include "overlays/actors/ovl_En_Bombal/z_en_bombal.h"
 #include "z_en_bomjima.h"
 
-#include "overlays/effects/ovl_Effect_Ss_Hitmark/z_eff_ss_hitmark.h"
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define THIS ((EnBomjima*)thisx)
 
 void EnBomjima_Init(Actor* thisx, PlayState* play);
 void EnBomjima_Destroy(Actor* thisx, PlayState* play);
@@ -51,7 +52,7 @@ typedef enum EnBomjimaAction {
 static s32 D_80C009F0 = 0;
 static s32 D_80C009F4 = 0;
 
-ActorProfile En_Bomjima_Profile = {
+ActorInit En_Bomjima_InitVars = {
     /**/ ACTOR_EN_BOMJIMA,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -65,7 +66,7 @@ ActorProfile En_Bomjima_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -73,11 +74,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 10, 30, 0, { 0, 0, 0 } },
@@ -173,7 +174,7 @@ s16 D_80C00AF8[] = {
 };
 
 void EnBomjima_Init(Actor* thisx, PlayState* play) {
-    EnBomjima* this = (EnBomjima*)thisx;
+    EnBomjima* this = THIS;
     s32 csId;
     s32 i;
 
@@ -184,7 +185,7 @@ void EnBomjima_Init(Actor* thisx, PlayState* play) {
                        this->morphTable, OBJECT_CS_LIMB_MAX);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     CLEAR_WEEKEVENTREG(WEEKEVENTREG_83_04);
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     this->unk_2E6 = ENBOMJIMA_GET_F0(&this->actor);
     this->unk_2E4 = ENBOMJIMA_GET_F(&this->actor);
     Actor_SetScale(&this->actor, 0.01f);
@@ -212,7 +213,7 @@ void EnBomjima_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBomjima_Destroy(Actor* thisx, PlayState* play) {
-    EnBomjima* this = (EnBomjima*)thisx;
+    EnBomjima* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -316,10 +317,10 @@ void func_80BFE67C(EnBomjima* this, PlayState* play) {
     Vec3f sp60;
     Vec3f sp54;
     CollisionPoly* sp50;
-    s32 bgId;
+    s32 sp4C;
 
     this->unk_2DC = Math_Vec3f_Yaw(&this->actor.world.pos, &this->unk_2A4);
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
 
     switch (this->unk_2A2) {
         case 0:
@@ -331,7 +332,7 @@ void func_80BFE67C(EnBomjima* this, PlayState* play) {
 
                 abs = ABS_ALT(BINANG_SUB(this->actor.world.rot.y, Math_Vec3f_Yaw(&this->actor.world.pos, &sp54)));
                 if ((abs < 0x4000) && !BgCheck_EntityLineTest1(&play->colCtx, &this->actor.world.pos, &sp54, &sp6C,
-                                                               &sp50, true, false, false, true, &bgId)) {
+                                                               &sp50, true, false, false, true, &sp4C)) {
                     EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_5, 1.0f);
                     Math_Vec3f_Copy(&this->unk_2A4, &sp54);
                     this->unk_2BE = Rand_S16Offset(30, 50);
@@ -343,7 +344,7 @@ void func_80BFE67C(EnBomjima* this, PlayState* play) {
         case 1:
             if (curFrame >= 0.0f) {
                 this->unk_2DC = Math_Vec3f_Yaw(&this->actor.world.pos, &this->unk_2A4);
-                Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 10, 0x7D0, 0x14);
+                Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 10, 2000, 20);
             }
 
             abs2 = BINANG_SUB(this->actor.world.rot.y, this->unk_2DC);
@@ -354,7 +355,7 @@ void func_80BFE67C(EnBomjima* this, PlayState* play) {
                 sp60.z += Math_CosS(this->actor.world.rot.y) * 60.0f;
 
                 if (BgCheck_EntityLineTest1(&play->colCtx, &this->actor.world.pos, &sp60, &sp6C, &sp50, true, false,
-                                            false, true, &bgId)) {
+                                            false, true, &sp4C)) {
                     this->unk_2C0 = 0;
                     if (Rand_ZeroOne() < 0.5f) {
                         EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_19, 1.0f);
@@ -443,7 +444,7 @@ void func_80BFEB64(EnBomjima* this, PlayState* play) {
         this->actor.textId = Text_GetFaceReaction(play, FACE_REACTION_SET_JIM);
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_2DC = this->actor.yawTowardsPlayer;
         func_80C00234(this);
         return;
@@ -486,10 +487,10 @@ void func_80BFEB64(EnBomjima* this, PlayState* play) {
                 sp40.z = (Math_CosS(sp3E) * (Rand_ZeroFloat(20.0f) + 40.0f)) + this->bombal->actor.world.pos.z;
 
                 SoundSource_PlaySfxAtFixedWorldPos(play, &sp40, 50, NA_SE_EV_BOMBERS_SHOT_EXPLOSUIN);
-                EffectSsHitmark_SpawnFixedScale(play, EFFECT_HITMARK_WHITE, &sp40);
+                EffectSsHitmark_SpawnFixedScale(play, 0, &sp40);
                 this->unk_2BC++;
 
-                if ((TRUNCF_BINANG(Rand_ZeroFloat(2.0f)) + 3) < this->unk_2BC) {
+                if (((s16)Rand_ZeroFloat(2.0f) + 3) < this->unk_2BC) {
                     EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_5, 1.0f);
                     this->unk_29A = 0;
                     Math_Vec3f_Copy(&this->unk_2A4, &this->actor.home.pos);
@@ -511,7 +512,7 @@ void func_80BFEB64(EnBomjima* this, PlayState* play) {
             break;
     }
 
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
 }
 
 void func_80BFEFF0(EnBomjima* this) {
@@ -562,13 +563,13 @@ void func_80BFF174(EnBomjima* this, PlayState* play) {
         this->actor.textId = Text_GetFaceReaction(play, FACE_REACTION_SET_JIM);
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_2DC = this->actor.yawTowardsPlayer;
         func_80C00234(this);
         return;
     }
 
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
 
     if ((curFrame >= this->animEndFrame) && (this->unk_2BC < 5)) {
         this->unk_2BC++;
@@ -696,7 +697,7 @@ void func_80BFF6CC(EnBomjima* this, PlayState* play) {
     f32 curFrame = this->skelAnime.curFrame;
 
     if (curFrame >= this->animEndFrame) {
-        if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+        if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
             Message_CloseTextbox(play);
             EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_1, 1.0f);
             this->actionFunc = func_80BFF754;
@@ -801,7 +802,7 @@ void func_80BFF9B0(EnBomjima* this, PlayState* play) {
 }
 
 void func_80BFFB40(EnBomjima* this, PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_15, 1.0f);
         D_80C009F0 = 100;
@@ -825,7 +826,7 @@ void func_80BFFBC4(EnBomjima* this, PlayState* play) {
         this->unk_2DC = -10000;
     }
 
-    Math_SmoothStepToS(&this->unk_290, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->unk_290, this->unk_2DC, 1, 5000, 0);
     if (D_80C009F0 >= 104) {
         D_80C009F0 = 0;
         Message_CloseTextbox(play);
@@ -849,7 +850,7 @@ void func_80BFFD48(EnBomjima* this, PlayState* play) {
     s32 pad[2];
 
     this->unk_2DC = Math_Vec3f_Yaw(&this->actor.world.pos, &this->unk_2A4);
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
     Math_ApproachF(&this->actor.world.pos.x, this->unk_2A4.x, 0.3f, 4.0f);
     Math_ApproachF(&this->actor.world.pos.z, this->unk_2A4.z, 0.3f, 4.0f);
     if (sqrtf(SQ(this->actor.world.pos.x - this->unk_2A4.x) + SQ(this->actor.world.pos.z - this->unk_2A4.z)) < 4.0f) {
@@ -861,7 +862,7 @@ void func_80BFFD48(EnBomjima* this, PlayState* play) {
 }
 
 void func_80BFFE48(EnBomjima* this, PlayState* play) {
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
     Math_ApproachF(&this->actor.world.pos.x, this->unk_2A4.x, 0.3f, 4.0f);
     Math_ApproachF(&this->actor.world.pos.z, this->unk_2A4.z, 0.3f, 4.0f);
 
@@ -872,7 +873,7 @@ void func_80BFFE48(EnBomjima* this, PlayState* play) {
             func_80BFE65C(this);
             this->actionFunc = func_80BFFF54;
         } else {
-            Math_SmoothStepToS(&this->unk_290, 10000, 1, 0x1388, 0);
+            Math_SmoothStepToS(&this->unk_290, 10000, 1, 5000, 0);
             if (D_80C009F0 >= 103) {
                 this->unk_2DC = 0;
                 EnBomjima_ChangeAnim(this, ENBOMJIMA_ANIM_15, 1.0f);
@@ -886,7 +887,7 @@ void func_80BFFE48(EnBomjima* this, PlayState* play) {
 void func_80BFFF54(EnBomjima* this, PlayState* play) {
     f32 curFrame = this->skelAnime.curFrame;
 
-    Math_SmoothStepToS(&this->unk_290, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->unk_290, this->unk_2DC, 1, 5000, 0);
 
     if ((D_80C009F4 != 0) && (this->unk_2C2 == 0)) {
         this->unk_2C2 = Rand_S16Offset(5, 5);
@@ -945,7 +946,7 @@ void func_80C00168(EnBomjima* this, PlayState* play) {
         this->actor.textId = Text_GetFaceReaction(play, FACE_REACTION_SET_JIM);
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_2DC = this->actor.yawTowardsPlayer;
         func_80C00234(this);
     } else {
@@ -965,7 +966,7 @@ void func_80C00284(EnBomjima* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
     f32 curFrame = this->skelAnime.curFrame;
 
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 0x1388, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->unk_2DC, 1, 5000, 0);
     if (((this->action == EN_BOMJIMA_ACTION_0) || (this->unk_2C8 == 10) || (this->unk_2C8 == 11) ||
          (this->unk_2CA == 1)) &&
         (curFrame >= this->animEndFrame)) {
@@ -992,7 +993,7 @@ void func_80C00284(EnBomjima* this, PlayState* play) {
             break;
     }
 
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         this->collider.dim.radius = 10;
         this->collider.dim.height = 30;
         if ((this->action == EN_BOMJIMA_ACTION_4) || (this->unk_2CA == 1) ||
@@ -1070,7 +1071,7 @@ void func_80C00284(EnBomjima* this, PlayState* play) {
 
 void EnBomjima_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnBomjima* this = (EnBomjima*)thisx;
+    EnBomjima* this = THIS;
 
     if (this->unk_2BE != 0) {
         this->unk_2BE--;
@@ -1098,28 +1099,28 @@ void EnBomjima_Update(Actor* thisx, PlayState* play) {
     Actor_SetFocus(&this->actor, 20.0f);
     this->actionFunc(this, play);
     Actor_MoveWithGravity(&this->actor);
-    Math_SmoothStepToS(&this->unk_28A, this->unk_290, 1, 0x1388, 0);
-    Math_SmoothStepToS(&this->unk_288, this->unk_28E, 1, 0x3E8, 0);
-    Math_SmoothStepToS(&this->unk_294, this->unk_29A, 1, 0x3E8, 0);
+    Math_SmoothStepToS(&this->unk_28A, this->unk_290, 1, 5000, 0);
+    Math_SmoothStepToS(&this->unk_288, this->unk_28E, 1, 1000, 0);
+    Math_SmoothStepToS(&this->unk_294, this->unk_29A, 1, 1000, 0);
 
     if (this->unk_2E2 == 0) {
         this->unk_2E0++;
         if (this->unk_2E0 >= 3) {
             this->unk_2E0 = 0;
-            this->unk_2E2 = TRUNCF_BINANG(Rand_ZeroFloat(60.0f)) + 20;
+            this->unk_2E2 = (s16)Rand_ZeroFloat(60.0f) + 20;
         }
     }
 
     Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, 20.0f, 50.0f,
                             UPDBGCHECKINFO_FLAG_1 | UPDBGCHECKINFO_FLAG_4 | UPDBGCHECKINFO_FLAG_8 |
                                 UPDBGCHECKINFO_FLAG_10);
-    this->actor.cullingVolumeDistance = 500.0f;
+    this->actor.uncullZoneForward = 500.0f;
     Collider_UpdateCylinder(&this->actor, &this->collider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
 }
 
 s32 EnBomjima_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnBomjima* this = (EnBomjima*)thisx;
+    EnBomjima* this = THIS;
 
     if (limbIndex == OBJECT_CS_LIMB_08) {
         rot->z += this->unk_294;
@@ -1160,7 +1161,7 @@ void EnBomjima_Draw(Actor* thisx, PlayState* play) {
     static TexturePtr D_80C00B48[] = {
         object_cs_Tex_00E620, object_cs_Tex_00EA20, object_cs_Tex_00EE20, object_cs_Tex_00DD20, object_cs_Tex_00F220,
     };
-    EnBomjima* this = (EnBomjima*)thisx;
+    EnBomjima* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

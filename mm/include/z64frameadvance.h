@@ -4,7 +4,6 @@
 #include "ultra64.h"
 
 struct Input;
-struct PlayState;
 
 
 typedef struct FrameAdvanceContext {
@@ -14,7 +13,5 @@ typedef struct FrameAdvanceContext {
 
 void FrameAdvance_Init(FrameAdvanceContext* frameAdvCtx);
 s32 FrameAdvance_Update(FrameAdvanceContext* frameAdvCtx, struct Input* input);
-
-s32 FrameAdvance_IsEnabled(struct PlayState* thisx);
 
 #endif

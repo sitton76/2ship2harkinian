@@ -6,7 +6,9 @@
 
 #include "z_en_ending_hero4.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnEndingHero4*)thisx)
 
 void EnEndingHero4_Init(Actor* thisx, PlayState* play);
 void EnEndingHero4_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void EnEndingHero4_Draw(Actor* thisx, PlayState* play);
 void EnEndingHero4_SetupIdle(EnEndingHero4* this);
 void EnEndingHero4_Idle(EnEndingHero4* this, PlayState* play);
 
-ActorProfile En_Ending_Hero4_Profile = {
+ActorInit En_Ending_Hero4_InitVars = {
     /**/ ACTOR_EN_ENDING_HERO4,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -29,11 +31,11 @@ ActorProfile En_Ending_Hero4_Profile = {
 };
 
 void EnEndingHero4_Init(Actor* thisx, PlayState* play) {
-    EnEndingHero4* this = (EnEndingHero4*)thisx;
+    EnEndingHero4* this = THIS;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     Actor_SetScale(&this->actor, 0.01f);
-    this->actor.attentionRangeType = ATTENTION_RANGE_6;
+    this->actor.targetMode = TARGET_MODE_6;
     this->actor.gravity = -3.0f;
     SkelAnime_InitFlex(play, &this->skelAnime, &gSoldierSkel, &gSoldierCheerWithSpearAnim, this->jointTable,
                        this->morphTable, SOLDIER_LIMB_MAX);
@@ -54,7 +56,7 @@ void EnEndingHero4_Idle(EnEndingHero4* this, PlayState* play) {
 }
 
 void EnEndingHero4_Update(Actor* thisx, PlayState* play) {
-    EnEndingHero4* this = (EnEndingHero4*)thisx;
+    EnEndingHero4* this = THIS;
 
     this->actionFunc(this, play);
     Actor_MoveWithGravity(&this->actor);
@@ -64,7 +66,7 @@ void EnEndingHero4_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnEndingHero4_Draw(Actor* thisx, PlayState* play) {
-    EnEndingHero4* this = (EnEndingHero4*)thisx;
+    EnEndingHero4* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);

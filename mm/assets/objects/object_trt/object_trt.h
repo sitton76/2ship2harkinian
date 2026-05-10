@@ -177,8 +177,8 @@ static const ALIGN_ASSET(2) char gKotakeEyeClosedTex[] = dgKotakeEyeClosedTex;
 #define dgKotakeJewelTex "__OTR__objects/object_trt/gKotakeJewelTex"
 static const ALIGN_ASSET(2) char gKotakeJewelTex[] = dgKotakeJewelTex;
 
-#define dgKotakeEyeTexAnim "__OTR__objects/object_trt/gKotakeEyeTexAnim"
-static const ALIGN_ASSET(2) char gKotakeEyeTexAnim[] = dgKotakeEyeTexAnim;
+#define dgKotakeEyesTexAnim "__OTR__objects/object_trt/gKotakeEyesTexAnim"
+static const ALIGN_ASSET(2) char gKotakeEyesTexAnim[] = dgKotakeEyesTexAnim;
 
 #define dgKotakeHandsOnCounterAnim "__OTR__objects/object_trt/gKotakeHandsOnCounterAnim"
 static const ALIGN_ASSET(2) char gKotakeHandsOnCounterAnim[] = dgKotakeHandsOnCounterAnim;

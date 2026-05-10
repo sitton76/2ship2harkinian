@@ -7,7 +7,9 @@
 #include "z_en_ig.h"
 #include "overlays/actors/ovl_En_Door/z_en_door.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnIg*)thisx)
 
 void EnIg_Init(Actor* thisx, PlayState* play);
 void EnIg_Destroy(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ static u8 D_80BF3260[] = {
     /* 0x05 */ SCHEDULE_CMD_CHECK_NOT_IN_SCENE_S(SCENE_TOWN, 0x57 - 0x09),
     /* 0x09 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(15, 25, 15, 45, 0x51 - 0x0F),
     /* 0x0F */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(15, 45, 15, 50, 0x4B - 0x15),
-    /* 0x15 */ SCHEDULE_CMD_CHECK_WEEK_EVENT_REG_S(WEEKEVENTREG_RECEIVED_ROOM_KEY, 0x1A - 0x19),
+    /* 0x15 */ SCHEDULE_CMD_CHECK_FLAG_S(WEEKEVENTREG_RECEIVED_ROOM_KEY, 0x1A - 0x19),
     /* 0x19 */ SCHEDULE_CMD_RET_NONE(),
     /* 0x1A */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(16, 50, 16, 55, 0x45 - 0x20),
     /* 0x20 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(16, 55, 17, 15, 0x3F - 0x26),
@@ -39,7 +41,7 @@ static u8 D_80BF3260[] = {
     /* 0x5B */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(15, 45, 15, 50, 0xAF - 0x61),
     /* 0x61 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(15, 50, 16, 10, 0xA9 - 0x67),
     /* 0x67 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(16, 10, 16, 30, 0xA3 - 0x6D),
-    /* 0x6D */ SCHEDULE_CMD_CHECK_WEEK_EVENT_REG_S(WEEKEVENTREG_RECEIVED_ROOM_KEY, 0x8A - 0x71),
+    /* 0x6D */ SCHEDULE_CMD_CHECK_FLAG_S(WEEKEVENTREG_RECEIVED_ROOM_KEY, 0x8A - 0x71),
     /* 0x71 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(16, 30, 16, 50, 0x84 - 0x77),
     /* 0x77 */ SCHEDULE_CMD_CHECK_TIME_RANGE_S(16, 50, 16, 55, 0x7E - 0x7D),
     /* 0x7D */ SCHEDULE_CMD_RET_NONE(),
@@ -60,96 +62,96 @@ static u8 D_80BF3260[] = {
 static s32 D_80BF3318[] = { -1, -1, 3, 1, 3, 1, 2, 0, 3, 5, 0, 3, 1, 2, 4 };
 
 static MsgScript D_80BF3354[] = {
-    /* 0x0000 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B0),
-    /* 0x0003 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0004 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0000 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B0),
+    /* 0x0003 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0004 0x01 */ MSCRIPT_DONE(),
 };
 
 static MsgScript D_80BF335C[] = {
-    /* 0x0000 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0003 0x05 */ MSCRIPT_CMD_CHECK_WEEK_EVENT_REG(WEEKEVENTREG_RECEIVED_ROOM_KEY, 0x0027 - 0x0008),
-    /* 0x0008 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x0009 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B1),
-    /* 0x000C 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x000D 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0010 0x01 */ MSCRIPT_CMD_FOCUS_TO_SELF(),
-    /* 0x0011 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B2),
-    /* 0x0014 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0015 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0018 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x0019 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B3),
-    /* 0x001C 0x03 */ MSCRIPT_CMD_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
-    /* 0x001F 0x03 */ MSCRIPT_CMD_SET_WEEK_EVENT_REG(WEEKEVENTREG_55_02),
-    /* 0x0022 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0023 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0026 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0000 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0003 0x05 */ MSCRIPT_BRANCH_ON_WEEK_EVENT_REG(0x4B, 0x10, 0x0027 - 0x0008),
+    /* 0x0008 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x0009 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B1),
+    /* 0x000C 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x000D 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0010 0x01 */ MSCRIPT_FOCUS_TO_SELF(),
+    /* 0x0011 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B2),
+    /* 0x0014 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0015 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0018 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x0019 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B3),
+    /* 0x001C 0x03 */ MSCRIPT_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
+    /* 0x001F 0x03 */ MSCRIPT_WEEK_EVENT_REG_SET(0x37, 0x02),
+    /* 0x0022 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0023 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0026 0x01 */ MSCRIPT_DONE(),
 
-    /* 0x0027 0x05 */ MSCRIPT_CMD_CHECK_WEEK_EVENT_REG(WEEKEVENTREG_86_10, 0x005B - 0x002C),
-    /* 0x002C 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x002D 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B1),
-    /* 0x0030 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0031 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0034 0x01 */ MSCRIPT_CMD_FOCUS_TO_SELF(),
-    /* 0x0035 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B5),
-    /* 0x0038 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0039 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x003C 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x003D 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B6),
-    /* 0x0040 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0041 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0044 0x01 */ MSCRIPT_CMD_FOCUS_TO_SELF(),
-    /* 0x0045 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B7),
-    /* 0x0048 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0049 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x004C 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x004D 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B8),
-    /* 0x0050 0x03 */ MSCRIPT_CMD_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
-    /* 0x0053 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0054 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0057 0x03 */ MSCRIPT_CMD_SET_WEEK_EVENT_REG(WEEKEVENTREG_86_10),
-    /* 0x005A 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0027 0x05 */ MSCRIPT_BRANCH_ON_WEEK_EVENT_REG(0x56, 0x10, 0x005B - 0x002C),
+    /* 0x002C 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x002D 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B1),
+    /* 0x0030 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0031 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0034 0x01 */ MSCRIPT_FOCUS_TO_SELF(),
+    /* 0x0035 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B5),
+    /* 0x0038 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0039 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x003C 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x003D 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B6),
+    /* 0x0040 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0041 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0044 0x01 */ MSCRIPT_FOCUS_TO_SELF(),
+    /* 0x0045 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B7),
+    /* 0x0048 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0049 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x004C 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x004D 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B8),
+    /* 0x0050 0x03 */ MSCRIPT_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
+    /* 0x0053 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0054 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0057 0x03 */ MSCRIPT_WEEK_EVENT_REG_SET(0x56, 0x10),
+    /* 0x005A 0x01 */ MSCRIPT_DONE(),
 
-    /* 0x005B 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x005E 0x01 */ MSCRIPT_CMD_FOCUS_TO_SELF(),
-    /* 0x005F 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x2956),
-    /* 0x0062 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0063 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0066 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x0067 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x2957),
-    /* 0x006A 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x006B 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x006E 0x01 */ MSCRIPT_CMD_FOCUS_TO_SELF(),
-    /* 0x006F 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x2958),
-    /* 0x0072 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0073 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0076 0x01 */ MSCRIPT_CMD_FOCUS_TO_CHILD(),
-    /* 0x0077 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x2959),
-    /* 0x007A 0x03 */ MSCRIPT_CMD_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
-    /* 0x007D 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x007E 0x03 */ MSCRIPT_CMD_CHECK_CALLBACK(0x0),
-    /* 0x0081 0x01 */ MSCRIPT_CMD_CLOSE_TEXT(),
-    /* 0x0082 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x005B 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x005E 0x01 */ MSCRIPT_FOCUS_TO_SELF(),
+    /* 0x005F 0x03 */ MSCRIPT_BEGIN_TEXT(0x2956),
+    /* 0x0062 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0063 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0066 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x0067 0x03 */ MSCRIPT_BEGIN_TEXT(0x2957),
+    /* 0x006A 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x006B 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x006E 0x01 */ MSCRIPT_FOCUS_TO_SELF(),
+    /* 0x006F 0x03 */ MSCRIPT_BEGIN_TEXT(0x2958),
+    /* 0x0072 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0073 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0076 0x01 */ MSCRIPT_FOCUS_TO_CHILD(),
+    /* 0x0077 0x03 */ MSCRIPT_BEGIN_TEXT(0x2959),
+    /* 0x007A 0x03 */ MSCRIPT_NOTEBOOK_EVENT(BOMBERS_NOTEBOOK_EVENT_MET_ANJU),
+    /* 0x007D 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x007E 0x03 */ MSCRIPT_BRANCH_ON_CALLBACK_OPTIONAL(0x0),
+    /* 0x0081 0x01 */ MSCRIPT_CLOSE_TEXT(),
+    /* 0x0082 0x01 */ MSCRIPT_DONE(),
 };
 
 static MsgScript D_80BF33E0[] = {
-    /* 0x0000 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B9),
-    /* 0x0003 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0004 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0000 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B9),
+    /* 0x0003 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0004 0x01 */ MSCRIPT_DONE(),
 };
 
 static MsgScript D_80BF33E8[] = {
-    /* 0x0000 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x28B4),
-    /* 0x0003 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0004 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0000 0x03 */ MSCRIPT_BEGIN_TEXT(0x28B4),
+    /* 0x0003 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0004 0x01 */ MSCRIPT_DONE(),
 };
 
 static MsgScript D_80BF33F0[] = {
-    /* 0x0000 0x03 */ MSCRIPT_CMD_BEGIN_TEXT(0x295B),
-    /* 0x0003 0x01 */ MSCRIPT_CMD_AWAIT_TEXT(),
-    /* 0x0004 0x01 */ MSCRIPT_CMD_DONE(),
+    /* 0x0000 0x03 */ MSCRIPT_BEGIN_TEXT(0x295B),
+    /* 0x0003 0x01 */ MSCRIPT_AWAIT_TEXT(),
+    /* 0x0004 0x01 */ MSCRIPT_DONE(),
 };
 
-ActorProfile En_Ig_Profile = {
+ActorInit En_Ig_InitVars = {
     /**/ ACTOR_EN_IG,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -163,7 +165,7 @@ ActorProfile En_Ig_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT1,
+        COLTYPE_HIT1,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -171,11 +173,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 28, 62, 0, { 0, 0, 0 } },
@@ -183,7 +185,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 static ColliderSphereInit sSphereInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -191,11 +193,11 @@ static ColliderSphereInit sSphereInit = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 0, { { 0, 0, 0 }, 20 }, 100 },
@@ -231,51 +233,52 @@ static AnimationInfoS sAnimationInfo[ENIG_ANIM_MAX] = {
     { &object_dai_Anim_0040E0, 1.0f, 0, -1, ANIMMODE_LOOP, -4 }, // ENIG_ANIM_9
 };
 
-Actor* EnIg_FindActor(EnIg* this, PlayState* play, u8 actorCategory, s16 actorId) {
-    Actor* actorIter = NULL;
+Actor* func_80BF1150(EnIg* this, PlayState* play, u8 actorCat, s16 actorId) {
+    Actor* foundActor = NULL;
+    Actor* temp_v0;
 
     while (true) {
-        actorIter = SubS_FindActor(play, actorIter, actorCategory, actorId);
+        foundActor = SubS_FindActor(play, foundActor, actorCat, actorId);
 
-        if (actorIter == NULL) {
+        if (foundActor == NULL) {
             break;
         }
 
-        if ((this != (EnIg*)actorIter) && (actorIter->update != NULL)) {
+        if ((this != (EnIg*)foundActor) && (foundActor->update != NULL)) {
             break;
         }
 
-        if (actorIter->next == NULL) {
-            actorIter = NULL;
+        temp_v0 = foundActor->next;
+        if (temp_v0 == NULL) {
+            foundActor = NULL;
             break;
         }
-        actorIter = actorIter->next;
+        foundActor = temp_v0;
     }
 
-    return actorIter;
+    return foundActor;
 }
 
-EnDoor* EnIg_FindScheduleDoor(PlayState* play, s32 scheduleOutputResult) {
-    EnDoorScheduleType schType;
+EnDoor* func_80BF1200(PlayState* play, s32 arg1) {
+    s32 phi_a1;
 
-    switch (scheduleOutputResult) {
+    switch (arg1) {
         case 5:
         case 6:
         case 7:
         case 9:
-            schType = ENDOOR_SCH_TYPE_INN_MAIN_ENTRANCE;
+            phi_a1 = 11;
             break;
 
         case 8:
-            schType = ENDOOR_SCH_TYPE_INN_KNIFE_CHAMBER;
+            phi_a1 = 15;
             break;
 
         default:
-            schType = -1;
+            phi_a1 = -1;
             break;
     }
-
-    return SubS_FindScheduleDoor(play, schType);
+    return SubS_FindDoor(play, phi_a1);
 }
 
 void EnIg_UpdateSkelAnime(EnIg* this) {
@@ -339,7 +342,7 @@ Actor* func_80BF146C(EnIg* this, PlayState* play) {
     Actor* retActor;
 
     if (this->scheduleResult == 3) {
-        retActor = EnIg_FindActor(this, play, ACTORCAT_NPC, ACTOR_EN_AN);
+        retActor = func_80BF1150(this, play, ACTORCAT_NPC, ACTOR_EN_AN);
     } else {
         retActor = &GET_PLAYER(play)->actor;
     }
@@ -423,7 +426,7 @@ s16 func_80BF1744(EnIg* this, s32 numCutscenes) {
 }
 
 s32 func_80BF17BC(Actor* thisx, PlayState* play) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
     s16 csId;
     s32 ret;
 
@@ -470,10 +473,10 @@ s32 func_80BF17BC(Actor* thisx, PlayState* play) {
     return ret;
 }
 
-MsgScript* EnIg_GetMsgScript(EnIg* this, PlayState* play) {
+MsgScript* func_80BF1920(EnIg* this, PlayState* play) {
     switch (this->scheduleResult) {
         case 3:
-            this->msgScriptCallback = func_80BF17BC;
+            this->unk_3F8 = func_80BF17BC;
             return D_80BF335C;
 
         case 4:
@@ -500,12 +503,12 @@ s32 func_80BF19A0(EnIg* this, PlayState* play) {
     s32 ret = false;
 
     if (((this->unk_3D0 & SUBS_OFFER_MODE_MASK) != SUBS_OFFER_MODE_NONE) &&
-        Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+        Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         SubS_SetOfferMode(&this->unk_3D0, SUBS_OFFER_MODE_NONE, SUBS_OFFER_MODE_MASK);
         this->unk_3F6 = 0;
-        this->msgScriptCallback = NULL;
+        this->unk_3F8 = NULL;
         this->actor.child = this->unk_2A8;
-        this->msgScript = EnIg_GetMsgScript(this, play);
+        this->unk_29C = func_80BF1920(this, play);
         if ((this->scheduleResult != 2) && (this->scheduleResult != 3) && (this->scheduleResult != 4)) {
             this->unk_3D0 |= 0x20;
         }
@@ -550,7 +553,7 @@ s32 func_80BF1B40(EnIg* this, PlayState* play) {
     u16 temp = play->msgCtx.currentTextId;
     s32 pad;
 
-    if (player->stateFlags1 & (PLAYER_STATE1_TALKING | PLAYER_STATE1_400 | PLAYER_STATE1_CARRYING_ACTOR)) {
+    if (player->stateFlags1 & (PLAYER_STATE1_40 | PLAYER_STATE1_400 | PLAYER_STATE1_800)) {
         this->unk_3D0 |= 0x400;
         if (this->unk_3D2 != temp) {
             if ((this->animIndex == ENIG_ANIM_2) || (this->animIndex == ENIG_ANIM_3)) {
@@ -580,7 +583,7 @@ s32 func_80BF1B40(EnIg* this, PlayState* play) {
     return false;
 }
 
-s32 func_80BF1C44(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput, s32 actorCategory, s32 actorId) {
+s32 func_80BF1C44(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput, s32 arg3, s32 arg4) {
     u8 pathIndex = ENIG_GET_PATH_INDEX(&this->actor);
     Vec3s* sp48;
     Vec3f sp3C;
@@ -589,7 +592,7 @@ s32 func_80BF1C44(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput, s
     s32 pad;
     s32 sp24 = false;
 
-    sp2C = EnIg_FindActor(this, play, actorCategory, actorId);
+    sp2C = func_80BF1150(this, play, arg3, arg4);
     this->timePath = NULL;
 
     if (D_80BF3318[scheduleOutput->result] >= 0) {
@@ -624,7 +627,7 @@ s32 func_80BF1D78(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
 }
 
 s32 func_80BF1DF4(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
-    u16 sp56 = SCRIPT_TIME_NOW;
+    u16 sp56 = SCHEDULE_TIME_NOW;
     u8 pathIndex = ENIG_GET_PATH_INDEX(&this->actor);
     EnDoor* door;
     Vec3s* sp4C;
@@ -634,7 +637,7 @@ s32 func_80BF1DF4(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
     s32 ret = false;
 
     this->timePath = NULL;
-    door = EnIg_FindScheduleDoor(play, scheduleOutput->result);
+    door = func_80BF1200(play, scheduleOutput->result);
 
     if (D_80BF3318[scheduleOutput->result] >= 0) {
         this->timePath = SubS_GetAdditionalPath(play, pathIndex, D_80BF3318[scheduleOutput->result]);
@@ -658,7 +661,7 @@ s32 func_80BF1DF4(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
 
             this->unk_3E0 = scheduleOutput->time1 - scheduleOutput->time0;
             this->unk_3E2 = sp56 - scheduleOutput->time0;
-            this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             this->unk_3D0 |= 0x100;
             EnIg_ChangeAnim(this, ENIG_ANIM_3);
             this->actor.gravity = 0.0f;
@@ -669,7 +672,7 @@ s32 func_80BF1DF4(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
 }
 
 s32 func_80BF1FA8(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
-    u16 sp2E = SCRIPT_TIME_NOW;
+    u16 sp2E = SCHEDULE_TIME_NOW;
     u16 phi_v1;
     u8 pathIndex = ENIG_GET_PATH_INDEX(&this->actor);
     u16 tmp;
@@ -769,9 +772,9 @@ s32 func_80BF219C(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
 s32 func_80BF2368(EnIg* this, PlayState* play, ScheduleOutput* scheduleOutput) {
     s32 ret = false;
 
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     this->unk_3D0 = 0;
-    this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_TARGETABLE;
 
     switch (scheduleOutput->result) {
         case 5:
@@ -819,7 +822,7 @@ s32 func_80BF2400(EnIg* this, PlayState* play) {
 }
 
 s32 func_80BF2470(EnIg* this, PlayState* play) {
-    EnDoor* door = EnIg_FindScheduleDoor(play, this->scheduleResult);
+    EnDoor* door = func_80BF1200(play, this->scheduleResult);
     Vec3f sp38;
     f32 temp;
     s32 pad;
@@ -968,21 +971,21 @@ void func_80BF2A50(EnIg* this, PlayState* play) {
 }
 
 void func_80BF2AF8(EnIg* this, PlayState* play) {
-    ScheduleOutput scheduleOutput;
+    ScheduleOutput sp20;
 
     this->timePathTimeSpeed = R_TIME_SPEED + ((void)0, gSaveContext.save.timeSpeedOffset);
 
-    if (!Schedule_RunScript(play, D_80BF3260, &scheduleOutput) ||
-        ((this->scheduleResult != scheduleOutput.result) && !func_80BF2368(this, play, &scheduleOutput))) {
+    if (!Schedule_RunScript(play, D_80BF3260, &sp20) ||
+        ((this->scheduleResult != sp20.result) && !func_80BF2368(this, play, &sp20))) {
         this->actor.shape.shadowDraw = NULL;
-        this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
-        scheduleOutput.result = 0;
+        this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
+        sp20.result = 0;
     } else {
         this->actor.shape.shadowDraw = ActorShadow_DrawCircle;
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     }
     this->unk_2A8 = func_80BF146C(this, play);
-    this->scheduleResult = scheduleOutput.result;
+    this->scheduleResult = sp20.result;
     func_80BF2A50(this, play);
 }
 
@@ -991,12 +994,12 @@ void func_80BF2BD4(EnIg* this, PlayState* play) {
     Vec3f sp38;
     Vec3f sp2C;
 
-    if (MsgEvent_RunScript(&this->actor, play, this->msgScript, this->msgScriptCallback, &this->msgScriptPos)) {
-        SubS_SetOfferMode(&this->unk_3D0, SUBS_OFFER_MODE_ONSCREEN, SUBS_OFFER_MODE_MASK);
+    if (MsgEvent_RunScript(&this->actor, play, this->unk_29C, this->unk_3F8, &this->unk_2A0)) {
+        SubS_SetOfferMode(&this->unk_3D0, 3, 7);
         this->unk_3D0 &= ~0x20;
         this->unk_3D0 |= 0x200;
         this->unk_3EE = 20;
-        this->msgScriptPos = 0;
+        this->unk_2A0 = 0;
         this->actionFunc = func_80BF2AF8;
     } else if (((this->scheduleResult != 2) && (this->scheduleResult != 4)) &&
                ((this->unk_2A8 != NULL) && (this->unk_2A8->update != NULL))) {
@@ -1008,7 +1011,7 @@ void func_80BF2BD4(EnIg* this, PlayState* play) {
 }
 
 void EnIg_Init(Actor* thisx, PlayState* play) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 28.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &object_dai_Skel_0130D0, NULL, this->jointTable, this->morphTable,
@@ -1026,14 +1029,14 @@ void EnIg_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnIg_Destroy(Actor* thisx, PlayState* play) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider1);
     Collider_DestroySphere(play, &this->collider2);
 }
 
 void EnIg_Update(Actor* thisx, PlayState* play) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
 
     func_80BF19A0(this, play);
 
@@ -1054,7 +1057,7 @@ void EnIg_Update(Actor* thisx, PlayState* play) {
 
 s32 EnIg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
                           Gfx** gfx) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
 
     if (limbIndex == OBJECT_DAI_LIMB_0A) {
         *dList = NULL;
@@ -1066,7 +1069,7 @@ void EnIg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, 
     static Vec3f D_80BF351C = { 1800.0f, -2000.0f, 0.0f };
     static Vec3f D_80BF3528 = { 0.0f, 0.0f, 0.0f };
     s32 pad;
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
     Vec3f sp2C;
 
     if (limbIndex == OBJECT_DAI_LIMB_0B) {
@@ -1093,7 +1096,7 @@ void EnIg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, 
 }
 
 void EnIg_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx, Gfx** gfx) {
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
     s32 stepRot;
     s32 overrideRot;
 
@@ -1128,7 +1131,7 @@ void EnIg_Draw(Actor* thisx, PlayState* play) {
         object_dai_Tex_011FB0, object_dai_Tex_0127B0,
     };
     s32 pad;
-    EnIg* this = (EnIg*)thisx;
+    EnIg* this = THIS;
 
     if (this->scheduleResult != 0) {
         Gfx_SetupDL25_Opa(play->state.gfxCtx);
@@ -1144,7 +1147,7 @@ void EnIg_Draw(Actor* thisx, PlayState* play) {
                                                EnIg_TransformLimbDraw, &this->actor, POLY_OPA_DISP);
         Matrix_Put(&this->unk_190);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, object_dai_DL_00C538);
 
         CLOSE_DISPS(play->state.gfxCtx);

@@ -2,13 +2,12 @@
 #define Z_EN_TITE_H
 
 #include "global.h"
-#include "objects/object_tite/object_tite.h"
 
 struct EnTite;
 
 typedef void (*EnTiteActionFunc)(struct EnTite*, PlayState*);
 
-typedef enum EnTiteParam {
+typedef enum {
     /* -4 */ ENTITE_MINUS_4 = -4,
     /* -3 */ ENTITE_MINUS_3,
     /* -2 */ ENTITE_MINUS_2,
@@ -32,8 +31,8 @@ typedef enum EnTiteBodyPart {
 typedef struct EnTite {
     /* 0x000 */ Actor actor;
     /* 0x144 */ SkelAnime skelAnime;
-    /* 0x188 */ Vec3s jointTable[OBJECT_TITE_LIMB_MAX];
-    /* 0x21E */ Vec3s morphTable[OBJECT_TITE_LIMB_MAX];
+    /* 0x188 */ Vec3s jointTable[25];
+    /* 0x21E */ Vec3s morphTable[25];
     /* 0x2B4 */ EnTiteActionFunc actionFunc;
     /* 0x2B8 */ u8 unk_2B8;
     /* 0x2B9 */ u8 unk_2B9;

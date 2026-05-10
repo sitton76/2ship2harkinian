@@ -4,6 +4,7 @@
 
 extern "C" {
 #include "functions.h"
+#include "macros.h"
 #include "variables.h"
 }
 
@@ -132,10 +133,8 @@ void Emit(Options notification) {
         notification.remainingTime = CVarGetFloat("gNotifications.Duration", 10.0f);
     }
     notifications.push_back(notification);
-    if (!notification.mute) {
-        AudioSfx_PlaySfx(NA_SE_SY_METRONOME, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale,
-                         &gSfxDefaultFreqAndVolScale, &gSfxDefaultReverb);
-    }
+    AudioSfx_PlaySfx(NA_SE_SY_METRONOME, &gSfxDefaultPos, 4, &gSfxDefaultFreqAndVolScale, &gSfxDefaultFreqAndVolScale,
+                     &gSfxDefaultReverb);
 }
 
 } // namespace Notification

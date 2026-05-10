@@ -8,7 +8,9 @@
 #include "overlays/effects/ovl_Effect_Ss_Hahen/z_eff_ss_hahen.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnNutsball*)thisx)
 
 void EnNutsball_Init(Actor* thisx, PlayState* play);
 void EnNutsball_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void EnNutsball_Draw(Actor* thisx, PlayState* play);
 
 void EnNutsball_InitColliderParams(EnNutsball* this);
 
-ActorProfile En_Nutsball_Profile = {
+ActorInit En_Nutsball_InitVars = {
     /**/ ACTOR_EN_NUTSBALL,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -31,7 +33,7 @@ ActorProfile En_Nutsball_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -39,18 +41,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_WOOD,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_WOOD,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 13, 13, 0, { 0, 0, 0 } },
 };
 
 void EnNutsball_Init(Actor* thisx, PlayState* play) {
-    EnNutsball* this = (EnNutsball*)thisx;
+    EnNutsball* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 400.0f, ActorShadow_DrawCircle, 13.0f);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
@@ -73,36 +75,36 @@ void EnNutsball_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnNutsball_Destroy(Actor* thisx, PlayState* play) {
-    EnNutsball* this = (EnNutsball*)thisx;
+    EnNutsball* this = THIS;
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnNutsball_InitColliderParams(EnNutsball* this) {
     this->collider.base.atFlags &= ~(AT_HIT | AT_TYPE_ENEMY | AT_BOUNCED);
     this->collider.base.atFlags |= AT_TYPE_PLAYER;
-    this->collider.elem.atDmgInfo.dmgFlags = 0x400000;
-    this->collider.elem.atDmgInfo.damage = 2;
+    this->collider.info.toucher.dmgFlags = 0x400000;
+    this->collider.info.toucher.damage = 2;
 }
 
 void EnNutsball_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnNutsball* this = (EnNutsball*)thisx;
+    EnNutsball* this = THIS;
     Player* player = GET_PLAYER(play);
     Vec3f worldPos;
     Vec3s worldRot;
     Vec3f spawnBurstPos;
-    f32 speedXZ;
+    f32 spdXZ;
     s32 bgId;
     CollisionPoly* poly;
 
     if (!(player->stateFlags1 &
-          (PLAYER_STATE1_TALKING | PLAYER_STATE1_DEAD | PLAYER_STATE1_10000000 | PLAYER_STATE1_20000000))) {
+          (PLAYER_STATE1_40 | PLAYER_STATE1_80 | PLAYER_STATE1_10000000 | PLAYER_STATE1_20000000))) {
         this->timer--;
         if (this->timer < 0) {
             this->actor.velocity.y += this->actor.gravity;
-            speedXZ = sqrtf((this->actor.velocity.x * this->actor.velocity.x) +
-                            (this->actor.velocity.z * this->actor.velocity.z));
-            this->actor.world.rot.x = Math_Atan2S_XY(speedXZ, this->actor.velocity.y);
+            spdXZ = sqrtf((this->actor.velocity.x * this->actor.velocity.x) +
+                          (this->actor.velocity.z * this->actor.velocity.z));
+            this->actor.world.rot.x = Math_Atan2S_XY(spdXZ, this->actor.velocity.y);
         }
         this->actor.home.rot.z += 0x2AA8;
         if ((this->actor.bgCheckFlags & BGCHECKFLAG_WALL) || (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) ||
@@ -156,7 +158,7 @@ void EnNutsball_Update(Actor* thisx, PlayState* play2) {
         }
         Collider_UpdateCylinder(&this->actor, &this->collider);
 
-        this->actor.flags |= ACTOR_FLAG_SFX_FOR_PLAYER_BODY_HIT;
+        this->actor.flags |= ACTOR_FLAG_1000000;
 
         CollisionCheck_SetAT(play, &play->colChkCtx, &this->collider.base);
         CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
@@ -168,14 +170,14 @@ void EnNutsball_Update(Actor* thisx, PlayState* play2) {
 }
 
 void EnNutsball_Draw(Actor* thisx, PlayState* play) {
-    EnNutsball* this = (EnNutsball*)thisx;
+    EnNutsball* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
     Matrix_RotateZS(this->actor.home.rot.z, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gameplay_keep_DL_058BA0);
 
     CLOSE_DISPS(play->state.gfxCtx);

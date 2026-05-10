@@ -6,14 +6,16 @@
 
 #include "z_en_zl1.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnZl1*)thisx)
 
 void EnZl1_Init(Actor* thisx, PlayState* play);
 void EnZl1_Destroy(Actor* thisx, PlayState* play);
 void EnZl1_Update(Actor* thisx, PlayState* play);
 void EnZl1_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_Zl1_Profile = {
+ActorInit En_Zl1_InitVars = {
     /**/ ACTOR_EN_ZL1,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,

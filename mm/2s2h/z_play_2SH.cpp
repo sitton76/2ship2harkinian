@@ -1,8 +1,9 @@
 #include "BenPort.h"
+#include <libultraship/libultraship.h>
 #include "2s2h/resource/type/Scene.h"
-#include <ship/utils/StringHelper.h>
+#include <utils/StringHelper.h>
+#include <Vertex.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
-#include <ship/resource/ResourceManager.h>
 
 extern "C" {
 #include "global.h"
@@ -18,14 +19,14 @@ s32 OTRScene_ExecuteCommands(PlayState* play, SOH::Scene* scene);
 
 extern "C" void OTRPlay_InitScene(PlayState* play, s32 spawn) {
     play->curSpawn = spawn;
-    play->linkActorEntry = nullptr;
-    play->actorCsCamList = nullptr;
-    play->setupEntranceList = nullptr;
-    play->setupExitList = nullptr;
-    play->naviQuestHints = nullptr;
-    play->setupPathList = nullptr;
-    play->sceneMaterialAnims = nullptr;
-    play->roomCtx.unk74 = nullptr;
+    play->linkActorEntry = NULL;
+    play->actorCsCamList = NULL;
+    play->setupEntranceList = NULL;
+    play->setupExitList = NULL;
+    play->naviQuestHints = NULL;
+    play->setupPathList = NULL;
+    play->sceneMaterialAnims = NULL;
+    play->roomCtx.unk74 = NULL;
     play->numSetupActors = 0;
     Object_InitContext(&play->state, &play->objectCtx);
     LightContext_Init(play, &play->lightCtx);
@@ -50,16 +51,16 @@ extern "C" void OTRPlay_SpawnScene(PlayState* play, s32 sceneId, s32 spawn) {
     scene->unk_D = 0;
     gSegments[2] = (uintptr_t)play->sceneSegment;
     OTRPlay_InitScene(play, spawn);
-    Room_SetupFirstRoom(play, &play->roomCtx);
+    Room_AllocateAndLoad(play, &play->roomCtx);
 }
 
 extern "C" s32 OTRfunc_800973FC(PlayState* play, RoomContext* roomCtx) {
     if (roomCtx->status == 1) {
-        // if (!osRecvMesg(&roomCtx->loadQueue, nullptr, OS_MESG_NOBLOCK)) {
+        // if (!osRecvMesg(&roomCtx->loadQueue, NULL, OS_MESG_NOBLOCK)) {
         if (1) {
             roomCtx->status = 0;
-            roomCtx->curRoom.segment = roomCtx->roomRequestAddr;
-            gSegments[3] = (uintptr_t)roomCtx->roomRequestAddr;
+            roomCtx->curRoom.segment = roomCtx->activeRoomVram;
+            gSegments[3] = (uintptr_t)roomCtx->activeRoomVram;
 
             OTRScene_ExecuteCommands(play, (SOH::Scene*)roomCtx->curRoom.segment);
             func_80123140(play, GET_PLAYER(play));

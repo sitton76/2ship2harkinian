@@ -5,9 +5,10 @@
  */
 
 #include "z_en_bji_01.h"
-#include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnBji01*)thisx)
 
 void EnBji01_Init(Actor* thisx, PlayState* play);
 void EnBji01_Destroy(Actor* thisx, PlayState* play);
@@ -23,7 +24,7 @@ void func_809CD6C0(EnBji01* this, PlayState* play);
 void func_809CD70C(EnBji01* this, PlayState* play);
 void func_809CD77C(EnBji01* this, PlayState* play);
 
-ActorProfile En_Bji_01_Profile = {
+ActorInit En_Bji_01_InitVars = {
     /**/ ACTOR_EN_BJI_01,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -37,7 +38,7 @@ ActorProfile En_Bji_01_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT0,
+        COLTYPE_HIT0,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -45,11 +46,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 64, 0, { 0, 0, 0 } },
@@ -94,12 +95,12 @@ void func_809CCEE8(EnBji01* this, PlayState* play) {
     Math_ScaledStepToS(&this->actor.shape.rot.y, this->actor.home.rot.y, 0x444);
     if (this->actor.params == SHIKASHI_TYPE_DEFAULT) {
         if ((this->actor.xzDistToPlayer <= 60.0f) && (this->actor.playerHeightRel <= 10.0f)) {
-            this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags |= ACTOR_FLAG_10000;
         } else {
-            this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags &= ~ACTOR_FLAG_10000;
         }
     }
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         play->msgCtx.msgMode = MSGMODE_NONE;
         play->msgCtx.msgLength = 0;
         func_809CD028(this, play);
@@ -190,10 +191,7 @@ void func_809CD028(EnBji01* this, PlayState* play) {
                             break;
 
                         case 3:
-                            if (GameInteractor_Should(VB_TIME_UNTIL_MOON_CRASH_CALCULATION, true,
-                                                      &timeUntilMoonCrash)) {
-                                timeUntilMoonCrash = TIME_UNTIL_MOON_CRASH;
-                            }
+                            timeUntilMoonCrash = TIME_UNTIL_MOON_CRASH;
                             if (timeUntilMoonCrash < CLOCK_TIME_F(1, 0)) {
                                 this->textId = 0x5E8;
                             } else {
@@ -230,7 +228,7 @@ void EnBji01_DialogueHandler(EnBji01* this, PlayState* play) {
 
         case TEXT_STATE_CHOICE:
             if (Message_ShouldAdvance(play)) {
-                this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+                this->actor.flags &= ~ACTOR_FLAG_10000;
                 this->actor.params = SHIKASHI_TYPE_FINISHED_CONVERSATION;
                 switch (play->msgCtx.choiceIndex) {
                     case 0:
@@ -266,9 +264,9 @@ void EnBji01_DialogueHandler(EnBji01* this, PlayState* play) {
             }
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             if (Message_ShouldAdvance(play)) {
-                this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+                this->actor.flags &= ~ACTOR_FLAG_10000;
                 switch (play->msgCtx.currentTextId) {
                     case 0x5DE:
                         SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo,
@@ -315,7 +313,7 @@ void EnBji01_DialogueHandler(EnBji01* this, PlayState* play) {
                     case 0x5F7:
                     case 0x5F8:
                         Message_CloseTextbox(play);
-                        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+                        this->actor.flags &= ~ACTOR_FLAG_10000;
                         this->actor.params = SHIKASHI_TYPE_FINISHED_CONVERSATION;
                         func_809CCE98(this, play);
                         break;
@@ -328,7 +326,7 @@ void EnBji01_DialogueHandler(EnBji01* this, PlayState* play) {
 
         case TEXT_STATE_DONE:
             this->actor.params = SHIKASHI_TYPE_FINISHED_CONVERSATION;
-            this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags &= ~ACTOR_FLAG_10000;
             func_809CCE98(this, play);
             break;
 
@@ -346,7 +344,7 @@ void func_809CD634(EnBji01* this, PlayState* play) {
     SEQCMD_DISABLE_PLAY_SEQUENCES(true);
     play->nextEntrance = ENTRANCE(TERMINA_FIELD, 10); /* Telescope entrance */
     gSaveContext.respawn[RESPAWN_MODE_DOWN].entrance = play->nextEntrance;
-    func_80169EFC(play); /* Load new entrance? */
+    func_80169EFC(&play->state); /* Load new entrance? */
     gSaveContext.respawnFlag = -2;
     this->actionFunc = EnBji01_DoNothing;
 }
@@ -375,7 +373,7 @@ void func_809CD77C(EnBji01* this, PlayState* play) {
 }
 
 void EnBji01_Init(Actor* thisx, PlayState* play) {
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 30.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gShikashiSkel, &object_bji_Anim_000FDC, this->jointTable,
@@ -383,7 +381,7 @@ void EnBji01_Init(Actor* thisx, PlayState* play) {
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     this->actor.child = NULL;
     this->animIndex = SHIKASHI_ANIM_NONE;
 
@@ -399,7 +397,7 @@ void EnBji01_Init(Actor* thisx, PlayState* play) {
             break;
 
         case ENTRANCE(ASTRAL_OBSERVATORY, 2): /* Telescope entrance */
-            this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags |= ACTOR_FLAG_10000;
             AudioSfx_MuteBanks(0);
             SEQCMD_DISABLE_PLAY_SEQUENCES(false);
             this->actor.params = SHIKASHI_TYPE_LOOKED_THROUGH_TELESCOPE;
@@ -413,14 +411,14 @@ void EnBji01_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBji01_Destroy(Actor* thisx, PlayState* play) {
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnBji01_Update(Actor* thisx, PlayState* play) {
     static s16 sBlinkSequence[] = { 0, 1, 2, 1, 0, 0 };
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
     s32 pad;
 
     this->actionFunc(this, play);
@@ -443,18 +441,16 @@ void EnBji01_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnBji01_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
 
     if ((limbIndex == SHIKASHI_LIMB_NONE) && ((play->gameplayFrames % 2) != 0)) {
         *dList = NULL;
     }
     if (limbIndex == SHIKASHI_LIMB_NONE) {
-        // Set to itself
         rot->x = rot->x;
         rot->y = rot->y;
         rot->z = rot->z;
     }
-
     switch (limbIndex) {
         case SHIKASHI_LIMB_TORSO:
             rot->x += this->torsoXRotStep;
@@ -474,7 +470,7 @@ s32 EnBji01_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f*
 
 void EnBji01_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     static Vec3f D_809CDCC8 = { 1088.0f, 1200.0f, 0.0f };
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
     Vec3f sp20;
     s32 temp_f4 = 0;
 
@@ -489,7 +485,7 @@ void EnBji01_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* ro
 
 void EnBji01_Draw(Actor* thisx, PlayState* play) {
     static TexturePtr sEyeTextures[] = { object_bji_Tex_0049F0, object_bji_Tex_004E70, object_bji_Tex_005270 };
-    EnBji01* this = (EnBji01*)thisx;
+    EnBji01* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

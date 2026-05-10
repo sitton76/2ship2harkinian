@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ship/window/gui/GuiWindow.h>
+#include <libultraship/libultraship.h>
 
 class EventLogWindow : public Ship::GuiWindow {
   public:

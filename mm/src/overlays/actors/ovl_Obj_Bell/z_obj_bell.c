@@ -7,7 +7,9 @@
 #include "z_obj_bell.h"
 #include "objects/object_f52_obj/object_f52_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjBell*)thisx)
 
 void ObjBell_Init(Actor* thisx, PlayState* play);
 void ObjBell_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void ObjBell_Draw(Actor* thisx, PlayState* play);
 s32 func_80A356D8(ObjBell* this);
 s32 func_80A357A8(ObjBell* this, PlayState* play);
 
-ActorProfile Obj_Bell_Profile = {
+ActorInit Obj_Bell_InitVars = {
     /**/ ACTOR_OBJ_BELL,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile Obj_Bell_Profile = {
 // Bell Post?
 static ColliderSphereInit sCylinderInit1 = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_ON | AT_TYPE_ENEMY,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -40,11 +42,11 @@ static ColliderSphereInit sCylinderInit1 = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x20000000, 0x00, 0x04 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 0, { { 0, 960, 0 }, 70 }, 100 },
@@ -53,7 +55,7 @@ static ColliderSphereInit sCylinderInit1 = {
 // Bell
 static ColliderSphereInit sCylinderInit2 = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -61,11 +63,11 @@ static ColliderSphereInit sCylinderInit2 = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 0, { { 0, 1100, 0 }, 74 }, 100 },
@@ -133,7 +135,7 @@ s32 func_80A35510(ObjBell* this, s32 arg1) {
 
     this->unk_21C = CLAMP(this->unk_21C, 0.0f, 18000.0f);
     if (phi_a3 == true) {
-        Math_Vec3s_ToVec3f(&bumperPos, &this->collider2.elem.acDmgInfo.hitPos);
+        Math_Vec3s_ToVec3f(&bumperPos, &this->collider2.info.bumper.hitPos);
         Math_Vec3f_Copy(&worldPos, &this->dyna.actor.world.pos);
         this->dyna.actor.world.rot.y = Math_Vec3f_Yaw(&bumperPos, &worldPos);
         if (this->unk_20C <= 0x4000 && this->unk_20C >= -0x4000) {
@@ -155,7 +157,7 @@ s32 func_80A356D8(ObjBell* this) {
     scaleProjection = Math_SinS(this->unk_20C) * this->unk_21C;
     this->dyna.actor.world.rot.x = this->dyna.actor.home.rot.x;
     this->unk_220 = scaleProjection;
-    this->dyna.actor.world.rot.x += TRUNCF_BINANG(scaleProjection);
+    this->dyna.actor.world.rot.x += (s16)scaleProjection;
     Math_ApproachF(&this->unk_21C, 0.0f, 0.03f, 70.0f);
     if (this->unk_21C > 0.0f) {
         this->unk_20C -= 0x800;
@@ -222,7 +224,7 @@ void func_80A359B4(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_f52_obj_DL_000698);
     gSPDisplayList(POLY_OPA_DISP++, object_f52_obj_DL_0008D0);
     gSPDisplayList(POLY_OPA_DISP++, object_f52_obj_DL_000960);
@@ -239,7 +241,7 @@ void func_80A35B18(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_f52_obj_DL_000570);
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -252,14 +254,14 @@ void func_80A35BD4(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, object_f52_obj_DL_000840);
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
 void ObjBell_Init(Actor* thisx, PlayState* play) {
-    ObjBell* this = (ObjBell*)thisx;
+    ObjBell* this = THIS;
 
     DynaPolyActor_Init(&this->dyna, 0);
     DynaPolyActor_LoadMesh(play, &this->dyna, &object_f52_obj_Colheader_001BA8);
@@ -270,7 +272,7 @@ void ObjBell_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjBell_Destroy(Actor* thisx, PlayState* play) {
-    ObjBell* this = (ObjBell*)thisx;
+    ObjBell* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     Collider_DestroySphere(play, &this->collider1);
@@ -278,7 +280,7 @@ void ObjBell_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void ObjBell_Update(Actor* thisx, PlayState* play) {
-    ObjBell* this = (ObjBell*)thisx;
+    ObjBell* this = THIS;
 
     if (this->unk_214 != 0) {
         this->unk_214--;
@@ -289,7 +291,7 @@ void ObjBell_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjBell_Draw(Actor* thisx, PlayState* play) {
-    ObjBell* this = (ObjBell*)thisx;
+    ObjBell* this = THIS;
     Vec3f sp30;
     Vec3f sp24;
 

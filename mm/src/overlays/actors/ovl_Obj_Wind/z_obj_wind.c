@@ -7,14 +7,16 @@
 #include "z_obj_wind.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjWind*)thisx)
 
 void ObjWind_Init(Actor* thisx, PlayState* play);
 void ObjWind_Destroy(Actor* thisx, PlayState* play);
 void ObjWind_Update(Actor* thisx, PlayState* play);
 void ObjWind_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Wind_Profile = {
+ActorInit Obj_Wind_InitVars = {
     /**/ ACTOR_OBJ_WIND,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -27,9 +29,9 @@ ActorProfile Obj_Wind_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 4000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 4000, ICHAIN_STOP),
 };
 
 void ObjWind_Init(Actor* thisx, PlayState* play) {
@@ -127,7 +129,7 @@ void ObjWind_Update(Actor* thisx, PlayState* play) {
                 }
                 temp_ft0 = ((f32)entry->unk_6 / 100.0f) * (upXZ / entry->unk_2 * var_fa0);
                 if (upXZ != 0.0f) {
-                    //! FAKE:
+                    // FAKE:
                     if (1) {}
                     upXZ = 1.0f / upXZ;
                 }
@@ -155,7 +157,7 @@ void ObjWind_Draw(Actor* thisx, PlayState* play) {
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
     AnimatedMat_Draw(play, Lib_SegmentedToVirtual(&gameplay_keep_Matanimheader_07F218));
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, gameplay_keep_DL_07E8C0);
 
     CLOSE_DISPS(play->state.gfxCtx);

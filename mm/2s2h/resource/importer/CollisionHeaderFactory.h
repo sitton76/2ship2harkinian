@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ship/resource/Resource.h>
-#include <ship/resource/ResourceFactoryBinary.h>
-#include <ship/resource/ResourceFactoryXML.h>
+#include "Resource.h"
+#include "ResourceFactoryBinary.h"
+#include "ResourceFactoryXML.h"
 
 namespace SOH {
 class ResourceFactoryBinaryCollisionHeaderV0 : public Ship::ResourceFactoryBinary {

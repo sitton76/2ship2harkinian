@@ -6,7 +6,9 @@
 
 #include "z_en_hit_tag.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnHitTag*)thisx)
 
 void EnHitTag_Init(Actor* thisx, PlayState* play);
 void EnHitTag_Destroy(Actor* thisx, PlayState* play);
@@ -14,7 +16,7 @@ void EnHitTag_Update(Actor* thisx, PlayState* play);
 
 void EnHitTag_WaitForHit(EnHitTag* this, PlayState* play);
 
-ActorProfile En_Hit_Tag_Profile = {
+ActorInit En_Hit_Tag_InitVars = {
     /**/ ACTOR_EN_HIT_TAG,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile En_Hit_Tag_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -36,11 +38,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 16, 32, 0, { 0, 0, 0 } },
@@ -48,7 +50,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 void EnHitTag_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnHitTag* this = (EnHitTag*)thisx;
+    EnHitTag* this = THIS;
 
     Actor_SetScale(&this->actor, 1.0f);
     this->actionFunc = EnHitTag_WaitForHit;
@@ -60,7 +62,7 @@ void EnHitTag_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHitTag_Destroy(Actor* thisx, PlayState* play) {
-    EnHitTag* this = (EnHitTag*)thisx;
+    EnHitTag* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -85,6 +87,6 @@ void EnHitTag_WaitForHit(EnHitTag* this, PlayState* play) {
 }
 
 void EnHitTag_Update(Actor* thisx, PlayState* play) {
-    EnHitTag* this = (EnHitTag*)thisx;
+    EnHitTag* this = THIS;
     this->actionFunc(this, play);
 }

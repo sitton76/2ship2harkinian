@@ -1,11 +1,10 @@
 #include "ultra64.h"
 #include "libc/string.h"
 
-#define ATOI(i, a)                               \
-    for (i = 0; (*a >= '0') && (*a <= '9'); a++) \
-        if (i < 999)                             \
+#define ATOI(i, a)                           \
+    for (i = 0; *a >= '0' && *a <= '9'; a++) \
+        if (i < 999)                         \
             i = *a + i * 10 - '0';
-
 #define _PROUT(fmt, _size)                 \
     if (_size > 0) {                       \
         arg = (void*)pfn(arg, fmt, _size); \
@@ -14,9 +13,8 @@
         else                               \
             return x.nchar;                \
     }
-
 #define _PAD(m, src, extracond)      \
-    if (extracond && (m > 0)) {      \
+    if (extracond && m > 0) {        \
         int i;                       \
         int j;                       \
         for (j = m; j > 0; j -= i) { \
@@ -86,7 +84,7 @@ int _Printf(PrintCallback pfn, void* arg, const char* fmt, va_list ap) {
             x.qual = 0;
         }
 
-        if ((x.qual == 'l') && (*s == 'l')) {
+        if (x.qual == 'l' && *s == 'l') {
             x.qual = 'L';
             s++;
         }
@@ -108,6 +106,7 @@ void _Putfld(_Pft* px, va_list* pap, unsigned char code, unsigned char* ac) {
     px->n0 = px->nz0 = px->n1 = px->nz1 = px->n2 = px->nz2 = 0;
 
     switch (code) {
+
         case 'c':
             ac[px->n0++] = va_arg(*pap, u32);
             break;
@@ -159,7 +158,7 @@ void _Putfld(_Pft* px, va_list* pap, unsigned char code, unsigned char* ac) {
 
             if (px->flags & FLAGS_HASH) {
                 ac[px->n0++] = '0';
-                if ((code == 'x') || (code == 'X')) {
+                if (code == 'x' || code == 'X') {
 
                     ac[px->n0++] = code;
                 }
@@ -173,14 +172,16 @@ void _Putfld(_Pft* px, va_list* pap, unsigned char code, unsigned char* ac) {
         case 'g':
         case 'E':
         case 'G':
-            px->v.ld = (px->qual == 'L') ? va_arg(*pap, f64) : va_arg(*pap, f64);
+            px->v.ld = px->qual == 'L' ? va_arg(*pap, f64) : va_arg(*pap, f64);
 
             if (*(u16*)&px->v.ll & 0x8000) {
                 ac[px->n0++] = '-';
-            } else if (px->flags & FLAGS_PLUS) {
-                ac[px->n0++] = '+';
-            } else if (px->flags & FLAGS_SPACE) {
-                ac[px->n0++] = ' ';
+            } else {
+                if (px->flags & FLAGS_PLUS) {
+                    ac[px->n0++] = '+';
+                } else if (px->flags & FLAGS_SPACE) {
+                    ac[px->n0++] = ' ';
+                }
             }
 
             px->s = (char*)&ac[px->n0];

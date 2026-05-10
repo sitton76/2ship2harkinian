@@ -8,6 +8,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((EnInsect*)thisx)
+
 void EnInsect_Init(Actor* thisx, PlayState* play);
 void EnInsect_Destroy(Actor* thisx, PlayState* play2);
 void EnInsect_Update(Actor* thisx, PlayState* play);
@@ -29,7 +31,7 @@ void func_8091B984(EnInsect* this, PlayState* play);
 
 s16 D_8091BD60 = 0;
 
-ActorProfile En_Insect_Profile = {
+ActorInit En_Insect_InitVars = {
     /**/ ACTOR_EN_INSECT,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -44,11 +46,11 @@ ActorProfile En_Insect_Profile = {
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_NONE,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_NONE,
             OCELEM_ON,
         },
         { 0, { { 0, 0, 0 }, 5 }, 100 },
@@ -57,7 +59,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_PLAYER | OC1_TYPE_1,
@@ -72,9 +74,9 @@ u16 D_8091BDB8[] = { 0, 5 };
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 10, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 700, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 20, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 30, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 700, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 20, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 30, ICHAIN_STOP),
 };
 
 Vec3f D_8091BDCC = { 0.0f, 0.0f, 0.0f };
@@ -118,7 +120,7 @@ void func_8091A9E4(EnInsect* this) {
 }
 
 void EnInsect_Init(Actor* thisx, PlayState* play) {
-    EnInsect* this = (EnInsect*)thisx;
+    EnInsect* this = THIS;
     f32 rand;
 
     this->actor.world.rot.y = Rand_Next() & 0xFFFF;
@@ -135,9 +137,9 @@ void EnInsect_Init(Actor* thisx, PlayState* play) {
     Collider_SetJntSph(play, &this->collider, &this->actor, &sJntSphInit, this->colliderElements);
 
     {
-        ColliderJntSphElement* jntSphElem = &this->collider.elements[0];
+        ColliderJntSphElement* colliderElement = &this->collider.elements[0];
 
-        jntSphElem->dim.worldSphere.radius = jntSphElem->dim.modelSphere.radius * jntSphElem->dim.scale;
+        colliderElement->dim.worldSphere.radius = colliderElement->dim.modelSphere.radius * colliderElement->dim.scale;
     }
 
     this->actor.colChkInfo.mass = 30;
@@ -149,7 +151,7 @@ void EnInsect_Init(Actor* thisx, PlayState* play) {
 
     if (this->unk_30C & 4) {
         this->unk_314 = Rand_S16Offset(200, 40);
-        this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags |= ACTOR_FLAG_10;
     }
 
     rand = Rand_ZeroOne();
@@ -164,7 +166,7 @@ void EnInsect_Init(Actor* thisx, PlayState* play) {
 
 void EnInsect_Destroy(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnInsect* this = (EnInsect*)thisx;
+    EnInsect* this = THIS;
 
     Collider_DestroyJntSph(play, &this->collider);
 }
@@ -440,7 +442,7 @@ void func_8091B984(EnInsect* this, PlayState* play) {
 }
 
 void EnInsect_Update(Actor* thisx, PlayState* play) {
-    EnInsect* this = (EnInsect*)thisx;
+    EnInsect* this = THIS;
     s32 updBgCheckInfoFlags;
 
     if ((this->actor.child != NULL) && (this->actor.child->update == NULL) && (&this->actor != this->actor.child)) {
@@ -484,11 +486,11 @@ void EnInsect_Update(Actor* thisx, PlayState* play) {
             func_8091B274(this);
         } else if ((this->actor.xzDistToPlayer < 50.0f) && (this->actionFunc != func_8091B2D8)) {
             if (!(this->unk_30C & 0x20) && (this->unk_314 < 180)) {
-                ColliderJntSphElement* jntSphElem = &this->collider.elements[0];
+                ColliderJntSphElement* colliderElement = &this->collider.elements[0];
 
-                jntSphElem->dim.worldSphere.center.x = this->actor.world.pos.x;
-                jntSphElem->dim.worldSphere.center.y = this->actor.world.pos.y;
-                jntSphElem->dim.worldSphere.center.z = this->actor.world.pos.z;
+                colliderElement->dim.worldSphere.center.x = this->actor.world.pos.x;
+                colliderElement->dim.worldSphere.center.y = this->actor.world.pos.y;
+                colliderElement->dim.worldSphere.center.z = this->actor.world.pos.z;
                 CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
             }
 
@@ -503,7 +505,7 @@ void EnInsect_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnInsect_Draw(Actor* thisx, PlayState* play) {
-    EnInsect* this = (EnInsect*)thisx;
+    EnInsect* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     SkelAnime_DrawOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, NULL, NULL, NULL);

@@ -7,14 +7,16 @@
 #include "z_bg_open_spot.h"
 #include "objects/object_open_obj/object_open_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgOpenSpot*)thisx)
 
 void BgOpenSpot_Init(Actor* thisx, PlayState* play);
 void BgOpenSpot_Destroy(Actor* thisx, PlayState* play);
 void BgOpenSpot_Update(Actor* thisx, PlayState* play);
 void BgOpenSpot_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Bg_Open_Spot_Profile = {
+ActorInit Bg_Open_Spot_InitVars = {
     /**/ ACTOR_BG_OPEN_SPOT,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -27,14 +29,14 @@ ActorProfile Bg_Open_Spot_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 560, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 800, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 560, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 800, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
 void BgOpenSpot_Init(Actor* thisx, PlayState* play) {
-    BgOpenSpot* this = (BgOpenSpot*)thisx;
+    BgOpenSpot* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     this->texScrolls = Lib_SegmentedToVirtual(gSpotlightTexAnim);
@@ -44,7 +46,7 @@ void BgOpenSpot_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void BgOpenSpot_Update(Actor* thisx, PlayState* play) {
-    BgOpenSpot* this = (BgOpenSpot*)thisx;
+    BgOpenSpot* this = THIS;
     u32 cueId;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_125)) {
@@ -66,7 +68,7 @@ void BgOpenSpot_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_MODELVIEW | G_MTX_LOAD);
     gDPSetColorDither(POLY_XLU_DISP++, G_CD_BAYER);
     gSPDisplayList(POLY_XLU_DISP++, gSpotlightLeftDL);
     gSPDisplayList(POLY_XLU_DISP++, gSpotlightRightDL);

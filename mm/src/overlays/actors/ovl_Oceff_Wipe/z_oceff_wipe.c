@@ -7,14 +7,16 @@
 #include "z_oceff_wipe.h"
 #include "BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((OceffWipe*)thisx)
 
 void OceffWipe_Init(Actor* thisx, PlayState* play);
 void OceffWipe_Destroy(Actor* thisx, PlayState* play);
 void OceffWipe_Update(Actor* thisx, PlayState* play);
 void OceffWipe_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Oceff_Wipe_Profile = {
+ActorInit Oceff_Wipe_InitVars = {
     ACTOR_OCEFF_WIPE,
     ACTORCAT_ITEMACTION,
     FLAGS,
@@ -26,10 +28,10 @@ ActorProfile Oceff_Wipe_Profile = {
     (ActorFunc)OceffWipe_Draw,
 };
 
-static s32 sBssPad;
+UNK_TYPE4 D_80977200;
 
 void OceffWipe_Init(Actor* thisx, PlayState* play) {
-    OceffWipe* this = (OceffWipe*)thisx;
+    OceffWipe* this = THIS;
 
     Actor_SetScale(&this->actor, 0.1f);
     this->counter = 0;
@@ -37,14 +39,14 @@ void OceffWipe_Init(Actor* thisx, PlayState* play) {
 }
 
 void OceffWipe_Destroy(Actor* thisx, PlayState* play) {
-    OceffWipe* this = (OceffWipe*)thisx;
+    OceffWipe* this = THIS;
 
     Magic_Reset(play);
     play->msgCtx.ocarinaSongEffectActive = false;
 }
 
 void OceffWipe_Update(Actor* thisx, PlayState* play) {
-    OceffWipe* this = (OceffWipe*)thisx;
+    OceffWipe* this = THIS;
 
     this->actor.world.pos = GET_ACTIVE_CAM(play)->eye;
     if (this->counter < 100) {
@@ -63,7 +65,7 @@ static u8 sAlphaIndices[] = {
 
 void OceffWipe_Draw(Actor* thisx, PlayState* play) {
     u32 scroll = play->state.frames & 0xFF;
-    OceffWipe* this = (OceffWipe*)thisx;
+    OceffWipe* this = THIS;
     f32 z;
     s32 pad;
     u8 alphaTable[3];
@@ -120,7 +122,7 @@ void OceffWipe_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateXS(0x708, MTXMODE_APPLY);
     Matrix_Translate(0.0f, 0.0f, -z, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     if (this->actor.params != OCEFF_WIPE_ZL) {
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 170, 255, 255, 255);
@@ -131,8 +133,8 @@ void OceffWipe_Draw(Actor* thisx, PlayState* play) {
     }
 
     gSPDisplayList(POLY_XLU_DISP++, sSongOfTimeFrustumMaterialDL);
-    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, 0 - scroll, scroll * -2, 32,
-                                                       32, 1, 0 - scroll, scroll * -2, 32, 32, -1, -2, -1, -2));
+    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, 0 - scroll, scroll * -2, 32,
+                                                     32, 1, 0 - scroll, scroll * -2, 32, 32));
     gSPDisplayList(POLY_XLU_DISP++, sSongOfTimeFrustumModelDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

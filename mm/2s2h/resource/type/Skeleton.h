@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <ship/resource/Resource.h>
+#include "Resource.h"
 #include "SkeletonLimb.h"
 #include <z64animation.h>
 

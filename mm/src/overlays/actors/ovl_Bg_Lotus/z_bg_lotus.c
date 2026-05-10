@@ -3,6 +3,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgLotus*)thisx)
+
 void BgLotus_Init(Actor* thisx, PlayState* play);
 void BgLotus_Destroy(Actor* thisx, PlayState* play);
 void BgLotus_Update(Actor* thisx, PlayState* play);
@@ -12,7 +14,7 @@ void func_80AD68DC(BgLotus* this, PlayState* play);
 void func_80AD6A88(BgLotus* this, PlayState* play);
 void func_80AD6B68(BgLotus* this, PlayState* play);
 
-ActorProfile Bg_Lotus_Profile = {
+ActorInit Bg_Lotus_InitVars = {
     /**/ ACTOR_BG_LOTUS,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -29,14 +31,14 @@ static InitChainEntry sInitChain[] = {
 };
 
 void BgLotus_Init(Actor* thisx, PlayState* play) {
-    BgLotus* this = (BgLotus*)thisx;
+    BgLotus* this = THIS;
     s32 pad;
-    s32 bgId;
+    s32 sp2C;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
     DynaPolyActor_LoadMesh(play, &this->dyna, &gLilyPadCol);
-    this->dyna.actor.floorHeight = BgCheck_EntityRaycastFloor5(&play->colCtx, &this->dyna.actor.floorPoly, &bgId,
+    this->dyna.actor.floorHeight = BgCheck_EntityRaycastFloor5(&play->colCtx, &this->dyna.actor.floorPoly, &sp2C,
                                                                &this->dyna.actor, &this->dyna.actor.world.pos);
     this->unk168 = 0x60;
     this->dyna.actor.world.rot.y = (s32)Rand_Next() >> 0x10;
@@ -44,7 +46,7 @@ void BgLotus_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgLotus_Destroy(Actor* thisx, PlayState* play) {
-    BgLotus* this = (BgLotus*)thisx;
+    BgLotus* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -85,7 +87,7 @@ void func_80AD68DC(BgLotus* this, PlayState* play) {
             }
             if (gSaveContext.save.playerForm != PLAYER_FORM_DEKU) {
                 this->unk166 = 40;
-                this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+                this->dyna.actor.flags |= ACTOR_FLAG_10;
                 this->actionFunc = func_80AD6A88;
                 return;
             }
@@ -135,7 +137,7 @@ void func_80AD6B68(BgLotus* this, PlayState* play) {
         } else {
             this->dyna.actor.world.pos.y = this->unk160;
         }
-        this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags &= ~ACTOR_FLAG_10;
         this->unk168 = 0x60;
         this->actionFunc = func_80AD68DC;
         this->dyna.actor.world.pos.x = this->dyna.actor.home.pos.x;
@@ -144,17 +146,17 @@ void func_80AD6B68(BgLotus* this, PlayState* play) {
 }
 
 void BgLotus_Update(Actor* thisx, PlayState* play) {
-    BgLotus* this = (BgLotus*)thisx;
+    BgLotus* this = THIS;
     s32 pad;
-    WaterBox* waterBox;
+    WaterBox* sp2C;
 
     WaterBox_GetSurface1_2(play, &play->colCtx, this->dyna.actor.world.pos.x, this->dyna.actor.world.pos.z,
-                           &this->unk160, &waterBox);
+                           &this->unk160, &sp2C);
     this->actionFunc(this, play);
 }
 
 void BgLotus_Draw(Actor* thisx, PlayState* play) {
-    BgLotus* this = (BgLotus*)thisx;
+    BgLotus* this = THIS;
 
     Gfx_DrawDListOpa(play, gLilyPadDL);
 }

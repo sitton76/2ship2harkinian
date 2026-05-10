@@ -6,7 +6,9 @@
 
 #include "z_en_hs2.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnHs2*)thisx)
 
 void EnHs2_Init(Actor* thisx, PlayState* play);
 void EnHs2_Destroy(Actor* thisx, PlayState* play);
@@ -15,7 +17,7 @@ void EnHs2_Draw(Actor* thisx, PlayState* play);
 
 void EnHs2_DoNothing(EnHs2* this, PlayState* play);
 
-ActorProfile En_Hs2_Profile = {
+ActorInit En_Hs2_InitVars = {
     /**/ ACTOR_EN_HS2,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile En_Hs2_Profile = {
 };
 
 void EnHs2_Init(Actor* thisx, PlayState* play) {
-    EnHs2* this = (EnHs2*)thisx;
+    EnHs2* this = THIS;
 
     Actor_SetScale(&this->actor, 1.0f);
     this->actionFunc = EnHs2_DoNothing;
@@ -41,7 +43,7 @@ void EnHs2_DoNothing(EnHs2* this, PlayState* play) {
 }
 
 void EnHs2_Update(Actor* thisx, PlayState* play) {
-    EnHs2* this = (EnHs2*)thisx;
+    EnHs2* this = THIS;
 
     this->actionFunc(this, play);
 }

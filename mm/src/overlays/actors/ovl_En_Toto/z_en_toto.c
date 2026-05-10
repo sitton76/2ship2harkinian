@@ -5,9 +5,12 @@
  */
 
 #include "z_en_toto.h"
+#include "objects/object_zm/object_zm.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnToto*)thisx)
 
 #define ENTOTO_WEEK_EVENT_FLAGS (CHECK_WEEKEVENTREG(WEEKEVENTREG_50_01) || CHECK_WEEKEVENTREG(WEEKEVENTREG_51_80))
 
@@ -48,7 +51,7 @@ s32 func_80BA4B24(EnToto* this, PlayState* play);
 s32 func_80BA4C0C(EnToto* this, PlayState* play);
 s32 func_80BA4C44(EnToto* this, PlayState* play);
 
-ActorProfile En_Toto_Profile = {
+ActorInit En_Toto_InitVars = {
     /**/ ACTOR_EN_TOTO,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -62,7 +65,7 @@ ActorProfile En_Toto_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -70,11 +73,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x00100000, 0x00, 0x00 },
         { 0x01000202, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 20, 60, 0, { 0, 0, 0 } },
@@ -87,7 +90,7 @@ static EnTotoActionFunc D_80BA501C[] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_1, ICHAIN_STOP),
+    ICHAIN_U8(targetMode, TARGET_MODE_1, ICHAIN_STOP),
 };
 
 static EnTotoText D_80BA502C[] = {
@@ -97,20 +100,8 @@ static EnTotoText D_80BA502C[] = {
     { 0, 0, 0x2AE1 }, { 0, 0, 0x2AE2 }, { 4, 0, 0x2AE3 },  { 4, 0, 0x2AE4 },
 };
 
-typedef enum EnTotoAnimation {
-    /* 0 */ ENTOTO_ANIM_0,
-    /* 1 */ ENTOTO_ANIM_1,
-    /* 2 */ ENTOTO_ANIM_2,
-    /* 3 */ ENTOTO_ANIM_3,
-    /* 4 */ ENTOTO_ANIM_MAX
-} EnTotoAnimation;
-
-static AnimationHeader* sAnimations[ENTOTO_ANIM_MAX] = {
-    &object_zm_Anim_0028B8, // ENTOTO_ANIM_0
-    &object_zm_Anim_00B894, // ENTOTO_ANIM_1
-    &object_zm_Anim_002F20, // ENTOTO_ANIM_2
-    &object_zm_Anim_00BC08, // ENTOTO_ANIM_3
-};
+static AnimationHeader* D_80BA5078[] = { &object_zm_Anim_0028B8, &object_zm_Anim_00B894, &object_zm_Anim_002F20,
+                                         &object_zm_Anim_00BC08 };
 
 static EnTotoText D_80BA5088[] = {
     { 5, 0, 0 },  { 6, 20, 0 }, { 7, 0, 0 },  { 8, 9, 0 },  { 9, 10, 0 },       { 1, 0, 0 },  { 10, 0, 0 },
@@ -125,10 +116,10 @@ static EnTotoUnkStruct2 D_80BA50DC[] = {
     { 0x2B2C, 0x2B2D, 0x2B2E, { 0xFFF1, 0x0016, 0xFE74 } },
 };
 
-static Vec3s sPlayerOverrideInputPosList[] = {
-    { -186, -8, -192 },
-    { -223, -3, -252 },
-    { -156, 22, -386 },
+static Vec3s D_80BA510C[] = {
+    { 0xFF46, 0xFFF8, 0xFF40 },
+    { 0xFF21, 0xFFFD, 0xFF04 },
+    { 0xFF64, 0x0016, 0xFE7E },
 };
 
 static u16 sOcarinaActionWindFishPrompts[] = {
@@ -159,18 +150,18 @@ static EnTotoActionFunc D_80BA51B8[] = {
 };
 
 void func_80BA36C0(EnToto* this, PlayState* play, s32 index) {
-    this->unk2B7 = false;
+    this->unk2B7 = 0;
     this->actionFuncIndex = index;
     D_80BA501C[this->actionFuncIndex](this, play);
 }
 
 void EnToto_Init(Actor* thisx, PlayState* play) {
-    EnToto* this = (EnToto*)thisx;
+    EnToto* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
-    if ((play->sceneId == SCENE_MILK_BAR) && (CURRENT_TIME >= CLOCK_TIME(6, 0)) &&
-        (CURRENT_TIME < CLOCK_TIME(21, 30))) {
+    if ((play->sceneId == SCENE_MILK_BAR) && (gSaveContext.save.time >= CLOCK_TIME(6, 0)) &&
+        (gSaveContext.save.time < CLOCK_TIME(21, 30))) {
         Actor_Kill(&this->actor);
         return;
     }
@@ -178,13 +169,13 @@ void EnToto_Init(Actor* thisx, PlayState* play) {
     this->actor.bgCheckFlags |= BGCHECKFLAG_PLAYER_400;
     SkelAnime_InitFlex(play, &this->skelAnime, &object_zm_Skel_00A978,
                        ((play->sceneId == SCENE_SONCHONOIE) ? &object_zm_Anim_003AA8 : &object_zm_Anim_00C880),
-                       this->jointTable, this->morphTable, OBJECT_ZM_LIMB_MAX);
+                       this->jointTable, this->morphTable, 18);
     func_80BA36C0(this, play, 0);
     this->actor.shape.rot.x = 0;
 }
 
 void EnToto_Destroy(Actor* thisx, PlayState* play) {
-    EnToto* this = (EnToto*)thisx;
+    EnToto* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -193,22 +184,22 @@ void func_80BA383C(EnToto* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime) && (this->actionFuncIndex == 1) &&
         (this->skelAnime.animation != &object_zm_Anim_000C80)) {
         if ((play->msgCtx.currentTextId != 0x2A98) && (play->msgCtx.currentTextId != 0x2A99)) {
-            if ((this->animIndex & 1) || (Rand_ZeroOne() > 0.5f)) {
-                this->animIndex = (this->animIndex + 1) & 3;
+            if ((this->unk2B4 & 1) || (Rand_ZeroOne() > 0.5f)) {
+                this->unk2B4 = (this->unk2B4 + 1) & 3;
             }
         }
-        Animation_PlayOnce(&this->skelAnime, sAnimations[this->animIndex]);
+        Animation_PlayOnce(&this->skelAnime, D_80BA5078[this->unk2B4]);
     }
-    FaceChange_UpdateBlinkingNonHuman(&this->faceChange, 20, 80, 3);
+    func_800BBB74(&this->blinkInfo, 20, 80, 3);
 }
 
 void func_80BA3930(EnToto* this, PlayState* play) {
-    AnimationHeader* anim = &object_zm_Anim_00C880;
+    AnimationHeader* animationHeader = &object_zm_Anim_00C880;
 
     if (play->sceneId == SCENE_SONCHONOIE) {
-        anim = &object_zm_Anim_003AA8;
+        animationHeader = &object_zm_Anim_003AA8;
     }
-    Animation_MorphToLoop(&this->skelAnime, anim, -4.0f);
+    Animation_MorphToLoop(&this->skelAnime, animationHeader, -4.0f);
 }
 
 s32 func_80BA397C(EnToto* this, s16 arg1) {
@@ -225,7 +216,7 @@ void func_80BA39C8(EnToto* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     func_80BA383C(this, play);
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80BA36C0(this, play, 1);
         if (play->sceneId != SCENE_SONCHONOIE) {
             Flags_SetSwitch(play, ENTOTO_GET_SWITCH_FLAG_1(&this->actor));
@@ -237,17 +228,16 @@ void func_80BA39C8(EnToto* this, PlayState* play) {
     }
 
     if (((play->sceneId == SCENE_MILK_BAR) &&
-         !((CURRENT_TIME >= CLOCK_TIME(6, 0)) && (CURRENT_TIME <= (CLOCK_TIME(22, 13) + 7)))) ||
+         !((gSaveContext.save.time >= CLOCK_TIME(6, 0)) && (gSaveContext.save.time <= (CLOCK_TIME(22, 13) + 7)))) ||
         ((play->sceneId != SCENE_MILK_BAR) && func_80BA397C(this, 0x2000))) {
         if (this->unk2B6 != 0) {
             this->text = &D_80BA502C[6];
-            this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags |= ACTOR_FLAG_10000;
             Actor_OfferTalkExchange(&this->actor, play, 9999.9f, 9999.9f, PLAYER_IA_NONE);
         } else {
-            this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags &= ~ACTOR_FLAG_10000;
             Actor_OfferTalk(&this->actor, play, 50.0f);
-            // 2S2H [FD Enhancement] - Do not prompt for song if playing as FD. Default to dialog of cancellation
-            if (play->sceneId == SCENE_SONCHONOIE || player->transformation == PLAYER_FORM_FIERCE_DEITY) {
+            if (play->sceneId == SCENE_SONCHONOIE) {
                 if (player->transformation == PLAYER_FORM_DEKU) {
                     if (!Flags_GetSwitch(play, ENTOTO_GET_SWITCH_FLAG_3(&this->actor))) {
                         this->text = &D_80BA502C[15];
@@ -273,7 +263,7 @@ void func_80BA39C8(EnToto* this, PlayState* play) {
 void func_80BA3BFC(EnToto* this, PlayState* play) {
     if (play->sceneId == SCENE_SONCHONOIE) {
         Animation_MorphToPlayOnce(&this->skelAnime, &object_zm_Anim_000C80, -4.0f);
-        this->animIndex = ENTOTO_ANIM_0;
+        this->unk2B4 = 0;
     } else {
         if (this->text->unk0 == 4) {
             Message_BombersNotebookQueueEvent(play, BOMBERS_NOTEBOOK_EVENT_MET_TOTO);
@@ -283,7 +273,7 @@ void func_80BA3BFC(EnToto* this, PlayState* play) {
 }
 
 void func_80BA3C88(EnToto* this) {
-    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 0xFA0, 0x320);
+    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 4000, 800);
 }
 
 void func_80BA3CC4(EnToto* this, PlayState* play) {
@@ -301,19 +291,19 @@ void func_80BA3D38(EnToto* this, PlayState* play) {
     this->text = ENTOTO_WEEK_EVENT_FLAGS ? &D_80BA5088[13] : &D_80BA5088[0];
     func_80BA4C0C(this, play);
     play->actorCtx.flags |= ACTORCTX_FLAG_5;
-    this->faceChange.face = 0;
+    this->blinkInfo.eyeTexIndex = 0;
 }
 
 void func_80BA3DBC(EnToto* this, PlayState* play) {
     Player* player;
 
     func_80BA383C(this, play);
-    if (!this->unk2B7) {
+    if (this->unk2B7 == 0) {
         if (!func_80BA4C44(this, play)) {
             return;
         }
         if ((this->text->unk1 != 0) && ENTOTO_WEEK_EVENT_FLAGS) {
-            this->unk2B7 = true;
+            this->unk2B7 = 1;
             return;
         }
     } else {
@@ -349,9 +339,7 @@ s32 func_80BA3EE8(EnToto* this, PlayState* play) {
 
 s32 func_80BA3F2C(EnToto* this, PlayState* play) {
     if (this->text->textId != 0) {
-        if (GameInteractor_Should(VB_TOTO_START_SOUND_CHECK, true, this)) {
-            Message_ContinueTextbox(play, this->text->textId);
-        }
+        Message_ContinueTextbox(play, this->text->textId);
     } else {
         Message_CloseTextbox(play);
         func_80BA3EE8(this, play);
@@ -395,7 +383,7 @@ s32 func_80BA407C(EnToto* this, PlayState* play) {
 }
 
 s32 func_80BA40D4(EnToto* this, PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         return 1;
     }
     return 0;
@@ -435,28 +423,30 @@ s32 func_80BA4204(EnToto* this, PlayState* play) {
 
 s32 func_80BA42BC(EnToto* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
-    u32 numPoints = 0;
-    Vec3s* endPosListPtr = &sPlayerOverrideInputPosList[ARRAY_COUNT(sPlayerOverrideInputPosList)];
+    u32 phi_s0 = 0;
+    Vec3s* end = &D_80BA510C[3];
 
     func_80BA3FB0(this, play);
     Player_SetCsActionWithHaltedActors(play, NULL, PLAYER_CSACTION_END);
     if (player->actor.world.pos.z > -310.0f) {
         if ((player->actor.world.pos.x > -150.0f) || (player->actor.world.pos.z > -172.0f)) {
-            numPoints = ARRAY_COUNT(sPlayerOverrideInputPosList);
-        } else if (player->actor.world.pos.z > -232.0f) {
-            numPoints = ARRAY_COUNT(sPlayerOverrideInputPosList) - 1;
+            phi_s0 = 3;
         } else {
-            numPoints = ARRAY_COUNT(sPlayerOverrideInputPosList) - 2;
+            if (player->actor.world.pos.z > -232.0f) {
+                phi_s0 = 2;
+            } else {
+                phi_s0 = 1;
+            }
         }
     }
-    Player_InitOverrideInput(play, &this->overrideInputEntry, numPoints, endPosListPtr - numPoints);
+    func_80122744(play, &this->unk_2BC, phi_s0, end - phi_s0);
     this->spotlights = Actor_Spawn(&play->actorCtx, play, ACTOR_DM_CHAR07, 0.0f, 0.0f, 0.0f, 0, 0, 0, 0xF02);
     return 0;
 }
 
 s32 func_80BA43F4(EnToto* this, PlayState* play) {
     func_80BA3C88(this);
-    if (Player_UpdateOverrideInput(play, &this->overrideInputEntry, 60.0f)) {
+    if (func_80122760(play, &this->unk_2BC, 60.0f)) {
         Player_SetCsActionWithHaltedActors(play, NULL, PLAYER_CSACTION_19);
         return func_80BA4204(this, play);
     }
@@ -505,7 +495,7 @@ s32 func_80BA4530(EnToto* this, PlayState* play) {
         if (func_80BA44D4(temp_s0, player)) {
             Math_Vec3s_ToVec3f(&player->actor.world.pos, &temp_s0->unk6);
             player->actor.shape.rot.y = 0;
-            player->yaw = 0;
+            player->currentYaw = 0;
             return func_80BA407C(this, play);
         }
         if (!ENTOTO_WEEK_EVENT_FLAGS) {
@@ -574,7 +564,7 @@ s32 func_80BA47E0(EnToto* this, PlayState* play) {
             Math_Vec3s_ToVec3f(&spawnPos, &D_80BA50DC[i].unk6);
 
             Actor_Spawn(&play->actorCtx, play, ACTOR_PLAYER, spawnPos.x, spawnPos.y, spawnPos.z, i + 2, 0, 0,
-                        PLAYER_PARAMS(0xFF, PLAYER_START_MODE_F) | 0xFFFFF000);
+                        PLAYER_PARAMS(0xFF, PLAYER_INITMODE_F) | 0xFFFFF000);
         }
     }
     func_80BA402C(this, play);
@@ -651,8 +641,9 @@ s32 func_80BA4C0C(EnToto* this, PlayState* play) {
 }
 
 s32 func_80BA4C44(EnToto* this, PlayState* play) {
-    s32 ret = D_80BA5174[this->text->unk0](this, play);
+    s32 ret;
 
+    ret = D_80BA5174[this->text->unk0](this, play);
     if (ret != 0) {
         this->text += ret;
         return func_80BA4C0C(this, play);
@@ -690,7 +681,7 @@ void func_80BA4CB4(EnToto* this, PlayState* play) {
 }
 
 void EnToto_Update(Actor* thisx, PlayState* play) {
-    EnToto* this = (EnToto*)thisx;
+    EnToto* this = THIS;
     s32 pad;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_525)) {
@@ -707,14 +698,14 @@ void EnToto_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnToto_Draw(Actor* thisx, PlayState* play) {
-    static TexturePtr eyeTextures[] = { gTotoEyesOpenTex, gTotoEyesHalfTex, gTotoEyesClosedTex };
-    EnToto* this = (EnToto*)thisx;
+    static TexturePtr sp4C[] = { object_zm_Tex_008AE8, object_zm_Tex_00A068, object_zm_Tex_00A468 };
+    EnToto* this = THIS;
     s32 pad;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(eyeTextures[this->faceChange.face]));
+    gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(sp4C[this->blinkInfo.eyeTexIndex]));
     Scene_SetRenderModeXlu(play, 0, 1);
     SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount, NULL,
                           NULL, &this->actor);

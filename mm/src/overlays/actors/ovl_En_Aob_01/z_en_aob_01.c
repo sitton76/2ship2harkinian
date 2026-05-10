@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Racedog/z_en_racedog.h"
 #include "overlays/actors/ovl_En_Dg/z_en_dg.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnAob01*)thisx)
 
 void EnAob01_Init(Actor* thisx, PlayState* play);
 void EnAob01_Destroy(Actor* thisx, PlayState* play);
@@ -30,7 +32,7 @@ void EnAob01_AfterRace_AskToPlayAgain(EnAob01* this, PlayState* play);
 void EnAob01_AfterRace_Talk(EnAob01* this, PlayState* play);
 s32 EnAob01_PlayerIsHoldingDog(EnAob01* this, PlayState* play);
 
-ActorProfile En_Aob_01_Profile = {
+ActorInit En_Aob_01_InitVars = {
     /**/ ACTOR_EN_AOB_01,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -70,7 +72,7 @@ static AnimationInfo sAnimationInfo[EN_AOB01_ANIM_MAX] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -78,11 +80,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 64, 0, { 0, 0, 0 } },
@@ -122,8 +124,8 @@ void EnAob01_Blink(EnAob01* this, s32 maxEyeIndex) {
  * Called every frame during the race in order to make in-game time pass.
  */
 void EnAob01_AdvanceTime(void) {
-    gSaveContext.save.time = CURRENT_TIME + (u16)R_TIME_SPEED;
-    gSaveContext.save.time = CURRENT_TIME + (u16)((void)0, gSaveContext.save.timeSpeedOffset);
+    gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)R_TIME_SPEED;
+    gSaveContext.save.time = ((void)0, gSaveContext.save.time) + (u16)((void)0, gSaveContext.save.timeSpeedOffset);
 }
 
 /**
@@ -438,7 +440,7 @@ void EnAob01_BeforeRace_HandleConversation(EnAob01* this, PlayState* play) {
             }
 
             gSaveContext.unk_3F5C = this->rupeesBet;
-            play->msgCtx.rupeesTotal = this->rupeesBet;
+            play->msgCtx.bankRupees = this->rupeesBet;
             this->textId = 0x3529; // Is that bet okay?
             break;
 
@@ -515,7 +517,7 @@ void EnAob01_BeforeRace_RespondToPlayAgainQuestion(EnAob01* this, PlayState* pla
                     break;
             }
         }
-    } else if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    } else if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
         play->msgCtx.stateTimer = 4;
         this->textId = 0;
@@ -573,12 +575,12 @@ void EnAob01_BeforeRace_Idle(EnAob01* this, PlayState* play) {
     if (EnAob01_ProcessIdleAnim(this)) {
         if (EnAob01_PlayerIsHoldingDog(this, play) && !(this->stateFlags & ENAOB01_FLAG_PLAYER_CAN_TALK)) {
             if (this->collider.base.ocFlags2 & OC2_HIT_PLAYER) {
-                this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+                this->actor.flags |= ACTOR_FLAG_10000;
                 Actor_OfferTalk(&this->actor, play, 100.0f);
                 this->stateFlags |= ENAOB01_FLAG_TALKING_TO_PLAYER_HOLDING_DOG;
                 this->actionFunc = EnAob01_BeforeRace_Talk;
             }
-        } else if (Actor_TalkOfferAccepted(&this->actor, &play->state) &&
+        } else if (Actor_ProcessTalkRequest(&this->actor, &play->state) &&
                    (this->stateFlags & ENAOB01_FLAG_PLAYER_CAN_TALK)) {
             this->stateFlags &= ~ENAOB01_FLAG_PLAYER_CAN_TALK;
             this->prevTrackTarget = this->trackTarget;
@@ -602,7 +604,7 @@ void EnAob01_BeforeRace_Idle(EnAob01* this, PlayState* play) {
 void EnAob01_BeforeRace_Talk(EnAob01* this, PlayState* play) {
     u8 talkState = Message_GetState(&play->msgCtx);
 
-    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 0xFA0, 1);
+    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 4000, 1);
 
     //! @bug: This block of code acts as a failsafe for when the player triggered this conversation by
     //! bumping into the racetrack owner while holding the dog and, at the same time, threw or dropped
@@ -618,7 +620,7 @@ void EnAob01_BeforeRace_Talk(EnAob01* this, PlayState* play) {
 
         this->actor.textId = 0;
         this->stateFlags &= ~ENAOB01_FLAG_TALKING_TO_PLAYER_HOLDING_DOG;
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         this->actionFunc = EnAob01_BeforeRace_Idle;
         return;
     }
@@ -632,9 +634,9 @@ void EnAob01_BeforeRace_Talk(EnAob01* this, PlayState* play) {
     }
 
     if (this->stateFlags & ENAOB01_FLAG_TALKING_TO_PLAYER_HOLDING_DOG) {
-        if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
-            this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
-            Player_SetAutoLockOnActor(play, &this->actor);
+        if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
+            this->actor.flags &= ~ACTOR_FLAG_10000;
+            func_80123E90(play, &this->actor);
             if (this->stateFlags & ENAOB01_FLAG_PLAYER_TOLD_TO_PICK_A_DOG) {
                 EnAob01_BeforeRace_HandleConversation(this, play);
                 this->stateFlags &= ~ENAOB01_FLAG_PLAYER_TOLD_TO_PICK_A_DOG;
@@ -665,7 +667,7 @@ void EnAob01_BeforeRace_Talk(EnAob01* this, PlayState* play) {
                     break;
             }
         }
-    } else if (talkState == TEXT_STATE_EVENT) {
+    } else if (talkState == TEXT_STATE_5) {
         if (Message_ShouldAdvance(play)) {
             this->stateFlags &= ~ENAOB01_FLAG_LAUGH;
             if (this->stateFlags & ENAOB01_FLAG_CONVERSATION_OVER) {
@@ -677,9 +679,9 @@ void EnAob01_BeforeRace_Talk(EnAob01* this, PlayState* play) {
                 EnAob01_BeforeRace_HandleConversation(this, play);
             }
         }
-    } else if ((talkState == TEXT_STATE_INPUT_RUPEES) && Message_ShouldAdvance(play)) {
+    } else if ((talkState == TEXT_STATE_14) && Message_ShouldAdvance(play)) {
         this->stateFlags &= ~ENAOB01_FLAG_LAUGH;
-        this->rupeesBet = play->msgCtx.rupeesSelected;
+        this->rupeesBet = play->msgCtx.bankRupeesSelected;
         EnAob01_BeforeRace_HandleConversation(this, play);
     }
 }
@@ -842,9 +844,9 @@ void EnAob01_Race_StartCutscene(EnAob01* this, PlayState* play) {
  * receive the same number of rupees they bet.
  */
 void EnAob01_AfterRace_GiveRaceResult(EnAob01* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
-        Player_SetAutoLockOnActor(play, &this->actor);
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
+        this->actor.flags &= ~ACTOR_FLAG_10000;
+        func_80123E90(play, &this->actor);
         this->rupeesBet = gSaveContext.unk_3F5C;
         switch (GET_EVENTINF_DOG_RACE_RACE_STANDING) {
             case 1:
@@ -852,7 +854,7 @@ void EnAob01_AfterRace_GiveRaceResult(EnAob01* this, PlayState* play) {
                 this->stateFlags |= ENAOB01_FLAG_SURPRISE;
                 this->rupeesBet *= 3;
                 Rupees_ChangeBy(this->rupeesBet);
-                play->msgCtx.rupeesTotal = this->rupeesBet;
+                play->msgCtx.bankRupees = this->rupeesBet;
                 break;
 
             case 2:
@@ -860,7 +862,7 @@ void EnAob01_AfterRace_GiveRaceResult(EnAob01* this, PlayState* play) {
                 this->stateFlags |= ENAOB01_FLAG_SURPRISE;
                 this->rupeesBet *= 2;
                 Rupees_ChangeBy(this->rupeesBet);
-                play->msgCtx.rupeesTotal = this->rupeesBet;
+                play->msgCtx.bankRupees = this->rupeesBet;
                 break;
 
             case 3:
@@ -894,7 +896,7 @@ void EnAob01_AfterRace_GiveReward(EnAob01* this, PlayState* play) {
     u8 talkState = Message_GetState(&play->msgCtx);
 
     if (EnAob01_ProcessIdleAnim(this)) {
-        if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+        if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
             this->rupeesBet = 0;
             play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
             play->msgCtx.stateTimer = 4;
@@ -928,7 +930,7 @@ void EnAob01_AfterRace_GiveReward(EnAob01* this, PlayState* play) {
 void EnAob01_AfterRace_AfterGivingReward(EnAob01* this, PlayState* play) {
     u8 talkState = Message_GetState(&play->msgCtx);
 
-    if (((talkState == TEXT_STATE_EVENT) || (talkState == TEXT_STATE_DONE)) && Message_ShouldAdvance(play)) {
+    if (((talkState == TEXT_STATE_5) || (talkState == TEXT_STATE_DONE)) && Message_ShouldAdvance(play)) {
         if (CHECK_WEEKEVENTREG(WEEKEVENTREG_KICKOUT_TIME_PASSED)) {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_KICKOUT_TIME_PASSED);
         }
@@ -949,7 +951,7 @@ void EnAob01_AfterRace_AfterGivingReward(EnAob01* this, PlayState* play) {
  * the player has won the 150 rupee reward.
  */
 void EnAob01_AfterRace_AskToPlayAgain(EnAob01* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->textId = 0x354C; // Want to play again?
         Message_ContinueTextbox(play, this->textId);
         this->actionFunc = EnAob01_BeforeRace_RespondToPlayAgainQuestion;
@@ -969,7 +971,7 @@ void EnAob01_AfterRace_AskToPlayAgain(EnAob01* this, PlayState* play) {
 void EnAob01_AfterRace_Talk(EnAob01* this, PlayState* play) {
     u8 talkState = Message_GetState(&play->msgCtx);
 
-    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 0xFA0, 1);
+    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 4, 4000, 1);
 
     if (this->stateFlags & ENAOB01_FLAG_LAUGH) {
         if (!EnAob01_ProcessLaughAnim(this)) {
@@ -981,7 +983,7 @@ void EnAob01_AfterRace_Talk(EnAob01* this, PlayState* play) {
         }
     }
 
-    if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         this->stateFlags &= ~ENAOB01_FLAG_LAUGH;
         this->stateFlags &= ~ENAOB01_FLAG_SURPRISE;
         if (this->rupeesBet >= 150) {
@@ -1097,7 +1099,7 @@ void EnAob01_InitializeDogTextOffsets(void) {
 
 void EnAob01_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 0.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gMamamuYanSkel, NULL, this->jointTable, this->morphTable,
@@ -1112,7 +1114,7 @@ void EnAob01_Init(Actor* thisx, PlayState* play) {
         case EVENTINF_DOG_RACE_STATE_NOT_STARTED:
             EnAob01_InitializeDogTextOffsets();
             EnAob01_SpawnDogs(this, play);
-            this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags |= ACTOR_FLAG_TARGETABLE;
             this->actionFunc = EnAob01_BeforeRace_Idle;
             break;
 
@@ -1123,7 +1125,7 @@ void EnAob01_Init(Actor* thisx, PlayState* play) {
             this->csId = this->actor.csId;
             EnAob01_Race_FollowSelectedDog(this, play);
             CutsceneManager_Queue(this->csId);
-            this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             EnAob01_Race_HidePlayer(this, play);
             this->actionFunc = EnAob01_Race_StartCutscene;
             break;
@@ -1131,15 +1133,15 @@ void EnAob01_Init(Actor* thisx, PlayState* play) {
         case EVENTINF_DOG_RACE_STATE_ENDED:
             EnAob01_InitializeDogTextOffsets();
             EnAob01_SpawnDogs(this, play);
-            this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
-            this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->actor.flags |= ACTOR_FLAG_TARGETABLE;
+            this->actor.flags |= ACTOR_FLAG_10000;
             this->actionFunc = EnAob01_AfterRace_GiveRaceResult;
             break;
     }
 }
 
 void EnAob01_Destroy(Actor* thisx, PlayState* play) {
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
 
     if (!(this->stateFlags & ENAOB01_FLAG_STARTED_RACE)) {
         CLEAR_WEEKEVENTREG(WEEKEVENTREG_KICKOUT_WAIT);
@@ -1149,14 +1151,14 @@ void EnAob01_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void EnAob01_Update(Actor* thisx, PlayState* play) {
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
 
     this->actionFunc(this, play);
     EnAob01_UpdateCommon(this, play);
 }
 
 s32 EnAob01_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
     TexturePtr eyeTextures[] = {
         gMamamuYanEyeOpenTex,
         gMamamuYanEyeHalfTex,
@@ -1187,8 +1189,8 @@ s32 EnAob01_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f*
 
     if ((limbIndex == MAMAMU_YAN_LIMB_TORSO) || (limbIndex == MAMAMU_YAN_LIMB_LEFT_UPPER_ARM) ||
         (limbIndex == MAMAMU_YAN_LIMB_RIGHT_UPPER_ARM)) {
-        rot->y += TRUNCF_BINANG(Math_SinS(this->fidgetTableY[limbIndex])) * 200;
-        rot->z += TRUNCF_BINANG(Math_CosS(this->fidgetTableZ[limbIndex])) * 200;
+        rot->y += (s16)Math_SinS(this->fidgetTableY[limbIndex]) * 200;
+        rot->z += (s16)Math_CosS(this->fidgetTableZ[limbIndex]) * 200;
     }
 
     return false;
@@ -1196,7 +1198,7 @@ s32 EnAob01_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f*
 
 void EnAob01_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     static Vec3f sFocusOffset = { 0.0f, 0.0f, 0.0f };
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
 
     if (limbIndex == MAMAMU_YAN_LIMB_HEAD) {
         Matrix_MultVec3f(&sFocusOffset, &this->actor.focus.pos);
@@ -1208,7 +1210,7 @@ void EnAob01_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
 
 void EnAob01_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnAob01* this = (EnAob01*)thisx;
+    EnAob01* this = THIS;
     Vec3f pos;
     Vec3f scale;
 

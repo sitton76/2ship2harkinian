@@ -1,4 +1,3 @@
-#include "ultra64.h"
 #include "libc/math.h"
 #include "ultra64.h"
 #include "z64math.h"
@@ -42,7 +41,7 @@ f32 __cosf(f32 x) {
 
     xpt &= 0x1FF; // Remove the sign bit
 
-    // |x| < 2^{28} (beyond this range, floats are too sparse to make the trig functions usable)
+    // |x| < 2^{28} (beyond this range, floats are too sparse to make the trig functions useable)
     if (xpt < 310) {
         absx = (x > 0) ? x : -x;
         dx = absx;
@@ -56,7 +55,7 @@ f32 __cosf(f32 x) {
         dx -= dn * pihi.d;
         dx -= dn * pilo.d;
 
-        xSq = dx * dx;
+        xSq = SQ(dx);
         polyApprox = ((P[4].d * xSq + P[3].d) * xSq + P[2].d) * xSq + P[1].d;
         result = dx + (dx * xSq) * polyApprox; // Actual Maclaurin polynomial for sin(x)
 

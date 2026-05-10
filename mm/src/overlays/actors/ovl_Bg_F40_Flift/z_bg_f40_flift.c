@@ -7,7 +7,9 @@
 #include "z_bg_f40_flift.h"
 #include "objects/object_f40_obj/object_f40_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgF40Flift*)thisx)
 
 void BgF40Flift_Init(Actor* thisx, PlayState* play);
 void BgF40Flift_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void BgF40Flift_Draw(Actor* thisx, PlayState* play);
 void func_808D75F0(BgF40Flift* this, PlayState* play);
 void func_808D7714(BgF40Flift* this, PlayState* play);
 
-ActorProfile Bg_F40_Flift_Profile = {
+ActorInit Bg_F40_Flift_InitVars = {
     /**/ ACTOR_BG_F40_FLIFT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -30,13 +32,13 @@ ActorProfile Bg_F40_Flift_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 400, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 5000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 400, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 5000, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
 void BgF40Flift_Init(Actor* thisx, PlayState* play) {
-    BgF40Flift* this = (BgF40Flift*)thisx;
+    BgF40Flift* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -46,7 +48,7 @@ void BgF40Flift_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgF40Flift_Destroy(Actor* thisx, PlayState* play) {
-    BgF40Flift* this = (BgF40Flift*)thisx;
+    BgF40Flift* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -84,7 +86,7 @@ void func_808D7714(BgF40Flift* this, PlayState* play) {
 }
 
 void BgF40Flift_Update(Actor* thisx, PlayState* play) {
-    BgF40Flift* this = (BgF40Flift*)thisx;
+    BgF40Flift* this = THIS;
 
     this->actionFunc(this, play);
 }

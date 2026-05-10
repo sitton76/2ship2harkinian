@@ -1,7 +1,5 @@
-#include "z64skin.h"
-
 #include "global.h"
-#include "z64malloc.h"
+#include "z64skin.h"
 
 #include "2s2h/BenPort.h"
 

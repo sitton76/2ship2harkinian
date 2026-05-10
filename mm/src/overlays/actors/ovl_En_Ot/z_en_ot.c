@@ -6,15 +6,17 @@
 
 #include "prevent_bss_reordering.h"
 #include "z_en_ot.h"
+#include "objects/object_ot/object_ot.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnOt*)thisx)
 
 void EnOt_Init(Actor* thisx, PlayState* play);
 void EnOt_Destroy(Actor* thisx, PlayState* play);
 void EnOt_Update(Actor* thisx, PlayState* play);
 void EnOt_Draw(Actor* thisx, PlayState* play);
-void EnOt_Reset(void);
 
 void func_80B5BDA8(EnOt* this, PlayState* play);
 void func_80B5BE04(EnOt* this, PlayState* play);
@@ -61,7 +63,7 @@ EnOt* D_80B5E880;
 EnOt* D_80B5E884;
 EnOt* D_80B5E888;
 
-ActorProfile En_Ot_Profile = {
+ActorInit En_Ot_InitVars = {
     /**/ ACTOR_EN_OT,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -71,12 +73,11 @@ ActorProfile En_Ot_Profile = {
     /**/ EnOt_Destroy,
     /**/ EnOt_Update,
     /**/ EnOt_Draw,
-    /**/ EnOt_Reset,
 };
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT0,
+        COLTYPE_HIT0,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER | AC_TYPE_ENEMY,
         OC1_ON | OC1_TYPE_ALL,
@@ -84,33 +85,26 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 5, 33, -20, { 0, 0, 0 } },
 };
 
-typedef enum SeahorseAnimation {
-    /* 0 */ SEAHORSE_ANIM_0,
-    /* 1 */ SEAHORSE_ANIM_1,
-    /* 2 */ SEAHORSE_ANIM_2,
-    /* 3 */ SEAHORSE_ANIM_MAX
-} SeahorseAnimation;
-
-static AnimationSpeedInfo sAnimationSpeedInfo[SEAHORSE_ANIM_MAX] = {
-    { &object_ot_Anim_004B30, 1.0f, ANIMMODE_LOOP, -5.0f }, // SEAHORSE_ANIM_0
-    { &object_ot_Anim_0008D8, 1.0f, ANIMMODE_LOOP, -5.0f }, // SEAHORSE_ANIM_1
-    { &object_ot_Anim_000420, 1.0f, ANIMMODE_LOOP, 0.0f },  // SEAHORSE_ANIM_2
+static AnimationSpeedInfo sAnimations[] = {
+    { &object_ot_Anim_004B30, 1.0f, ANIMMODE_LOOP, -5.0f },
+    { &object_ot_Anim_0008D8, 1.0f, ANIMMODE_LOOP, -5.0f },
+    { &object_ot_Anim_000420, 1.0f, ANIMMODE_LOOP, 0.0f },
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 80, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 80, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneScale, 80, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 80, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_STOP),
 };
 
 void func_80B5B2E0(PlayState* play, Vec3f* pos, s16 pathIndex, Vec3f* vec, s32* index) {
@@ -136,7 +130,7 @@ void func_80B5B2E0(PlayState* play, Vec3f* pos, s16 pathIndex, Vec3f* vec, s32* 
 
 void EnOt_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
     s32 bgId;
     s32 pad2;
     Vec3f sp64;
@@ -147,8 +141,8 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
     this->type = SEAHORSE_GET_TYPE(&this->actor);
     if (this->type == SEAHORSE_TYPE_0) {
         D_80B5E880 = this;
-        this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-        this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+        this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+        this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
         this->actor.update = func_80B5DB6C;
         this->actor.draw = NULL;
         return;
@@ -156,12 +150,12 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 30.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &object_ot_Skel_004800, &object_ot_Anim_0008D8, this->jointTable,
-                       this->morphTable, OBJECT_OT_LIMB_MAX);
+                       this->morphTable, 19);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
-    Animation_Change(&this->skelAnime, sAnimationSpeedInfo[SEAHORSE_ANIM_0].animation, 1.0f,
-                     Animation_GetLastFrame(&sAnimationSpeedInfo[SEAHORSE_ANIM_0].animation->common) * Rand_ZeroOne(),
-                     Animation_GetLastFrame(&sAnimationSpeedInfo[SEAHORSE_ANIM_0].animation->common),
-                     sAnimationSpeedInfo[SEAHORSE_ANIM_0].mode, sAnimationSpeedInfo[SEAHORSE_ANIM_0].morphFrames);
+    Animation_Change(&this->skelAnime, sAnimations[0].animation, 1.0f,
+                     Animation_GetLastFrame(&sAnimations[0].animation->common) * Rand_ZeroOne(),
+                     Animation_GetLastFrame(&sAnimations[0].animation->common), sAnimations[0].mode,
+                     sAnimations[0].morphFrames);
     this->pathIndex = SEAHORSE_GET_PATH_INDEX(&this->actor);
     this->unk_344 = this->actor.world.rot.z;
     this->actor.world.rot.z = 0;
@@ -169,7 +163,7 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     this->actor.gravity = 0.0f;
     SubS_FillCutscenesList(&this->actor, this->csIdList, ARRAY_COUNT(this->csIdList));
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->skelAnime.curFrame = Rand_ZeroOne() * this->skelAnime.endFrame;
     this->lightNode = LightContext_InsertLight(play, &play->lightCtx, &this->lightInfo);
     this->unk_744.r = 255;
@@ -201,7 +195,7 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
                             this->unk_394.y = this->actor.world.pos.y;
                             this->unk_394.z = (this->actor.world.pos.z + this->unk_360->actor.world.pos.z) * 0.5f;
                             Math_Vec3f_Copy(&this->unk_360->unk_394, &this->unk_394);
-                            if (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_SEAHORSE_HEART_PIECE)) {
+                            if (CHECK_WEEKEVENTREG(WEEKEVENTREG_32_01)) {
                                 func_80B5C244(this, play);
                             } else {
                                 func_80B5C684(this, play);
@@ -226,9 +220,6 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
 
                 case 1:
                     Actor_Kill(&this->actor);
-                    break;
-
-                default:
                     break;
             }
             break;
@@ -260,7 +251,7 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
                 case 1:
                     Actor_SetScale(&this->actor, 1.3f * 0.01f);
                     if (CHECK_WEEKEVENTREG(WEEKEVENTREG_84_10)) {
-                        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_SEAHORSE_HEART_PIECE)) {
+                        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_32_01)) {
                             func_80B5C244(this, play);
                         } else {
                             func_80B5C684(this, play);
@@ -269,16 +260,13 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
                         func_80B5CE6C(this, play);
                     }
                     break;
-
-                default:
-                    break;
             }
             break;
 
         case SEAHORSE_TYPE_3:
             if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_26_08)) {
-                this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-                this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+                this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+                this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
                 Actor_SetScale(&this->actor, 0.0064999997f);
                 this->collider.dim.radius *= 0.5f;
                 this->collider.dim.height *= 0.5f;
@@ -296,7 +284,7 @@ void EnOt_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnOt_Destroy(Actor* thisx, PlayState* play) {
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
@@ -306,16 +294,16 @@ void func_80B5BAAC(LightInfo* lightInfo, Vec3f* arg1, Color_RGB8* arg2, s16 radi
     Lights_PointNoGlowSetInfo(lightInfo, arg1->x, arg1->y, arg1->z, arg2->r, arg2->g, arg2->b, radius);
 }
 
-void EnOt_LerpColor(Color_RGB8* arg0, Color_RGB8* arg1, f32 lerp) {
+void func_80B5BB38(Color_RGB8* arg0, Color_RGB8* arg1, f32 arg2) {
     f32 rand = Rand_ZeroOne();
 
-    arg0->r = (arg1->r * lerp) + (arg1->r * (1.0f - lerp) * rand);
-    arg0->g = (arg1->g * lerp) + (arg1->g * (1.0f - lerp) * rand);
-    arg0->b = (arg1->b * lerp) + (arg1->b * (1.0f - lerp) * rand);
+    arg0->r = (arg1->r * arg2) + (arg1->r * (1.0f - arg2) * rand);
+    arg0->g = (arg1->g * arg2) + (arg1->g * (1.0f - arg2) * rand);
+    arg0->b = (arg1->b * arg2) + (arg1->b * (1.0f - arg2) * rand);
 }
 
 void func_80B5BDA8(EnOt* this, PlayState* play) {
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_1, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 1, &this->animIndex);
     SubS_FillCutscenesList(&this->actor, this->csIdList, ARRAY_COUNT(this->csIdList));
     this->actionFunc = func_80B5BE04;
 }
@@ -333,14 +321,11 @@ void func_80B5BE04(EnOt* this, PlayState* play) {
                 func_80B5BF60(this, play);
             }
             break;
-
-        default:
-            break;
     }
 }
 
 void func_80B5BE88(EnOt* this, PlayState* play) {
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_1, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 1, &this->animIndex);
     this->actionFunc = func_80B5BED4;
 }
 
@@ -355,7 +340,7 @@ void func_80B5BED4(EnOt* this, PlayState* play) {
 
 void func_80B5BF60(EnOt* this, PlayState* play) {
     this->unk_32C |= 0x40;
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->actionFunc = func_80B5BFB8;
 }
 
@@ -394,13 +379,12 @@ void func_80B5BFB8(EnOt* this, PlayState* play) {
 }
 
 void func_80B5C154(EnOt* this, PlayState* play) {
-    if (CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_SEAHORSE_HEART_PIECE)) {
+    if (CHECK_WEEKEVENTREG(WEEKEVENTREG_32_01)) {
         this->getItemId = GI_RUPEE_RED;
     } else {
         this->getItemId = GI_HEART_PIECE;
-        SET_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_SEAHORSE_HEART_PIECE);
+        SET_WEEKEVENTREG(WEEKEVENTREG_32_01);
     }
-
     Actor_OfferGetItem(&this->actor, play, this->getItemId, this->actor.xzDistToPlayer, this->actor.playerHeightRel);
     this->actionFunc = func_80B5C1CC;
 }
@@ -430,13 +414,12 @@ void func_80B5C25C(EnOt* this, PlayState* play) {
     if ((this->type == SEAHORSE_TYPE_2) && (this->unk_32C & 0x80) && (this->unk_360->unk_32C & 0x80)) {
         this->unk_32C |= 0x100;
         this->unk_360->unk_32C |= 0x100;
-        SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_2, &this->animIndex);
-        SubS_ChangeAnimationBySpeedInfo(&this->unk_360->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_2,
-                                        &this->unk_360->animIndex);
-        this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-        this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
-        this->unk_360->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-        this->unk_360->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+        SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 2, &this->animIndex);
+        SubS_ChangeAnimationBySpeedInfo(&this->unk_360->skelAnime, sAnimations, 2, &this->unk_360->animIndex);
+        this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+        this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
+        this->unk_360->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+        this->unk_360->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
         func_80B5C9A8(this->unk_360, play);
         func_80B5C3B8(this, play);
     }
@@ -510,7 +493,7 @@ void func_80B5C64C(EnOt* this, PlayState* play) {
 
 void func_80B5C684(EnOt* this, PlayState* play) {
     this->actor.speed = 0.0f;
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->actionFunc = func_80B5C6DC;
 }
 
@@ -535,9 +518,6 @@ void func_80B5C6DC(EnOt* this, PlayState* play) {
                 case 1:
                     CutsceneManager_Stop(this->csIdList[3]);
                     break;
-
-                default:
-                    break;
             }
             this->unk_73C = -1;
         } else {
@@ -554,7 +534,7 @@ void func_80B5C6DC(EnOt* this, PlayState* play) {
     if (CHECK_WEEKEVENTREG(WEEKEVENTREG_84_10) && (this->type == SEAHORSE_TYPE_1)) {
         this->actor.textId = 0;
         this->unk_384 = 1;
-        if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+        if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
             this->unk_3A0 = BINANG_ADD(sp3E, 0x4000);
             this->unk_360->unk_3A0 = this->unk_3A0;
             func_80B5C9A8(this, play);
@@ -570,7 +550,7 @@ void func_80B5C910(EnOt* this, PlayState* play) {
     this->actor.shape.rot.x = 0;
     this->actor.shape.rot.z = 0;
     this->actor.shape.rot.y = this->actor.yawTowardsPlayer;
-    // Set to itself
+    // This is weird
     this->actor.world.rot.x = this->actor.world.rot.x;
     this->actor.world.rot.y = this->actor.world.rot.y;
     this->actor.world.rot.z = this->actor.world.rot.z;
@@ -596,7 +576,7 @@ void func_80B5C9D0(EnOt* this, PlayState* play) {
     this->actor.shape.rot.x = 0;
     this->actor.shape.rot.z = 0;
     this->actor.shape.rot.y = this->actor.yawTowardsPlayer;
-    // Set to itself
+    // This is weird
     this->actor.world.rot.x = this->actor.world.rot.x;
     this->actor.world.rot.y = this->actor.world.rot.y;
     this->actor.world.rot.z = this->actor.world.rot.z;
@@ -629,15 +609,15 @@ void func_80B5CB0C(EnOt* this, PlayState* play) {
 }
 
 void func_80B5CBA0(EnOt* this, PlayState* play) {
-    this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+    this->actor.flags |= ACTOR_FLAG_10000;
     Actor_OfferTalkExchange(&this->actor, play, this->actor.xzDistToPlayer, this->actor.playerHeightRel,
                             PLAYER_IA_NONE);
     this->actionFunc = func_80B5CBEC;
 }
 
 void func_80B5CBEC(EnOt* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         func_80B5CC88(this, play);
     } else {
         Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 3, 0xE38, 0x38E);
@@ -661,7 +641,7 @@ void func_80B5CCA0(EnOt* this, PlayState* play) {
 }
 
 void func_80B5CCF4(EnOt* this, PlayState* play) {
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->actionFunc = func_80B5CD40;
 }
 
@@ -674,23 +654,20 @@ void func_80B5CD40(EnOt* this, PlayState* play) {
             temp = Math_SmoothStepToS(&this->actor.shape.rot.y,
                                       BINANG_ROT180(Camera_GetCamDirYaw(GET_ACTIVE_CAM(play))), 3, 0xE38, 0x38E);
             this->actor.world.rot.y = this->actor.shape.rot.y;
-
-            //! FAKE:
             if (1) {}
-
             if (!temp) {
                 SET_WEEKEVENTREG(WEEKEVENTREG_23_10);
                 Message_StartTextbox(play, 0x1069, NULL);
             }
             break;
 
-        case TEXT_STATE_NEXT:
+        case TEXT_STATE_1:
         case TEXT_STATE_CLOSING:
-        case TEXT_STATE_FADING:
+        case TEXT_STATE_3:
             break;
 
         case TEXT_STATE_CHOICE:
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
         case TEXT_STATE_DONE:
             if (Message_ShouldAdvance(play) && (play->msgCtx.currentTextId == 0x1069)) {
                 this->unk_32C |= 4;
@@ -708,7 +685,7 @@ void func_80B5CD40(EnOt* this, PlayState* play) {
 void func_80B5CE6C(EnOt* this, PlayState* play) {
     this->unk_384 = 0;
     this->unk_32C |= 0x20;
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->actionFunc = func_80B5CEC8;
 }
 
@@ -717,26 +694,25 @@ void func_80B5CEC8(EnOt* this, PlayState* play) {
     s32 pad;
 
     this->actor.textId = 0;
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80B5D114(this, play);
         return;
     }
 
     Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 3, 0xE38, 0x38E);
-
     if (this->unk_32C & 0x800) {
-        this->actor.flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags |= ACTOR_FLAG_10000;
         Actor_OfferTalkExchange(&this->actor, play, this->actor.xzDistToPlayer, this->actor.playerHeightRel,
                                 PLAYER_IA_NONE);
     } else {
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         if ((player->actor.bgCheckFlags & BGCHECKFLAG_GROUND) && !func_801242B4(player) &&
             (this->actor.xzDistToPlayer < 130.0f)) {
             Actor_OfferTalk(&this->actor, play, 130.0f);
         }
     }
 
-    if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_84_10) && (SEAHORSE_GET_TYPE(&this->actor) == SEAHORSE_TYPE_1)) {
+    if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_84_10) && (SEAHORSE_GET_TYPE(&this->actor) == 1)) {
         if ((fabsf(this->actor.xzDistToPlayer) <= 130.0f) && (fabsf(this->actor.playerHeightRel) <= 130.0f)) {
             player->unk_B2B = 29;
         }
@@ -766,7 +742,7 @@ void func_80B5CEC8(EnOt* this, PlayState* play) {
 }
 
 void func_80B5D114(EnOt* this, PlayState* play) {
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_0, &this->animIndex);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 0, &this->animIndex);
     this->actionFunc = func_80B5D160;
 }
 
@@ -778,7 +754,7 @@ void func_80B5D160(EnOt* this, PlayState* play) {
         case TEXT_STATE_NONE:
             temp = Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 3, 0xE38, 0x38E);
             this->actor.world.rot.y = this->actor.shape.rot.y;
-            if (!temp) {
+            if (temp == 0) {
                 switch (this->unk_384) {
                     case 0:
                         if ((this->type != SEAHORSE_TYPE_1) && (this->type == SEAHORSE_TYPE_2)) {
@@ -808,20 +784,18 @@ void func_80B5D160(EnOt* this, PlayState* play) {
                         Message_StartTextbox(play, 0x106D, &this->actor);
                         func_80B5D114(this, play);
                         break;
-
-                    default:
-                        break;
                 }
+                break;
             }
             break;
 
-        case TEXT_STATE_NEXT:
+        case TEXT_STATE_1:
         case TEXT_STATE_CLOSING:
-        case TEXT_STATE_FADING:
+        case TEXT_STATE_3:
             break;
 
         case TEXT_STATE_CHOICE:
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
         case TEXT_STATE_DONE:
             if (Message_ShouldAdvance(play)) {
                 switch (play->msgCtx.currentTextId) {
@@ -850,9 +824,6 @@ void func_80B5D160(EnOt* this, PlayState* play) {
                         break;
                 }
             }
-            break;
-
-        default:
             break;
     }
 }
@@ -926,9 +897,9 @@ void func_80B5D648(EnOt* this, PlayState* play) {
     this->actorPath.pointOffset.z = 0.0f;
     this->actor.gravity = 0.0f;
     this->actor.speed = 0.0f;
-    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimationSpeedInfo, SEAHORSE_ANIM_1, &this->animIndex);
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-    this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+    SubS_ChangeAnimationBySpeedInfo(&this->skelAnime, sAnimations, 1, &this->animIndex);
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+    this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
     Flags_SetSwitch(play, SEAHORSE_GET_SWITCH_FLAG(&this->actor));
     this->actionFunc = func_80B5D750;
 }
@@ -955,9 +926,9 @@ void func_80B5D750(EnOt* this, PlayState* play) {
     }
 
     if ((this->unk_32C & 1) && (this->actor.xzDistToPlayer <= 180.0f)) {
-        this->actor.flags &= ~ACTOR_FLAG_LOCK_ON_DISABLED;
-        this->actor.flags |= (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
-        if (D_80B5E884 != NULL) {
+        this->actor.flags &= ~ACTOR_FLAG_CANT_LOCK_ON;
+        this->actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
+        if (D_80B5E884 != 0) {
             func_80B5C9A8(this, play);
         } else {
             func_80B5CBA0(this, play);
@@ -967,16 +938,16 @@ void func_80B5D750(EnOt* this, PlayState* play) {
 
 void EnOt_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
 
-    if ((this->animIndex == SEAHORSE_ANIM_1) && Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame)) {
+    if ((this->animIndex == 1) && Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame)) {
         Actor_PlaySfx(&this->actor, NA_SE_EV_SEAHORSE_SWIM);
     }
 
     this->actionFunc(this, play);
     if (this->actor.bgCheckFlags & BGCHECKFLAG_WATER) {
         if (DECR(this->unk_354) == 0) {
-            if (this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) {
+            if (this->actor.flags & ACTOR_FLAG_40) {
                 s32 i;
 
                 for (i = 0; i < 2; i++) {
@@ -998,10 +969,10 @@ void EnOt_Update(Actor* thisx, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
     Collider_UpdateCylinder(&this->actor, &this->collider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
-    EnOt_LerpColor(&this->unk_747, &this->unk_744, 0.7f);
+    func_80B5BB38(&this->unk_747, &this->unk_744, 0.7f);
 
     if (this->unk_32C & 0x400) {
-        func_80B5BAAC(&this->lightInfo, &this->unk_378, &this->unk_747, 210);
+        func_80B5BAAC(&this->lightInfo, &this->unk_378, &this->unk_747, 0xD2);
     }
 
     func_80B5E078(play, this->unk_3A4, 10);
@@ -1009,12 +980,12 @@ void EnOt_Update(Actor* thisx, PlayState* play) {
 
 void func_80B5DAEC(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
 
     this->actionFunc(this, play);
     Actor_SetFocus(&this->actor, 12.0f);
     SkelAnime_Update(&this->skelAnime);
-    EnOt_LerpColor(&this->unk_747, &this->unk_744, 0.7f);
+    func_80B5BB38(&this->unk_747, &this->unk_744, 0.7f);
     if (this->unk_32C & 0x400) {
         func_80B5BAAC(&this->lightInfo, &this->unk_378, &this->unk_747, 210);
     }
@@ -1022,7 +993,7 @@ void func_80B5DAEC(Actor* thisx, PlayState* play) {
 
 void func_80B5DB6C(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
     Player* player = GET_PLAYER(play);
 
     if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_84_10) && !(this->unk_32C & 8)) {
@@ -1062,11 +1033,11 @@ void func_80B5DB6C(Actor* thisx, PlayState* play) {
 
 void EnOt_Draw(Actor* thisx, PlayState* play) {
     s32 pad[2];
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
     Gfx* gfx;
 
     Matrix_Push();
-    func_80B5E1D8(play, this->unk_3A4, ARRAY_COUNT(this->unk_3A4));
+    func_80B5E1D8(play, this->unk_3A4, 10);
     Matrix_Pop();
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -1091,7 +1062,7 @@ void EnOt_Draw(Actor* thisx, PlayState* play) {
                       0);
     gSPDisplayList(&gfx[2], gameplay_keep_DL_029CB0);
     gDPSetPrimColor(&gfx[3], 0, 0, this->unk_747.r, this->unk_747.g, this->unk_747.b, 50);
-    MATRIX_FINALIZE_AND_LOAD(&gfx[4], play->state.gfxCtx);
+    gSPMatrix(&gfx[4], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[5], gameplay_keep_DL_029CF0);
 
     POLY_XLU_DISP = &gfx[6];
@@ -1101,9 +1072,9 @@ void EnOt_Draw(Actor* thisx, PlayState* play) {
 
 void EnOt_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     static Vec3f D_80B5E410 = { 400.0f, 600.0f, 0.0f };
-    EnOt* this = (EnOt*)thisx;
+    EnOt* this = THIS;
 
-    if (limbIndex == OBJECT_OT_LIMB_04) {
+    if (limbIndex == 4) {
         OPEN_DISPS(play->state.gfxCtx);
         Gfx* gfx = POLY_OPA_DISP;
 
@@ -1112,7 +1083,7 @@ void EnOt_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, 
         Matrix_MultVec3f(&D_80B5E410, &this->unk_74C);
 
         CLOSE_DISPS(play->state.gfxCtx);
-    } else if (limbIndex == OBJECT_OT_LIMB_01) {
+    } else if (limbIndex == 1) {
         Matrix_MultZero(&this->unk_378);
         this->unk_32C |= 0x400;
     }
@@ -1121,7 +1092,7 @@ void EnOt_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, 
 EnOtUnkStruct* func_80B5DF58(EnOtUnkStruct* arg0, u8 arg1, Vec3f* arg2, Vec3s* arg3, s32 arg4) {
     s32 i = 0;
 
-    while ((i < arg4) && arg0->unk_00) {
+    while (i < arg4 && arg0->unk_00) {
         i++;
         arg0++;
     }
@@ -1174,7 +1145,7 @@ void func_80B5E078(PlayState* play, EnOtUnkStruct* arg1, s32 arg2) {
 
 void func_80B5E1D8(PlayState* play, EnOtUnkStruct* arg1, s32 arg2) {
     s32 i;
-    s32 flag = false;
+    s32 flag = 0;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -1196,15 +1167,9 @@ void func_80B5E1D8(PlayState* play, EnOtUnkStruct* arg1, s32 arg2) {
         Matrix_Scale(arg1->unk_04, arg1->unk_04, arg1->unk_04, MTXMODE_APPLY);
 
         gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(gDropRecoveryHeartTex));
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, object_ot_DL_000078);
     }
 
     CLOSE_DISPS(play->state.gfxCtx);
-}
-
-void EnOt_Reset(void) {
-    D_80B5E880 = NULL;
-    D_80B5E884 = NULL;
-    D_80B5E888 = NULL;
 }

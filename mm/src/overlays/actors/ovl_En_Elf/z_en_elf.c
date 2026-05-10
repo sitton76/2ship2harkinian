@@ -6,7 +6,9 @@
 
 #include "z_en_elf.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_2000000)
+
+#define THIS ((EnElf*)thisx)
 
 void EnElf_Init(Actor* thisx, PlayState* play2);
 void EnElf_Destroy(Actor* thisx, PlayState* play);
@@ -30,7 +32,7 @@ void func_8088F5F4(EnElf* this, PlayState* play, s32 sparkleLife);
 void func_8089010C(Actor* thisx, PlayState* play);
 void func_808908D0(Vec3f* vec, PlayState* play, u32 action);
 
-ActorProfile En_Elf_Profile = {
+ActorInit En_Elf_InitVars = {
     /**/ ACTOR_EN_ELF,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -314,7 +316,7 @@ f32 func_8088CD3C(s32 colorFlag) {
 
 void EnElf_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
     Player* player = GET_PLAYER(play);
     s32 colorConfig;
     s32 fairyType;
@@ -462,7 +464,7 @@ void EnElf_Init(Actor* thisx, PlayState* play2) {
 
 void EnElf_Destroy(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
 
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNodeGlow);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNodeNoGlow);
@@ -882,7 +884,7 @@ void func_8088E60C(EnElf* this, PlayState* play) {
 void func_8088E850(EnElf* this, PlayState* play) {
     Vec3f nextPos;
     Player* player = GET_PLAYER(play);
-    Actor* tatlHoverActor;
+    Actor* targetFairyActor;
     f32 xScale;
     f32 distFromLinksHead;
     u32 cueChannel;
@@ -968,15 +970,15 @@ void func_8088E850(EnElf* this, PlayState* play) {
                 break;
 
             default:
-                tatlHoverActor = play->actorCtx.attention.tatlHoverActor;
-                if ((player->stateFlags1 & PLAYER_STATE1_TALKING) && (player->talkActor != NULL)) {
+                targetFairyActor = play->actorCtx.targetCtx.fairyActor;
+                if ((player->stateFlags1 & PLAYER_STATE1_40) && (player->talkActor != NULL)) {
                     Math_Vec3f_Copy(&nextPos, &player->talkActor->focus.pos);
                 } else {
-                    Math_Vec3f_Copy(&nextPos, &play->actorCtx.attention.tatlHoverPos);
+                    Math_Vec3f_Copy(&nextPos, &play->actorCtx.targetCtx.fairyPos);
                 }
                 nextPos.y += 1500.0f * this->actor.scale.y;
 
-                if (tatlHoverActor != NULL) {
+                if (targetFairyActor != NULL) {
                     func_8088DB4C(this, &nextPos, 0.0f, 30.0f, 0.2f);
                     if (this->actor.speed >= 5.0f) {
                         func_8088F5F4(this, play, 0x10);
@@ -1037,7 +1039,7 @@ void func_8088EF18(Color_RGBAf* dest, Color_RGBAf* newColor, Color_RGBAf* curCol
 }
 
 void func_8088EFA4(EnElf* this, PlayState* play) {
-    Actor* tatlHoverActor = play->actorCtx.attention.tatlHoverActor;
+    Actor* targetFairyActor = play->actorCtx.targetCtx.fairyActor;
     Player* player = GET_PLAYER(play);
     f32 transitionRate;
 
@@ -1062,35 +1064,35 @@ void func_8088EFA4(EnElf* this, PlayState* play) {
             this->outerColor.b = 80.0f;
             this->outerColor.a = 0.0f;
         }
-    } else if (play->actorCtx.attention.tatlMoveProgressFactor != 0.0f) {
+    } else if (play->actorCtx.targetCtx.fairyMoveProgressFactor != 0.0f) {
         this->unk_268 = 0;
         this->unk_238 = 1.0f;
         if (!this->unk_269) {
             Actor_PlaySfx(&this->actor, NA_SE_EV_BELL_DASH_NORMAL);
         }
     } else if (this->unk_268 == 0) {
-        if ((tatlHoverActor == NULL) ||
-            (Math_Vec3f_DistXYZ(&this->actor.world.pos, &play->actorCtx.attention.tatlHoverPos) < 50.0f)) {
+        if ((targetFairyActor == NULL) ||
+            (Math_Vec3f_DistXYZ(&this->actor.world.pos, &play->actorCtx.targetCtx.fairyPos) < 50.0f)) {
             this->unk_268 = 1;
         }
     } else if (this->unk_238 != 0.0f) {
         if (Math_StepToF(&this->unk_238, 0.0f, 0.25f)) {
-            this->innerColor = play->actorCtx.attention.tatlInnerColor;
-            this->outerColor = play->actorCtx.attention.tatlOuterColor;
+            this->innerColor = play->actorCtx.targetCtx.fairyInnerColor;
+            this->outerColor = play->actorCtx.targetCtx.fairyOuterColor;
         } else {
             transitionRate = 0.25f / this->unk_238;
-            func_8088EF18(&this->innerColor, &play->actorCtx.attention.tatlInnerColor, &this->innerColor,
+            func_8088EF18(&this->innerColor, &play->actorCtx.targetCtx.fairyInnerColor, &this->innerColor,
                           transitionRate);
-            func_8088EF18(&this->outerColor, &play->actorCtx.attention.tatlOuterColor, &this->outerColor,
+            func_8088EF18(&this->outerColor, &play->actorCtx.targetCtx.fairyOuterColor, &this->outerColor,
                           transitionRate);
         }
     }
 
     if (this->fairyFlags & 1) {
-        if ((tatlHoverActor == NULL) || (player->focusActor == NULL)) {
+        if ((targetFairyActor == NULL) || (player->lockOnActor == NULL)) {
             this->fairyFlags ^= 1;
         }
-    } else if ((tatlHoverActor != NULL) && (player->focusActor != NULL)) {
+    } else if ((targetFairyActor != NULL) && (player->lockOnActor != NULL)) {
         u8 temp = this->unk_269;
         u16 targetSfxId = (this->unk_269 == 0) ? NA_SE_NONE : NA_SE_NONE;
 
@@ -1103,7 +1105,7 @@ void func_8088EFA4(EnElf* this, PlayState* play) {
 
 void func_8088F214(EnElf* this, PlayState* play) {
     s32 sp34;
-    Actor* tatlHoverActor;
+    Actor* targetFairyActor;
     Player* player = GET_PLAYER(play);
     s32 pad;
 
@@ -1134,12 +1136,12 @@ void func_8088F214(EnElf* this, PlayState* play) {
         sp34 = 1;
         Actor_PlaySfx_Flagged(&this->actor, NA_SE_EV_BELL_ANGER - SFX_FLAG);
     } else {
-        tatlHoverActor = play->actorCtx.attention.tatlHoverActor;
+        targetFairyActor = play->actorCtx.targetCtx.fairyActor;
         if (player->stateFlags1 & PLAYER_STATE1_400) {
             sp34 = 10;
             this->unk_25C = 100;
-        } else if ((tatlHoverActor == NULL) || (tatlHoverActor->category == ACTORCAT_NPC)) {
-            if (tatlHoverActor != NULL) {
+        } else if ((targetFairyActor == NULL) || (targetFairyActor->category == ACTORCAT_NPC)) {
+            if (targetFairyActor != NULL) {
                 this->unk_25C = 100;
                 player->stateFlags2 |= PLAYER_STATE2_100000;
                 sp34 = 0;
@@ -1149,7 +1151,7 @@ void func_8088F214(EnElf* this, PlayState* play) {
                         if (this->unk_25C != 0) {
                             this->unk_25C--;
                             sp34 = 0;
-                        } else if (!(player->stateFlags1 & PLAYER_STATE1_TALKING)) {
+                        } else if (!(player->stateFlags1 & PLAYER_STATE1_40)) {
                             if (this->unk_269 == 0) {
                                 Actor_PlaySfx(&this->actor, NA_SE_EV_NAVY_VANISH);
                             }
@@ -1212,7 +1214,7 @@ void func_8088F214(EnElf* this, PlayState* play) {
                     if (this->unk_269 == 0) {
                         Actor_PlaySfx(&this->actor, NA_SE_EV_BELL_DASH_NORMAL);
                     }
-                } else if (player->stateFlags1 & PLAYER_STATE1_TALKING) {
+                } else if (player->stateFlags1 & PLAYER_STATE1_40) {
                     player->stateFlags2 |= PLAYER_STATE2_100000;
                     sp34 = 0;
                     this->unk_25C = 0;
@@ -1239,8 +1241,8 @@ void func_8088F214(EnElf* this, PlayState* play) {
 }
 
 void func_8088F5F4(EnElf* this, PlayState* play, s32 sparkleLife) {
-    static Vec3f sSparkleVelocity = { 0.0f, -0.05f, 0.0f };
-    static Vec3f sSparkleAccel = { 0.0f, -0.025f, 0.0f };
+    static Vec3f sparkleVelocity = { 0.0f, -0.05f, 0.0f };
+    static Vec3f sparkleAccel = { 0.0f, -0.025f, 0.0f };
     s32 pad;
     Vec3f sparklePos;
     Color_RGBA8 primColor;
@@ -1259,13 +1261,13 @@ void func_8088F5F4(EnElf* this, PlayState* play, s32 sparkleLife) {
         envColor.g = this->outerColor.g;
         envColor.b = this->outerColor.b;
 
-        EffectSsKirakira_SpawnDispersed(play, &sparklePos, &sSparkleVelocity, &sSparkleAccel, &primColor, &envColor,
-                                        1000, sparkleLife);
+        EffectSsKirakira_SpawnDispersed(play, &sparklePos, &sparkleVelocity, &sparkleAccel, &primColor, &envColor, 1000,
+                                        sparkleLife);
     }
 }
 
 void func_8088F9E4(Actor* thisx, PlayState* play) {
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
     s32 bgId;
 
     thisx->floorHeight =
@@ -1278,13 +1280,13 @@ void func_8088FA38(EnElf* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
     if (this->fairyFlags & 0x10) {
-        refPos = play->actorCtx.attention.tatlHoverPos;
+        refPos = play->actorCtx.targetCtx.fairyPos;
 
         if (this->unk_234 != NULL) {
             refPos = this->unk_234->world.pos;
         } else {
-            if ((player->focusActor == NULL) || (&player->actor == player->focusActor) ||
-                (&this->actor == player->focusActor) || (this->unk_264 & 4)) {
+            if ((player->lockOnActor == NULL) || (&player->actor == player->lockOnActor) ||
+                (&this->actor == player->lockOnActor) || (this->unk_264 & 4)) {
                 refPos.x =
                     player->bodyPartsPos[PLAYER_BODYPART_HEAD].x + (Math_SinS(player->actor.shape.rot.y) * 20.0f);
                 refPos.y = player->bodyPartsPos[PLAYER_BODYPART_HEAD].y + 5.0f;
@@ -1357,7 +1359,7 @@ void func_8088FDCC(EnElf* this) {
 
 void func_8088FE64(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
 
     func_8088FA38(this, play);
 
@@ -1388,7 +1390,7 @@ void func_8088FE64(Actor* thisx, PlayState* play2) {
             }
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             if (Message_ShouldAdvance(play)) {
                 switch (play->msgCtx.currentTextId) {
                     case 0x240:
@@ -1419,7 +1421,7 @@ void func_8088FE64(Actor* thisx, PlayState* play2) {
                             case 3:
                                 if (!gSaveContext.save.isNight) {
                                     Message_ContinueTextbox(play, 0x248);
-                                } else if ((CURRENT_TIME < CLOCK_TIME(6, 0)) &&
+                                } else if ((gSaveContext.save.time < CLOCK_TIME(6, 0)) &&
                                            CHECK_WEEKEVENTREG(WEEKEVENTREG_74_20)) {
                                     Message_ContinueTextbox(play, 0x225);
                                 } else {
@@ -1451,7 +1453,7 @@ void func_8088FE64(Actor* thisx, PlayState* play2) {
 
 void func_8089010C(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
     Player* player = GET_PLAYER(play);
     u16 temp_v0 = QuestHint_GetTatlTextId(play);
 
@@ -1460,7 +1462,7 @@ void func_8089010C(Actor* thisx, PlayState* play) {
         gSaveContext.save.saveInfo.playerData.tatlTimer = 0;
     }
 
-    if ((player->tatlTextId == 0) && (player->focusActor == NULL)) {
+    if ((player->tatlTextId == 0) && (player->lockOnActor == NULL)) {
         if ((gSaveContext.save.saveInfo.playerData.tatlTimer >= 600) &&
             (gSaveContext.save.saveInfo.playerData.tatlTimer <= 3000)) {
             player->tatlTextId = QuestHint_GetTatlTextId(play);
@@ -1468,10 +1470,10 @@ void func_8089010C(Actor* thisx, PlayState* play) {
     }
 
     if (player->tatlTextId < 0) {
-        thisx->flags |= ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        thisx->flags |= ACTOR_FLAG_10000;
     }
 
-    if (Actor_TalkOfferAccepted(thisx, &play->state)) {
+    if (Actor_ProcessTalkRequest(thisx, &play->state)) {
         Audio_PlaySfx_AtPosWithReverb(&gSfxDefaultPos, NA_SE_VO_NA_LISTEN, 0x20);
         thisx->focus.pos = thisx->world.pos;
 
@@ -1485,7 +1487,7 @@ void func_8089010C(Actor* thisx, PlayState* play) {
         thisx->update = func_8088FE64;
         func_8088C51C(this, 3);
         if (this->elfMsg != NULL) {
-            this->elfMsg->flags |= ACTOR_FLAG_TALK;
+            this->elfMsg->flags |= ACTOR_FLAG_TALK_REQUESTED;
             thisx->csId = this->elfMsg->csId;
             if (thisx->csId != CS_ID_NONE) {
                 func_8088FD04(this);
@@ -1497,7 +1499,7 @@ void func_8089010C(Actor* thisx, PlayState* play) {
         } else {
             thisx->csId = CS_ID_NONE;
         }
-        thisx->flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        thisx->flags &= ~ACTOR_FLAG_10000;
     } else if (this->unk_264 & 4) {
         thisx->focus.pos = thisx->world.pos;
         this->fairyFlags |= 0x10;
@@ -1534,7 +1536,7 @@ void func_8089010C(Actor* thisx, PlayState* play) {
 }
 
 void EnElf_Update(Actor* thisx, PlayState* play) {
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -1548,9 +1550,9 @@ void EnElf_Update(Actor* thisx, PlayState* play) {
 
 s32 EnElf_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
                            Gfx** gfx) {
-    static Vec3f sZeroVec = { 0.0f, 0.0f, 0.0f };
+    static Vec3f zeroVec = { 0.0f, 0.0f, 0.0f };
     s32 pad;
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
     Vec3f sp34;
     f32 scale;
 
@@ -1561,7 +1563,7 @@ s32 EnElf_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
         }
         scale *= this->actor.scale.x * (1.0f / 0.008f);
 
-        Matrix_MultVec3f(&sZeroVec, &sp34);
+        Matrix_MultVec3f(&zeroVec, &sp34);
         Matrix_Translate(sp34.x, sp34.y, sp34.z, MTXMODE_NEW);
         Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
     }
@@ -1577,7 +1579,7 @@ s32 EnElf_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
 }
 
 void EnElf_Draw(Actor* thisx, PlayState* play) {
-    EnElf* this = (EnElf*)thisx;
+    EnElf* this = THIS;
     Player* player = GET_PLAYER(play);
     s32 pad;
     s32 pad2;

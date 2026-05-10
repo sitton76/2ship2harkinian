@@ -6,7 +6,9 @@
 
 #include "z_en_ge2.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_MINIMAP_ICON_ENABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_80000000)
+
+#define THIS ((EnGe2*)thisx)
 
 void EnGe2_Init(Actor* thisx, PlayState* play);
 void EnGe2_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void EnGe2_GuardStationary(EnGe2* this, PlayState* play);
 
 s32 EnGe2_ValidatePictograph(PlayState* play, Actor* thisx);
 
-ActorProfile En_Ge2_Profile = {
+ActorInit En_Ge2_InitVars = {
     /**/ ACTOR_EN_GE2,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -54,7 +56,7 @@ typedef enum {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -62,11 +64,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x038BFBB3, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 30, 60, 0, { 0, 0, 0 } },
@@ -74,7 +76,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 void EnGe2_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGe2* this = (EnGe2*)thisx;
+    EnGe2* this = THIS;
 
     ActorShape_Init(&this->picto.actor.shape, 0.0f, ActorShadow_DrawCircle, 36.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gGerudoPurpleSkel, NULL, this->jointTable, this->morphTable,
@@ -84,7 +86,7 @@ void EnGe2_Init(Actor* thisx, PlayState* play) {
     Collider_InitAndSetCylinder(play, &this->collider, &this->picto.actor, &sCylinderInit);
     this->picto.actor.colChkInfo.mass = MASS_IMMOVABLE;
     Actor_SetScale(&this->picto.actor, 0.01f);
-    this->picto.actor.cullingVolumeDistance = 1200.0f;
+    this->picto.actor.uncullZoneForward = 1200.0f;
 
     if (this->picto.actor.world.rot.z == 0) {
         this->verticalDetectRange = 40.0f;
@@ -95,7 +97,7 @@ void EnGe2_Init(Actor* thisx, PlayState* play) {
     this->picto.actor.world.rot.x = this->picto.actor.shape.rot.x = 0;
     this->picto.actor.world.rot.z = this->picto.actor.shape.rot.z = 0;
 
-    this->picto.actor.attentionRangeType = ATTENTION_RANGE_6;
+    this->picto.actor.targetMode = TARGET_MODE_6;
     this->stateFlags = 0;
     this->detectedStatus = GERUDO_PURPLE_DETECTION_UNDETECTED;
     this->cueId = -1;
@@ -109,9 +111,9 @@ void EnGe2_Init(Actor* thisx, PlayState* play) {
 
     EnGe2_SetupPath(this, play);
 
-    this->picto.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
-    if (play->actorCtx.flags & ACTORCTX_FLAG_TELESCOPE_ON) {
-        this->picto.actor.flags |= (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED);
+    this->picto.actor.flags |= ACTOR_FLAG_10;
+    if (play->actorCtx.flags & ACTORCTX_FLAG_1) {
+        this->picto.actor.flags |= (ACTOR_FLAG_10 | ACTOR_FLAG_20);
     }
 
     switch (GERUDO_PURPLE_GET_TYPE(&this->picto.actor)) {
@@ -120,7 +122,7 @@ void EnGe2_Init(Actor* thisx, PlayState* play) {
                              Animation_GetLastFrame(&gGerudoPurpleLookingAboutAnim), ANIMMODE_LOOP, 0.0f);
             this->actionFunc = EnGe2_GuardStationary;
             this->picto.actor.speed = 0.0f;
-            this->picto.actor.cullingVolumeDistance = 4000.0f;
+            this->picto.actor.uncullZoneForward = 4000.0f;
             break;
 
         case GERUDO_PURPLE_TYPE_AVEIL_GUARD:
@@ -462,7 +464,7 @@ void EnGe2_KnockedOut(EnGe2* this, PlayState* play) {
         this->detectedStatus = GERUDO_PURPLE_DETECTION_UNDETECTED;
         CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
         this->stateFlags &= ~GERUDO_PURPLE_STATE_KO;
-        this->picto.actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->picto.actor.flags |= ACTOR_FLAG_TARGETABLE;
     }
 }
 
@@ -500,9 +502,9 @@ void EnGe2_PatrolDuties(EnGe2* this, PlayState* play) {
                              Animation_GetLastFrame(&gGerudoPurpleLookingAboutAnim), ANIMMODE_LOOP, -8.0f);
         }
     } else if (this->collider.base.acFlags & AC_HIT) {
-        if ((this->collider.elem.acHitElem != NULL) &&
-            (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & DMG_DEKU_NUT)) {
-            Actor_SetColorFilter(&this->picto.actor, COLORFILTER_COLORFLAG_BLUE, 120, COLORFILTER_BUFFLAG_OPA, 400);
+        if ((this->collider.info.acHitInfo != NULL) &&
+            (this->collider.info.acHitInfo->toucher.dmgFlags & DMG_DEKU_NUT)) {
+            Actor_SetColorFilter(&this->picto.actor, 0, 120, 0, 400);
             this->picto.actor.speed = 0.0f;
             this->actionFunc = EnGe2_Stunned;
             this->stateFlags |= GERUDO_PURPLE_STATE_STUNNED;
@@ -513,7 +515,7 @@ void EnGe2_PatrolDuties(EnGe2* this, PlayState* play) {
             this->picto.actor.speed = 0.0f;
             this->actionFunc = EnGe2_KnockedOut;
             Actor_PlaySfx(&this->picto.actor, NA_SE_EN_PIRATE_DEAD);
-            this->picto.actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->picto.actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             this->stateFlags |= GERUDO_PURPLE_STATE_KO;
         }
     } else if (this->picto.actor.home.rot.x == 0) {
@@ -697,7 +699,7 @@ void EnGe2_GuardStationary(EnGe2* this, PlayState* play) {
 
 void EnGe2_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGe2* this = (EnGe2*)thisx;
+    EnGe2* this = THIS;
 
     if (!(this->stateFlags & GERUDO_PURPLE_STATE_DISABLE_MOVEMENT)) {
         Actor_MoveWithGravity(&this->picto.actor);
@@ -711,7 +713,7 @@ void EnGe2_Update(Actor* thisx, PlayState* play) {
         this->actionFunc = EnGe2_PerformCutsceneActions;
         this->stateFlags &= ~GERUDO_PURPLE_STATE_KO;
         this->stateFlags &= ~GERUDO_PURPLE_STATE_PATH_REVERSE;
-        this->picto.actor.flags |= ACTOR_FLAG_DRAW_CULLING_DISABLED;
+        this->picto.actor.flags |= ACTOR_FLAG_20;
         this->picto.actor.speed = 0.0f;
     }
 
@@ -741,7 +743,7 @@ s32 EnGe2_ValidatePictograph(PlayState* play, Actor* thisx) {
 }
 
 s32 EnGe2_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnGe2* this = (EnGe2*)thisx;
+    EnGe2* this = THIS;
 
     if (limbIndex == GERUDO_PURPLE_NECK_LIMB) {
         rot->x += this->headRot.y;
@@ -765,7 +767,7 @@ void EnGe2_Draw(Actor* thisx, PlayState* play) {
         gGerudoPurpleEyeClosedTex,
     };
     s32 pad;
-    EnGe2* this = (EnGe2*)thisx;
+    EnGe2* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

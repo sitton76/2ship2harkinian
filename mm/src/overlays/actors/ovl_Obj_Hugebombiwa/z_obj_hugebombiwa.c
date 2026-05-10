@@ -10,7 +10,9 @@
 #include "objects/object_bombiwa/object_bombiwa.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjHugebombiwa*)thisx)
 
 void ObjHugebombiwa_Init(Actor* thisx, PlayState* play);
 void ObjHugebombiwa_Destroy(Actor* thisx, PlayState* play2);
@@ -27,7 +29,7 @@ void func_80A55310(ObjHugebombiwa* this);
 void func_80A55564(ObjHugebombiwa* this, PlayState* play);
 void func_80A55B34(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Hugebombiwa_Profile = {
+ActorInit Obj_Hugebombiwa_InitVars = {
     /**/ ACTOR_OBJ_HUGEBOMBIWA,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -41,7 +43,7 @@ ActorProfile Obj_Hugebombiwa_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -49,11 +51,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x81C37BB6, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 180, 226, 0, { 0, 0, 0 } },
@@ -310,7 +312,7 @@ s32 func_80A54A0C(ObjHugebombiwa* this) {
     s32 params;
     Vec3f sp20;
 
-    if ((this->collider.base.acFlags & AC_HIT) && (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x80000000)) {
+    if ((this->collider.base.acFlags & AC_HIT) && (this->collider.info.acHitInfo->toucher.dmgFlags & 0x80000000)) {
         ac = this->collider.base.ac;
         params = ENHUGEBOMBIWA_GET_100(&this->actor);
 
@@ -327,14 +329,14 @@ s32 func_80A54A0C(ObjHugebombiwa* this) {
 }
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 3700, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 900, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 900, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 3700, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 900, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 900, ICHAIN_STOP),
 };
 
 void ObjHugebombiwa_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjHugebombiwa* this = (ObjHugebombiwa*)thisx;
+    ObjHugebombiwa* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     Collider_InitCylinder(play, &this->collider);
@@ -362,7 +364,7 @@ void ObjHugebombiwa_Init(Actor* thisx, PlayState* play) {
 
 void ObjHugebombiwa_Destroy(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjHugebombiwa* this = (ObjHugebombiwa*)thisx;
+    ObjHugebombiwa* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -389,9 +391,9 @@ void func_80A54C04(ObjHugebombiwa* this, PlayState* play) {
     if (this->unk_4B3 > 0) {
         this->unk_4B3--;
         if (this->unk_4B3 == 0) {
-            this->collider.base.colMaterial = COL_MATERIAL_HARD;
+            this->collider.base.colType = COLTYPE_HARD;
         } else {
-            this->collider.base.colMaterial = COL_MATERIAL_NONE;
+            this->collider.base.colType = COLTYPE_NONE;
         }
     }
 
@@ -483,7 +485,7 @@ void func_80A55064(ObjHugebombiwa* this, PlayState* play) {
     Vec3f spA4;
     s32 pad2;
     CollisionPoly* sp9C;
-    s32 bgId;
+    s32 sp98;
     f32 temp_f0;
     EnHugebombiwaStruct* ptr;
     s16 phi_s3 = this->actor.shape.rot.y - 0x4000;
@@ -509,7 +511,7 @@ void func_80A55064(ObjHugebombiwa* this, PlayState* play) {
         spA4.y = ptr->unk_0C.y + 60.0f;
         spA4.z = ptr->unk_0C.z;
 
-        temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp9C, &bgId, &this->actor, &spA4);
+        temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp9C, &sp98, &this->actor, &spA4);
         if ((temp_f0 <= BGCHECK_Y_MIN + 10.0f) || ((ptr->unk_0C.y - (350.0f * ptr->unk_00.y)) < temp_f0)) {
             this->unk_4B0++;
             ptr->unk_24 = 1;
@@ -579,7 +581,7 @@ void func_80A55564(ObjHugebombiwa* this, PlayState* play) {
     Vec3f spA4;
     s32 pad;
     CollisionPoly* sp9C;
-    s32 bgId;
+    s32 sp98;
     f32 temp_f0;
     s16 phi_s3 = this->actor.shape.rot.y - 0x4000;
 
@@ -605,7 +607,7 @@ void func_80A55564(ObjHugebombiwa* this, PlayState* play) {
         spA4.y = ptr->unk_0C.y + 60.0f;
         spA4.z = ptr->unk_0C.z;
 
-        temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp9C, &bgId, &this->actor, &spA4);
+        temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp9C, &sp98, &this->actor, &spA4);
         if ((temp_f0 <= BGCHECK_Y_MIN + 10.0f) || (ptr->unk_0C.y < temp_f0)) {
             this->unk_4B0++;
             ptr->unk_24 = 1;
@@ -624,13 +626,13 @@ void func_80A55564(ObjHugebombiwa* this, PlayState* play) {
 }
 
 void ObjHugebombiwa_Update(Actor* thisx, PlayState* play) {
-    ObjHugebombiwa* this = (ObjHugebombiwa*)thisx;
+    ObjHugebombiwa* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void ObjHugebombiwa_Draw(Actor* thisx, PlayState* play) {
-    ObjHugebombiwa* this = (ObjHugebombiwa*)thisx;
+    ObjHugebombiwa* this = THIS;
     s32 pad[8];
     f32 sp38;
 
@@ -641,13 +643,13 @@ void ObjHugebombiwa_Draw(Actor* thisx, PlayState* play) {
             Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
             gSPSegment(POLY_OPA_DISP++, 0x08, D_801AEFA0);
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gDPSetPrimColor(POLY_OPA_DISP++, 0, 0xFF, 255, 255, 255, 255);
             gSPDisplayList(POLY_OPA_DISP++, object_bombiwa_DL_002F60);
 
             Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, object_bombiwa_DL_003110);
 
         } else if (this->actor.projectedPos.z < 4500.0f) {
@@ -655,7 +657,7 @@ void ObjHugebombiwa_Draw(Actor* thisx, PlayState* play) {
             Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
             gSPSegment(POLY_XLU_DISP++, 0x08, D_801AEF88);
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0xFF, 255, 255, 255, (s32)sp38);
             gSPDisplayList(POLY_XLU_DISP++, object_bombiwa_DL_002F60);
         }
@@ -674,7 +676,7 @@ void ObjHugebombiwa_Draw(Actor* thisx, PlayState* play) {
                 Matrix_SetTranslateRotateYXZ(ptr->unk_0C.x, ptr->unk_0C.y, ptr->unk_0C.z, &ptr->unk_1C);
                 Matrix_Scale(ptr->unk_00.x, ptr->unk_00.x, ptr->unk_00.x, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+                gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(gfx++, object_bombiwa_DL_001990);
                 FrameInterpolation_RecordCloseChild();
             }
@@ -687,7 +689,7 @@ void ObjHugebombiwa_Draw(Actor* thisx, PlayState* play) {
 }
 
 void func_80A55B34(Actor* thisx, PlayState* play) {
-    ObjHugebombiwa* this = (ObjHugebombiwa*)thisx;
+    ObjHugebombiwa* this = THIS;
     s32 i;
     Gfx* gfx;
     EnHugebombiwaStruct* ptr;
@@ -716,7 +718,7 @@ void func_80A55B34(Actor* thisx, PlayState* play) {
         Matrix_Scale(ptr->unk_00.x, ptr->unk_00.y, ptr->unk_00.z, MTXMODE_APPLY);
         Matrix_Translate(0.0f, -325.0f, 0.0f, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+        gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(gfx++, object_bombiwa_DL_0009E0);
         FrameInterpolation_RecordCloseChild();
     }

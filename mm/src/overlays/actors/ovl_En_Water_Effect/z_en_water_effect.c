@@ -18,9 +18,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnWaterEffect*)thisx)
 
 void EnWaterEffect_Init(Actor* thisx, PlayState* play);
 void EnWaterEffect_Destroy(Actor* thisx, PlayState* play);
@@ -32,7 +32,7 @@ void func_80A5A184(Actor* thisx, PlayState* play2);
 void func_80A5A534(Actor* thisx, PlayState* play);
 void func_80A5A6B8(Actor* thisx, PlayState* play2);
 
-ActorProfile En_Water_Effect_Profile = {
+ActorInit En_Water_Effect_InitVars = {
     /**/ ACTOR_EN_WATER_EFFECT,
     /**/ ACTORCAT_BOSS,
     /**/ FLAGS,
@@ -44,7 +44,8 @@ ActorProfile En_Water_Effect_Profile = {
     /**/ EnWaterEffect_Draw,
 };
 
-static Vec3f sZeroVec = { 0.0f, 0.0f, 0.0f };
+static Vec3f D_80A5AFB0 = { 0.0f, 0.0f, 0.0f };
+static Vec3f D_80A5AFBC = { 0.0f, -1.0f, 0.0f };
 
 void func_80A587A0(EnWaterEffect* this, Vec3f* arg1, u8 arg2) {
     s16 i;
@@ -54,8 +55,8 @@ void func_80A587A0(EnWaterEffect* this, Vec3f* arg1, u8 arg2) {
         if (!ptr->unk_00) {
             ptr->unk_00 = true;
             ptr->unk_04 = *arg1;
-            ptr->unk_10 = sZeroVec;
-            ptr->unk_1C = sZeroVec;
+            ptr->unk_10 = D_80A5AFB0;
+            ptr->unk_1C = D_80A5AFB0;
             ptr->unk_2C.x = 0.1f;
             ptr->unk_2C.y = 0.0f;
             ptr->unk_2C.z = Rand_ZeroFloat(M_PIf * 2);
@@ -67,7 +68,7 @@ void func_80A587A0(EnWaterEffect* this, Vec3f* arg1, u8 arg2) {
 }
 
 void func_80A58908(EnWaterEffect* this, Vec3f* arg1, Vec3f* arg2, u8 arg3) {
-    Vec3f sp2C = { 0.0f, -1.0f, 0.0f };
+    Vec3f sp2C = D_80A5AFBC;
     EnWaterEffectStruct* ptr = &this->unk_144[0];
     s16 i;
 
@@ -89,9 +90,9 @@ void func_80A58908(EnWaterEffect* this, Vec3f* arg1, Vec3f* arg2, u8 arg3) {
 
 void EnWaterEffect_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
 
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->unk_DC4 = Rand_ZeroFloat(100.0f);
 
     if (this->actor.params == ENWATEREFFECT_TYPE_FALLING_ROCK_SPAWNER) {
@@ -144,7 +145,7 @@ void EnWaterEffect_Destroy(Actor* thisx, PlayState* play) {
 
 void EnWaterEffect_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     Player* player = GET_PLAYER(play);
     EnWaterEffectStruct* ptr = &this->unk_144[0];
     s16 i;
@@ -218,8 +219,8 @@ void EnWaterEffect_Update(Actor* thisx, PlayState* play2) {
                             ptr->unk_00 = 3;
                             ptr->unk_2C.x = 0.1f;
                             ptr->unk_2C.y = 0.6f;
-                            ptr->unk_10 = sZeroVec;
-                            ptr->unk_1C = sZeroVec;
+                            ptr->unk_10 = D_80A5AFB0;
+                            ptr->unk_1C = D_80A5AFB0;
                             ptr->unk_3C = 200;
                             ptr->unk_28 = 9;
                             Math_Vec3f_Copy(&sp98, &ptr->unk_04);
@@ -256,8 +257,8 @@ void EnWaterEffect_Update(Actor* thisx, PlayState* play2) {
                             ptr->unk_00 = 3;
                             ptr->unk_2C.x = 0.05f;
                             ptr->unk_2C.y = 0.2f;
-                            ptr->unk_10 = sZeroVec;
-                            ptr->unk_1C = sZeroVec;
+                            ptr->unk_10 = D_80A5AFB0;
+                            ptr->unk_1C = D_80A5AFB0;
                             ptr->unk_3C = 150;
                             ptr->unk_28 = Rand_ZeroFloat(5.0f) + 7.0f;
                         } else {
@@ -281,7 +282,7 @@ void EnWaterEffect_Update(Actor* thisx, PlayState* play2) {
 void EnWaterEffect_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
     GraphicsContext* gfxCtx = play->state.gfxCtx;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     s32 pad;
     EnWaterEffectStruct* backupPtr = &this->unk_144[0];
     EnWaterEffectStruct* ptr = backupPtr;
@@ -317,7 +318,7 @@ void EnWaterEffect_Draw(Actor* thisx, PlayState* play2) {
             Matrix_Scale(ptr->unk_2C.x, ptr->unk_2C.y, 1.0f, MTXMODE_APPLY);
             Matrix_RotateZF(ptr->unk_2C.z, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_0042B0);
             FrameInterpolation_RecordCloseChild();
         }
@@ -345,7 +346,7 @@ void EnWaterEffect_Draw(Actor* thisx, PlayState* play2) {
             Matrix_Scale(ptr->unk_2C.x, 1.0f, ptr->unk_2C.x, MTXMODE_APPLY);
             Matrix_RotateYF(ptr->unk_2C.z, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_0042F8);
             FrameInterpolation_RecordCloseChild();
         }
@@ -363,8 +364,8 @@ void func_80A599E8(EnWaterEffect* this, Vec3f* arg1, u8 arg2) {
             ptr->unk_00 = 4;
             ptr->unk_04 = *arg1;
 
-            ptr->unk_1C = sZeroVec;
-            ptr->unk_10 = sZeroVec;
+            ptr->unk_1C = D_80A5AFB0;
+            ptr->unk_10 = D_80A5AFB0;
 
             if ((arg2 == 0) || (arg2 == 2)) {
                 ptr->unk_1C.y = -1.0f;
@@ -396,7 +397,7 @@ void func_80A599E8(EnWaterEffect* this, Vec3f* arg1, u8 arg2) {
 
 void func_80A59C04(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     s16 i;
     s16 j;
     f32 temp_f0_2;
@@ -442,7 +443,7 @@ void func_80A59C04(Actor* thisx, PlayState* play2) {
             ptr->unk_04.x += ptr->unk_10.x;
             ptr->unk_04.y += ptr->unk_10.y;
             ptr->unk_04.z += ptr->unk_10.z;
-            ptr->unk_10.y += ptr->unk_1C.y;
+            ptr->unk_10.y = ptr->unk_10.y + ptr->unk_1C.y;
 
             if (ptr->unk_00 == 4) {
                 if (ptr->unk_2A > 0) {
@@ -481,12 +482,12 @@ void func_80A59C04(Actor* thisx, PlayState* play2) {
                         (fabsf(ptr->unk_04.z - player->actor.world.pos.z) < 20.0f) &&
                         (fabsf(ptr->unk_04.y - (player->actor.world.pos.y + 25.0f)) < 30.0f)) {
                         phi_s5 = true;
-                        if ((player->transformation != PLAYER_FORM_GORON) && !player->bodyIsBurning) {
+                        if ((player->transformation != PLAYER_FORM_GORON) && !player->isBurning) {
                             func_800B8D50(play, &this->actor, 2.0f, Rand_ZeroFloat(0x10000), 0.0f, 0x10);
-                            for (j = 0; j < ARRAY_COUNT(player->bodyFlameTimers); j++) {
-                                player->bodyFlameTimers[j] = Rand_S16Offset(0, 200);
+                            for (j = 0; j < ARRAY_COUNT(player->flameTimers); j++) {
+                                player->flameTimers[j] = Rand_S16Offset(0, 200);
                             }
-                            player->bodyIsBurning = true;
+                            player->isBurning = true;
                             Player_PlaySfx(player, player->ageProperties->voiceSfxIdOffset + NA_SE_VO_LI_DEMO_DAMAGE);
                         }
                     }
@@ -521,7 +522,7 @@ void func_80A59C04(Actor* thisx, PlayState* play2) {
 
 void func_80A5A184(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     GraphicsContext* gfxCtx = play->state.gfxCtx;
     EnWaterEffectStruct* ptr = &this->unk_144[0];
     u8 flag = false;
@@ -544,8 +545,8 @@ void func_80A5A184(Actor* thisx, PlayState* play2) {
 
             gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, (u8)ptr->unk_38, 0, 0, (u8)ptr->unk_3C);
             gSPSegment(POLY_XLU_DISP++, 0x08,
-                       Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (ptr->unk_01 * -20) & 0x1FF,
-                                          0x20, 0x80, 0, 0, 0, -20));
+                       Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (ptr->unk_01 * -20) & 0x1FF,
+                                        0x20, 0x80));
 
             Matrix_Translate(ptr->unk_04.x, ptr->unk_04.y, ptr->unk_04.z, MTXMODE_NEW);
 
@@ -561,7 +562,7 @@ void func_80A5A184(Actor* thisx, PlayState* play2) {
                 Matrix_RotateYF(M_PIf, MTXMODE_APPLY);
             }
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_0043E8);
 
             if ((ptr->unk_2A & 1) == 0) {
@@ -569,7 +570,8 @@ void func_80A5A184(Actor* thisx, PlayState* play2) {
                 Matrix_RotateXS(ptr->unk_28, MTXMODE_APPLY);
                 Matrix_Scale(ptr->unk_2C.z, ptr->unk_2C.z, ptr->unk_2C.z, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_OPA_DISP++, gameplay_keep_DL_06AB30);
             }
             FrameInterpolation_RecordCloseChild();
@@ -582,7 +584,7 @@ void func_80A5A184(Actor* thisx, PlayState* play2) {
 }
 
 void func_80A5A534(Actor* thisx, PlayState* play) {
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     s32 i;
 
     if (this->unk_E38 < 1.0f) {
@@ -619,7 +621,7 @@ void func_80A5A534(Actor* thisx, PlayState* play) {
 
 void func_80A5A6B8(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnWaterEffect* this = (EnWaterEffect*)thisx;
+    EnWaterEffect* this = THIS;
     EnWaterEffectStruct* ptr = &this->unk_144[0];
     u8 phi_s4 = false;
     s16 i;
@@ -645,7 +647,7 @@ void func_80A5A6B8(Actor* thisx, PlayState* play2) {
             AnimatedMat_Draw(play, Lib_SegmentedToVirtual(object_water_effect_Matanimheader_000DE0));
             Matrix_Scale(this->unk_DC8[1].y, this->unk_DC8[1].z, this->unk_DC8[1].y, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 255, (u8)this->unk_E2C);
             gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_000420);
             FrameInterpolation_RecordCloseChild();
@@ -659,7 +661,7 @@ void func_80A5A6B8(Actor* thisx, PlayState* play2) {
             AnimatedMat_Draw(play, Lib_SegmentedToVirtual(object_water_effect_Matanimheader_000E0C));
             Matrix_Scale(this->unk_DC8[2].y, this->unk_DC8[2].z, this->unk_DC8[2].y, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 255, (u8)this->unk_E30);
             gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_000730);
             FrameInterpolation_RecordCloseChild();
@@ -676,7 +678,7 @@ void func_80A5A6B8(Actor* thisx, PlayState* play2) {
         AnimatedMat_Draw(play, Lib_SegmentedToVirtual(object_water_effect_Matanimheader_000E40));
         Matrix_Scale(this->unk_DC8[3].y, this->unk_DC8[3].z, this->unk_DC8[3].y, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 255, (u8)this->unk_E34);
         gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_000A48);
         FrameInterpolation_RecordCloseChild();
@@ -691,7 +693,7 @@ void func_80A5A6B8(Actor* thisx, PlayState* play2) {
         AnimatedMat_Draw(play, Lib_SegmentedToVirtual(object_water_effect_Matanimheader_000E58));
         Matrix_Scale(this->unk_DC8[4].y, this->unk_DC8[4].z, this->unk_DC8[4].y, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 255, 255, (u8)this->unk_E38);
         gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_000CD8);
         FrameInterpolation_RecordCloseChild();
@@ -719,7 +721,8 @@ void func_80A5A6B8(Actor* thisx, PlayState* play2) {
                 Matrix_Scale(ptr->unk_2C.x, 1.0f, ptr->unk_2C.x, MTXMODE_APPLY);
                 Matrix_RotateYF(ptr->unk_2C.z, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_XLU_DISP++, object_water_effect_DL_0042F8);
                 FrameInterpolation_RecordCloseChild();
             }

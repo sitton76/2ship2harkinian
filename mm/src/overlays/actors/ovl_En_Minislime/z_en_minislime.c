@@ -7,9 +7,9 @@
 #include "z_en_minislime.h"
 #include "overlays/actors/ovl_En_Bigslime/z_en_bigslime.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_200)
+
+#define THIS ((EnMinislime*)thisx)
 
 void EnMinislime_Init(Actor* thisx, PlayState* play);
 void EnMinislime_Destroy(Actor* thisx, PlayState* play);
@@ -41,7 +41,7 @@ void EnMinislime_MoveToGekko(EnMinislime* this, PlayState* play);
 void EnMinislime_SetupGekkoThrow(EnMinislime* this);
 void EnMinislime_GekkoThrow(EnMinislime* this, PlayState* play);
 
-ActorProfile En_Minislime_Profile = {
+ActorInit En_Minislime_InitVars = {
     /**/ ACTOR_EN_MINISLIME,
     /**/ ACTORCAT_BOSS,
     /**/ FLAGS,
@@ -55,7 +55,7 @@ ActorProfile En_Minislime_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE | AT_TYPE_ENEMY,
         AC_NONE | AC_TYPE_PLAYER,
         OC1_NONE | OC1_TYPE_ALL,
@@ -63,11 +63,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_HARD,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_HARD,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 54, 60, -30, { 0, 0, 0 } },
@@ -119,9 +119,9 @@ static DamageTable sDamageTable = {
 };
 
 void EnMinislime_Init(Actor* thisx, PlayState* play) {
-    EnMinislime* this = (EnMinislime*)thisx;
+    EnMinislime* this = THIS;
 
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     CollisionCheck_SetInfo(&this->actor.colChkInfo, &sDamageTable, &sColChkInfoInit);
     this->id = this->actor.params;
@@ -130,7 +130,7 @@ void EnMinislime_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnMinislime_Destroy(Actor* thisx, PlayState* play) {
-    EnMinislime* this = (EnMinislime*)thisx;
+    EnMinislime* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -207,15 +207,15 @@ void EnMinislime_AddIceShardEffect(EnMinislime* this) {
 
 void EnMinislime_AddIceSmokeEffect(EnMinislime* this, PlayState* play) {
     Vec3f pos;
-    Vec3f velocity;
+    Vec3f vel;
 
     pos.x = (Rand_CenteredFloat(200.0f) * this->actor.scale.x) + this->actor.world.pos.x;
     pos.y = CLAMP_MIN(this->actor.world.pos.y, GBT_ROOM_5_MIN_Y + 30.0f);
     pos.z = (Rand_CenteredFloat(200.0f) * this->actor.scale.z) + this->actor.world.pos.z;
-    velocity.x = Rand_CenteredFloat(1.5f);
-    velocity.z = Rand_CenteredFloat(1.5f);
-    velocity.y = 2.0f;
-    EffectSsIceSmoke_Spawn(play, &pos, &velocity, &gZeroVec3f, 500);
+    vel.x = Rand_CenteredFloat(1.5f);
+    vel.z = Rand_CenteredFloat(1.5f);
+    vel.y = 2.0f;
+    EffectSsIceSmoke_Spawn(play, &pos, &vel, &gZeroVec3f, 500);
 }
 
 void EnMinislime_SetupDisappear(EnMinislime* this) {
@@ -429,10 +429,12 @@ void EnMinislime_Idle(EnMinislime* this, PlayState* play) {
     if (this->idleTimer == 0) {
         if (this->actor.xzDistToPlayer < 300.0f) {
             this->actor.world.rot.y = this->actor.yawTowardsPlayer;
-        } else if (Actor_WorldDistXZToPoint(&this->actor, &this->actor.home.pos) < 200.0f) {
-            this->actor.world.rot.y = Actor_WorldYawTowardPoint(&this->actor, &this->actor.home.pos);
         } else {
-            this->actor.world.rot.y += (s16)((s32)Rand_Next() >> 0x13);
+            if (Actor_WorldDistXZToPoint(&this->actor, &this->actor.home.pos) < 200.0f) {
+                this->actor.world.rot.y = Actor_WorldYawTowardPoint(&this->actor, &this->actor.home.pos);
+            } else {
+                this->actor.world.rot.y += (s16)((s32)Rand_Next() >> 0x13);
+            }
         }
         this->idleTimer = 20;
     }
@@ -500,8 +502,8 @@ void EnMinislime_SetupMoveToBigslime(EnMinislime* this) {
     }
     this->frozenAlpha = 0;
 
-    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
-        this->actor.flags &= ~ACTOR_FLAG_HOOKSHOT_ATTACHED;
+    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
+        this->actor.flags &= ~ACTOR_FLAG_2000;
     }
     this->actionFunc = EnMinislime_MoveToBigslime;
 }
@@ -556,8 +558,8 @@ void EnMinislime_SetupDefeatIdle(EnMinislime* this) {
     }
 
     this->frozenAlpha = 0;
-    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
-        this->actor.flags &= ~ACTOR_FLAG_HOOKSHOT_ATTACHED;
+    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
+        this->actor.flags &= ~ACTOR_FLAG_2000;
     }
 
     this->actor.shape.rot.x = 0;
@@ -625,8 +627,8 @@ void EnMinislime_SetupMoveToGekko(EnMinislime* this) {
     this->actor.velocity.y = 0.0f;
     this->collider.base.acFlags &= ~AC_ON;
     this->collider.base.ocFlags1 &= ~OC1_ON;
-    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
-        this->actor.flags &= ~ACTOR_FLAG_HOOKSHOT_ATTACHED;
+    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
+        this->actor.flags &= ~ACTOR_FLAG_2000;
     }
 
     this->actionFunc = EnMinislime_MoveToGekko;
@@ -703,7 +705,7 @@ void EnMinislime_ApplyDamage(EnMinislime* this) {
 }
 
 void EnMinislime_Update(Actor* thisx, PlayState* play) {
-    EnMinislime* this = (EnMinislime*)thisx;
+    EnMinislime* this = THIS;
     Player* player;
     s32 pad;
     Vec3f vec1;
@@ -715,7 +717,7 @@ void EnMinislime_Update(Actor* thisx, PlayState* play) {
     } else if ((this->actor.params == MINISLIME_FORM_BIGSLIME) && (this->actionFunc != EnMinislime_MoveToBigslime)) {
         EnMinislime_SetupMoveToBigslime(this);
     } else {
-        if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
+        if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
             this->collider.base.acFlags &= ~AC_HIT;
             return;
         }

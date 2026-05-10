@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_Item_Etcetera/z_item_etcetera.h"
 #include "overlays/actors/ovl_En_Elf/z_en_elf.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((ShotSun*)thisx)
 
 void ShotSun_Init(Actor* thisx, PlayState* play);
 void ShotSun_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void ShotSun_Update(Actor* thisx, PlayState* play);
 void ShotSun_UpdateForOcarina(ShotSun* this, PlayState* play);
 void ShotSun_UpdateHyliaSun(ShotSun* this, PlayState* play);
 
-ActorProfile Shot_Sun_Profile = {
+ActorInit Shot_Sun_InitVars = {
     /**/ ACTOR_SHOT_SUN,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -31,7 +33,7 @@ ActorProfile Shot_Sun_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -39,11 +41,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000020, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 30, 60, 0, { 0, 0, 0 } },
@@ -51,25 +53,25 @@ static ColliderCylinderInit sCylinderInit = {
 
 void ShotSun_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ShotSun* this = (ShotSun*)thisx;
+    ShotSun* this = THIS;
 
     if ((SHOTSUN_GET_TYPE(thisx) == SHOTSUN_FAIRY_SPAWNER_SUNS) ||
         (SHOTSUN_GET_TYPE(thisx) == SHOTSUN_FAIRY_SPAWNER_STORMS)) {
         this->fairySpawnerState = SPAWNER_OUT_OF_RANGE; // never read after here
-        this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
-        this->actor.flags |= ACTOR_FLAG_UPDATE_DURING_OCARINA;
+        this->actor.flags |= ACTOR_FLAG_10;
+        this->actor.flags |= ACTOR_FLAG_2000000;
         this->actionFunc = ShotSun_UpdateForOcarina;
-        this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
+        this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
     } else {
         Collider_InitCylinder(play, &this->collider);
         Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
         this->actionFunc = ShotSun_UpdateHyliaSun;
-        this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     }
 }
 
 void ShotSun_Destroy(Actor* thisx, PlayState* play) {
-    ShotSun* this = (ShotSun*)thisx;
+    ShotSun* this = THIS;
 
     if ((SHOTSUN_GET_TYPE(thisx) != SHOTSUN_FAIRY_SPAWNER_SUNS) &&
         (SHOTSUN_GET_TYPE(thisx) != SHOTSUN_FAIRY_SPAWNER_STORMS)) {
@@ -176,8 +178,8 @@ void ShotSun_UpdateHyliaSun(ShotSun* this, PlayState* play) {
         return;
     }
 
-    if ((this->actor.xzDistToPlayer > 120.0f) || (CURRENT_TIME < CLOCK_TIME(6, 30)) ||
-        (CURRENT_TIME >= CLOCK_TIME(7, 30))) {
+    if ((this->actor.xzDistToPlayer > 120.0f) || (gSaveContext.save.time < CLOCK_TIME(6, 30)) ||
+        (gSaveContext.save.time >= CLOCK_TIME(7, 30))) {
         return;
     }
 
@@ -192,7 +194,7 @@ void ShotSun_UpdateHyliaSun(ShotSun* this, PlayState* play) {
 }
 
 void ShotSun_Update(Actor* thisx, PlayState* play) {
-    ShotSun* this = (ShotSun*)thisx;
+    ShotSun* this = THIS;
 
     this->actionFunc(this, play);
 }

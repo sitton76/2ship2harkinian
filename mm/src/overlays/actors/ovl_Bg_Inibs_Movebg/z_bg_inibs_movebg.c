@@ -7,13 +7,15 @@
 #include "z_bg_inibs_movebg.h"
 #include "objects/object_inibs_object/object_inibs_object.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((BgInibsMovebg*)thisx)
 
 void BgInibsMovebg_Init(Actor* thisx, PlayState* play);
 void BgInibsMovebg_Destroy(Actor* thisx, PlayState* play);
 void BgInibsMovebg_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Bg_Inibs_Movebg_Profile = {
+ActorInit Bg_Inibs_Movebg_InitVars = {
     /**/ ACTOR_BG_INIBS_MOVEBG,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -34,7 +36,7 @@ static InitChainEntry sInitChain[] = {
 };
 
 void BgInibsMovebg_Init(Actor* thisx, PlayState* play) {
-    BgInibsMovebg* this = (BgInibsMovebg*)thisx;
+    BgInibsMovebg* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -45,13 +47,13 @@ void BgInibsMovebg_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgInibsMovebg_Destroy(Actor* thisx, PlayState* play) {
-    BgInibsMovebg* this = (BgInibsMovebg*)thisx;
+    BgInibsMovebg* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
 
 void BgInibsMovebg_Draw(Actor* thisx, PlayState* play) {
-    BgInibsMovebg* this = (BgInibsMovebg*)thisx;
+    BgInibsMovebg* this = THIS;
     AnimatedMaterial* sandTexAnim;
     Gfx* opaDList;
     Gfx* xluDList;

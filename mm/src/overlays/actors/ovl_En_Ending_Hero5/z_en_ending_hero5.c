@@ -6,7 +6,9 @@
 
 #include "z_en_ending_hero5.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnEndingHero5*)thisx)
 
 void EnEndingHero5_Init(Actor* thisx, PlayState* play);
 void EnEndingHero5_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void EnEndingHero5_Draw(Actor* thisx, PlayState* play);
 void EnEndingHero5_SetupIdle(EnEndingHero5* this);
 void EnEndingHero5_Idle(EnEndingHero5* this, PlayState* play);
 
-ActorProfile En_Ending_Hero5_Profile = {
+ActorInit En_Ending_Hero5_InitVars = {
     /**/ ACTOR_EN_ENDING_HERO5,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -29,11 +31,11 @@ ActorProfile En_Ending_Hero5_Profile = {
 };
 
 void EnEndingHero5_Init(Actor* thisx, PlayState* play) {
-    EnEndingHero5* this = (EnEndingHero5*)thisx;
+    EnEndingHero5* this = THIS;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     Actor_SetScale(&this->actor, 0.01f);
-    this->actor.attentionRangeType = ATTENTION_RANGE_6;
+    this->actor.targetMode = TARGET_MODE_6;
     this->actor.gravity = -3.0f;
     SkelAnime_InitFlex(play, &this->skelAnime, &object_daiku_Skel_00A850, &object_daiku_Anim_002FA0, this->jointTable,
                        this->morphTable, OBJECT_DAIKU_LIMB_MAX);
@@ -55,7 +57,7 @@ void EnEndingHero5_Idle(EnEndingHero5* this, PlayState* play) {
 }
 
 void EnEndingHero5_Update(Actor* thisx, PlayState* play) {
-    EnEndingHero5* this = (EnEndingHero5*)thisx;
+    EnEndingHero5* this = THIS;
 
     this->actionFunc(this, play);
     Actor_MoveWithGravity(&this->actor);
@@ -68,7 +70,7 @@ Gfx* D_80C23BF0[] = { object_daiku_DL_0070C0, object_daiku_DL_006FB0, object_dai
                       object_daiku_DL_00A390 };
 
 void EnEndingHero5_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnEndingHero5* this = (EnEndingHero5*)thisx;
+    EnEndingHero5* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -80,7 +82,7 @@ void EnEndingHero5_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
 }
 
 void EnEndingHero5_Draw(Actor* thisx, PlayState* play) {
-    EnEndingHero5* this = (EnEndingHero5*)thisx;
+    EnEndingHero5* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);

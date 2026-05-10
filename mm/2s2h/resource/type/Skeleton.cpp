@@ -1,6 +1,7 @@
-#include <ship/resource/ResourceManager.h>
+#include "resource/ResourceManager.h"
 #include "Skeleton.h"
 #include "2s2h/BenPort.h"
+#include "libultraship/libultraship.h"
 
 namespace SOH {
 SkeletonData* Skeleton::GetPointer() {
@@ -47,7 +48,7 @@ void SkeletonPatcher::RegisterSkeleton(std::string& path, SkelAnime* skelAnime) 
 void SkeletonPatcher::UnregisterSkeleton(SkelAnime* skelAnime) {
 
     // TODO: Should probably just use a dictionary here...
-    for (size_t i = 0; i < skeletons.size(); i++) {
+    for (int i = 0; i < skeletons.size(); i++) {
         auto skel = skeletons[i];
 
         if (skel.skelAnime == skelAnime) {
@@ -62,27 +63,18 @@ void SkeletonPatcher::ClearSkeletons() {
 
 void SkeletonPatcher::UpdateSkeletons() {
     auto resourceMgr = Ship::Context::GetInstance()->GetResourceManager();
-    bool isAlt = resourceMgr->IsAltAssetsEnabled();
+    bool isHD = resourceMgr->IsAltAssetsEnabled();
+    for (auto skel : skeletons) {
+        Skeleton* newSkel =
+            (Skeleton*)resourceMgr
+                ->LoadResource((isHD ? Ship::IResource::gAltAssetPrefix : "") + skel.vanillaSkeletonPath, true)
+                .get();
 
-    for (const auto& skel : skeletons) {
-        auto newSkel = std::static_pointer_cast<Skeleton>(resourceMgr->LoadResource(
-            (isAlt ? Ship::IResource::gAltAssetPrefix : "") + skel.vanillaSkeletonPath, true));
-
-        if (newSkel == nullptr || skel.skelAnime == nullptr) {
-            continue;
-        }
-
-        switch (newSkel->type) {
-            case SkeletonType::Flex:
-                skel.skelAnime->skeleton = newSkel->skeletonData.flexSkeletonHeader.sh.segment;
-                skel.skelAnime->dListCount = newSkel->skeletonData.flexSkeletonHeader.dListCount;
-                break;
-            case SkeletonType::Normal:
-                skel.skelAnime->skeleton = newSkel->skeletonData.skeletonHeader.segment;
-                break;
-            case SkeletonType::Curve:
-                skel.skelAnime->skeleton = reinterpret_cast<void**>(newSkel->skeletonData.skelCurveLimbList.limbs);
-                break;
+        if (newSkel != nullptr) {
+            skel.skelAnime->skeleton = newSkel->skeletonData.skeletonHeader.segment;
+            uintptr_t skelPtr = (uintptr_t)newSkel->GetPointer();
+            memcpy(&skel.skelAnime->skeleton, &skelPtr,
+                   sizeof(uintptr_t)); // Dumb thing that needs to be done because cast is not cooperating
         }
     }
 }

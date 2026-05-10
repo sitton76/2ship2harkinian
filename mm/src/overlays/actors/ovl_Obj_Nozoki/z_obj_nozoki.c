@@ -8,7 +8,9 @@
 #include "objects/object_secom_obj/object_secom_obj.h"
 #include "objects/object_gi_mssa/object_gi_mssa.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjNozoki*)thisx)
 
 void ObjNozoki_Init(Actor* thisx, PlayState* play);
 void ObjNozoki_Destroy(Actor* thisx, PlayState* play);
@@ -31,7 +33,7 @@ s32 D_80BA36B0;
 s32 D_80BA36B4;
 f32 D_80BA36B8;
 
-ActorProfile Obj_Nozoki_Profile = {
+ActorInit Obj_Nozoki_InitVars = {
     /**/ ACTOR_OBJ_NOZOKI,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -45,7 +47,7 @@ ActorProfile Obj_Nozoki_Profile = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F(scale, 1, ICHAIN_CONTINUE),
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_0, ICHAIN_STOP),
+    ICHAIN_U8(targetMode, TARGET_MODE_0, ICHAIN_STOP),
 };
 
 static s16 sObjectIds[] = { OBJECT_SECOM_OBJ, OBJECT_GI_MSSA, OBJECT_SECOM_OBJ, OBJECT_SECOM_OBJ };
@@ -63,7 +65,7 @@ void ObjNozoki_SetupAction(ObjNozoki* this, ObjNozokiActionFunc actionFunc) {
 }
 
 void ObjNozoki_Init(Actor* thisx, PlayState* play) {
-    ObjNozoki* this = (ObjNozoki*)thisx;
+    ObjNozoki* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     this->dyna.actor.shape.rot.x = 0;
@@ -84,7 +86,7 @@ void ObjNozoki_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjNozoki_Destroy(Actor* thisx, PlayState* play) {
-    ObjNozoki* this = (ObjNozoki*)thisx;
+    ObjNozoki* this = THIS;
 
     if (this->unk_15C == 0) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -114,7 +116,7 @@ void func_80BA2514(ObjNozoki* this, PlayState* play) {
             Lib_Vec3f_TranslateAndRotateY(&this->dyna.actor.world.pos, this->dyna.actor.shape.rot.y, &D_80BA34C0,
                                           &this->dyna.actor.home.pos);
             Actor_SetScale(&this->dyna.actor, 0.6f);
-            this->dyna.actor.flags |= ACTOR_FLAG_DRAW_CULLING_DISABLED;
+            this->dyna.actor.flags |= ACTOR_FLAG_20;
             ObjNozoki_SetupAction(this, func_80BA2BA4);
         } else if (this->unk_15C == 2) {
             Lib_Vec3f_TranslateAndRotateY(&this->dyna.actor.home.pos, this->dyna.actor.shape.rot.y, &D_80BA34CC,
@@ -146,7 +148,7 @@ s32 func_80BA2708(ObjNozoki* this, PlayState* play) {
     Vec3f sp30;
 
     while (enemy != NULL) {
-        Actor_WorldToActorCoords(&this->dyna.actor, &sp30, &enemy->world.pos);
+        Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &sp30, &enemy->world.pos);
         if (sp30.z >= 0.0f) {
             return false;
         }
@@ -191,7 +193,7 @@ void func_80BA27C4(ObjNozoki* this, PlayState* play) {
                 play->actorCtx.flags |= ACTORCTX_FLAG_4;
             }
         }
-        GET_PLAYER(play)->speedXZ = 0.0f;
+        GET_PLAYER(play)->linearVelocity = 0.0f;
     }
 }
 
@@ -218,7 +220,7 @@ void func_80BA28DC(ObjNozoki* this, PlayState* play) {
                 if (OBJNOZOKI_GET_400(&this->dyna.actor)) {
                     Vec3f sp28;
 
-                    Actor_WorldToActorCoords(&this->dyna.actor, &sp28, &GET_PLAYER(play)->actor.world.pos);
+                    Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &sp28, &GET_PLAYER(play)->actor.world.pos);
                     if (sp28.z < -20.0f) {
                         this->csId = CutsceneManager_GetAdditionalCsId(this->csId);
                     }
@@ -349,7 +351,7 @@ void func_80BA2C94(ObjNozoki* this, PlayState* play) {
                     Actor_Kill(&this->dyna.actor);
                 }
 
-                this->dyna.actor.shape.rot.x = -0x1F40 - TRUNCF_BINANG(sp38 * 400.0f);
+                this->dyna.actor.shape.rot.x = -0x1F40 - (s16)(sp38 * 400.0f);
             }
         }
     }
@@ -412,11 +414,10 @@ void func_80BA3230(ObjNozoki* this, PlayState* play) {
 
         if ((test3 != NULL) && (test3->draw != NULL)) {
             if ((play->curSpawn == 3) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_64_40)) {
-                this->dyna.actor.flags |=
-                    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED);
+                this->dyna.actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10000);
                 this->dyna.actor.textId = 0x297A;
             } else {
-                this->dyna.actor.flags |= (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+                this->dyna.actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
                 if (CHECK_WEEKEVENTREG(WEEKEVENTREG_64_40)) {
                     this->dyna.actor.textId = 0;
                 } else {
@@ -424,7 +425,7 @@ void func_80BA3230(ObjNozoki* this, PlayState* play) {
                 }
             }
 
-            if (Actor_TalkOfferAccepted(&this->dyna.actor, &play->state)) {
+            if (Actor_ProcessTalkRequest(&this->dyna.actor, &play->state)) {
                 ObjNozoki_SetupAction(this, func_80BA3344);
             } else {
                 Actor_OfferTalk(&this->dyna.actor, play, 50.0f);
@@ -437,7 +438,7 @@ void func_80BA3344(ObjNozoki* this, PlayState* play) {
     if ((play->curSpawn == 3) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_64_40)) {
         if (Actor_TextboxIsClosing(&this->dyna.actor, play)) {
             SET_WEEKEVENTREG(WEEKEVENTREG_64_40);
-            this->dyna.actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+            this->dyna.actor.flags &= ~ACTOR_FLAG_10000;
             ObjNozoki_SetupAction(this, func_80BA3230);
         }
     } else if ((this->dyna.actor.textId == 0) || Actor_TextboxIsClosing(&this->dyna.actor, play)) {
@@ -447,7 +448,7 @@ void func_80BA3344(ObjNozoki* this, PlayState* play) {
 }
 
 void ObjNozoki_Update(Actor* thisx, PlayState* play) {
-    ObjNozoki* this = (ObjNozoki*)thisx;
+    ObjNozoki* this = THIS;
 
     this->actionFunc(this, play);
 }
@@ -464,7 +465,7 @@ Gfx* D_80BA34FC[] = {
 };
 
 void ObjNozoki_Draw(Actor* thisx, PlayState* play) {
-    ObjNozoki* this = (ObjNozoki*)thisx;
+    ObjNozoki* this = THIS;
 
     if (this->unk_15C == 1) {
         GetItem_Draw(play, GID_MASK_SUN);

@@ -7,7 +7,9 @@
 #include "z_en_si.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_200)
+
+#define THIS ((EnSi*)thisx)
 
 void EnSi_Init(Actor* thisx, PlayState* play);
 void EnSi_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void EnSi_Draw(Actor* thisx, PlayState* play);
 
 void EnSi_DraggedByHookshot(EnSi* this, PlayState* play);
 
-ActorProfile En_Si_Profile = {
+ActorInit En_Si_InitVars = {
     /**/ ACTOR_EN_SI,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -30,7 +32,7 @@ ActorProfile En_Si_Profile = {
 
 static ColliderSphereInit sSphereInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_NO_PUSH | OC1_TYPE_ALL,
@@ -38,11 +40,11 @@ static ColliderSphereInit sSphereInit = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 0, { { 0, 0, 0 }, 10 }, 100 },
@@ -120,7 +122,7 @@ void EnSi_GiveToken(EnSi* this, PlayState* play) {
 }
 
 void EnSi_Wait(EnSi* this, PlayState* play) {
-    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
+    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
         this->actionFunc = EnSi_DraggedByHookshot;
     } else if (this->collider.base.ocFlags2 & OC2_HIT_PLAYER) {
         EnSi_GiveToken(this, play);
@@ -131,14 +133,14 @@ void EnSi_Wait(EnSi* this, PlayState* play) {
 }
 
 void EnSi_DraggedByHookshot(EnSi* this, PlayState* play) {
-    if (!CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED)) {
+    if (!CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000)) {
         EnSi_GiveToken(this, play);
         Actor_Kill(&this->actor);
     }
 }
 
 void EnSi_Init(Actor* thisx, PlayState* play) {
-    EnSi* this = (EnSi*)thisx;
+    EnSi* this = THIS;
 
     Collider_InitSphere(play, &this->collider);
     Collider_SetSphere(play, &this->collider, &this->actor, &sSphereInit);
@@ -148,13 +150,13 @@ void EnSi_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnSi_Destroy(Actor* thisx, PlayState* play) {
-    EnSi* this = (EnSi*)thisx;
+    EnSi* this = THIS;
 
     Collider_DestroySphere(play, &this->collider);
 }
 
 void EnSi_Update(Actor* thisx, PlayState* play) {
-    EnSi* this = (EnSi*)thisx;
+    EnSi* this = THIS;
 
     this->actionFunc(this, play);
     EnSi_UpdateCollision(this, play);
@@ -162,7 +164,7 @@ void EnSi_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnSi_Draw(Actor* thisx, PlayState* play) {
-    EnSi* this = (EnSi*)thisx;
+    EnSi* this = THIS;
 
     func_800B8118(&this->actor, play, 0);
     func_800B8050(&this->actor, play, 0);

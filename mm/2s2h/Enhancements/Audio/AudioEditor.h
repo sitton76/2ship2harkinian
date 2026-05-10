@@ -3,7 +3,8 @@
 
 #include "libultraship/libultra/types.h"
 #ifdef __cplusplus
-#include <ship/window/gui/GuiWindow.h>
+#include "window/gui/Gui.h"
+#include "window/gui/GuiWindow.h"
 #include "AudioCollection.h"
 
 #ifndef IMGUI_DEFINE_MATH_OPERATORS

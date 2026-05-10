@@ -1,10 +1,9 @@
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/bridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 
 extern "C" {
 #include "functions.h"
-#include "variables.h"
 }
 
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipMiscInteractions"

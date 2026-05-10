@@ -6,9 +6,10 @@
 
 #include "z_bg_iknv_obj.h"
 #include "objects/object_iknv_obj/object_iknv_obj.h"
-#include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgIknvObj*)thisx)
 
 void BgIknvObj_Init(Actor* thisx, PlayState* play);
 void BgIknvObj_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +21,7 @@ void BgIknvObj_UpdateWaterwheel(BgIknvObj* this, PlayState* play);
 void BgIknvObj_UpdateRaisedDoor(BgIknvObj* this, PlayState* play);
 void BgIknvObj_UpdateSakonDoor(BgIknvObj* this, PlayState* play);
 
-ActorProfile Bg_Iknv_Obj_Profile = {
+ActorInit Bg_Iknv_Obj_InitVars = {
     /**/ ACTOR_BG_IKNV_OBJ,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -34,7 +35,7 @@ ActorProfile Bg_Iknv_Obj_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_ENEMY,
         OC1_ON | OC1_TYPE_ALL,
@@ -42,11 +43,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 40, 40, 0, { 0, 0, 0 } },
@@ -54,7 +55,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 void BgIknvObj_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgIknvObj* this = (BgIknvObj*)thisx;
+    BgIknvObj* this = THIS;
     CollisionHeader* colHeader = NULL;
 
     Actor_SetScale(&this->dyna.actor, 0.1f);
@@ -63,8 +64,8 @@ void BgIknvObj_Init(Actor* thisx, PlayState* play) {
         case IKNV_OBJ_WATERWHEEL:
             this->displayListPtr = object_iknv_obj_DL_013058;
             this->actionFunc = BgIknvObj_UpdateWaterwheel;
-            this->dyna.actor.flags |= ACTOR_FLAG_FREEZE_EXCEPTION;
-            this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->dyna.actor.flags |= ACTOR_FLAG_100000;
+            this->dyna.actor.flags |= ACTOR_FLAG_10;
             break;
         case IKNV_OBJ_RAISED_DOOR:
             this->displayListPtr = object_iknv_obj_DL_011880;
@@ -92,7 +93,7 @@ void BgIknvObj_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgIknvObj_Destroy(Actor* thisx, PlayState* play) {
-    BgIknvObj* this = (BgIknvObj*)thisx;
+    BgIknvObj* this = THIS;
 
     if (IKNV_OBJ_TYPE(this) != IKNV_OBJ_RAISED_DOOR) {
         if (IKNV_OBJ_TYPE(this) == IKNV_OBJ_SAKON_DOOR) {
@@ -140,7 +141,7 @@ s32 func_80BD7E0C(BgIknvObj* this, s16 targetRotation, PlayState* play) {
     this->dyna.actor.shape.yOffset = 0.0f;
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
     if (targetRotation != this->dyna.actor.shape.rot.y) {
-        Math_SmoothStepToS(&this->dyna.actor.shape.rot.y, targetRotation, 2, 0x64, 0x64);
+        Math_SmoothStepToS(&this->dyna.actor.shape.rot.y, targetRotation, 2, 100, 100);
         this->dyna.actor.world.rot.y = this->dyna.actor.shape.rot.y;
         if ((play->gameplayFrames % 2) != 0) {
             this->dyna.actor.shape.yOffset = 5.0f;
@@ -161,7 +162,7 @@ void func_80BD7ED8(BgIknvObj* this, PlayState* play) {
 }
 
 void func_80BD7F4C(BgIknvObj* this, PlayState* play) {
-    if (CURRENT_TIME > CLOCK_TIME(19, 30)) {
+    if (gSaveContext.save.time > CLOCK_TIME(19, 30)) {
         this->actionFunc = func_80BD7ED8;
     }
     if ((this->dyna.actor.home.rot.x == 1) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_58_80)) {
@@ -201,17 +202,17 @@ void BgIknvObj_DoNothing(BgIknvObj* this, PlayState* play) {
 }
 
 void BgIknvObj_Update(Actor* thisx, PlayState* play) {
-    BgIknvObj* this = (BgIknvObj*)thisx;
+    BgIknvObj* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void BgIknvObj_Draw(Actor* thisx, PlayState* play) {
-    BgIknvObj* this = (BgIknvObj*)thisx;
+    BgIknvObj* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     gSPDisplayList(POLY_OPA_DISP++, this->displayListPtr);
 

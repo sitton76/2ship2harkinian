@@ -7,14 +7,16 @@
 #include "z_obj_y2lift.h"
 #include "objects/object_kaizoku_obj/object_kaizoku_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjY2lift*)thisx)
 
 void ObjY2lift_Init(Actor* thisx, PlayState* play);
 void ObjY2lift_Destroy(Actor* thisx, PlayState* play);
 void ObjY2lift_Update(Actor* thisx, PlayState* play);
 void ObjY2lift_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Y2lift_Profile = {
+ActorInit Obj_Y2lift_InitVars = {
     /**/ ACTOR_OBJ_Y2LIFT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -28,13 +30,13 @@ ActorProfile Obj_Y2lift_Profile = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 800, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 800, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 800, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 800, ICHAIN_STOP),
 };
 
 void ObjY2lift_Init(Actor* thisx, PlayState* play) {
-    ObjY2lift* this = (ObjY2lift*)thisx;
+    ObjY2lift* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -42,13 +44,13 @@ void ObjY2lift_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjY2lift_Destroy(Actor* thisx, PlayState* play) {
-    ObjY2lift* this = (ObjY2lift*)thisx;
+    ObjY2lift* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
 
 void ObjY2lift_Update(Actor* thisx, PlayState* play) {
-    ObjY2lift* this = (ObjY2lift*)thisx;
+    ObjY2lift* this = THIS;
     f32 temp_fv0 = this->dyna.actor.world.pos.y;
     f32 targetVelocityY = 0.0f;
     s32 isPlayerOnTop = DynaPolyActor_IsPlayerOnTop(&this->dyna);

@@ -7,7 +7,9 @@
 #include "z_obj_hgdoor.h"
 #include "objects/object_hgdoor/object_hgdoor.h"
 
-#define FLAGS (ACTOR_FLAG_FREEZE_EXCEPTION)
+#define FLAGS (ACTOR_FLAG_100000)
+
+#define THIS ((ObjHgdoor*)thisx)
 
 void ObjHgdoor_Init(Actor* thisx, PlayState* play);
 void ObjHgdoor_Destroy(Actor* thisx, PlayState* play);
@@ -18,13 +20,13 @@ void ObjHgdoor_SetupIdle(ObjHgdoor* this);
 void ObjHgdoor_Idle(ObjHgdoor* this, PlayState* play);
 void ObjHgdoor_SetupCutscene(ObjHgdoor* this);
 void ObjHgdoor_PlayCutscene(ObjHgdoor* this, PlayState* play);
-void ObjHgdoor_SetupHandleCutscene(ObjHgdoor* this);
-void ObjHgdoor_HandleCutscene(ObjHgdoor* this, PlayState* play);
+void ObjHgdoor_SetupCsAction(ObjHgdoor* this);
+void ObjHgdoor_HandleCsAction(ObjHgdoor* this, PlayState* play);
 void ObjHgdoor_SetupStopCs(ObjHgdoor* this);
 void ObjHgdoor_StopCs(ObjHgdoor* this, PlayState* play);
 s32 ObjHgdoor_Rotate(ObjHgdoor* this, PlayState* play);
 
-ActorProfile Obj_Hgdoor_Profile = {
+ActorInit Obj_Hgdoor_InitVars = {
     /**/ ACTOR_OBJ_HGDOOR,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -63,7 +65,7 @@ void ObjHgdoor_SetParent(ObjHgdoor* this, PlayState* play) {
 }
 
 void ObjHgdoor_Init(Actor* thisx, PlayState* play) {
-    ObjHgdoor* this = (ObjHgdoor*)thisx;
+    ObjHgdoor* this = THIS;
     s32 pad;
     CollisionHeader* header = NULL;
 
@@ -82,7 +84,7 @@ void ObjHgdoor_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjHgdoor_Destroy(Actor* thisx, PlayState* play) {
-    ObjHgdoor* this = (ObjHgdoor*)thisx;
+    ObjHgdoor* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -108,8 +110,8 @@ void ObjHgdoor_SetupCutscene(ObjHgdoor* this) {
 void ObjHgdoor_PlayCutscene(ObjHgdoor* this, PlayState* play) {
     if (CutsceneManager_IsNext(this->csId)) {
         CutsceneManager_Start(this->csId, &this->dyna.actor);
-        ObjHgdoor_SetupHandleCutscene(this);
-        ObjHgdoor_SetupHandleCutscene((ObjHgdoor*)this->dyna.actor.child);
+        ObjHgdoor_SetupCsAction(this);
+        ObjHgdoor_SetupCsAction((ObjHgdoor*)this->dyna.actor.child);
     } else {
         if (CutsceneManager_GetCurrentCsId() == CS_ID_GLOBAL_TALK) {
             CutsceneManager_Stop(CS_ID_GLOBAL_TALK);
@@ -118,12 +120,12 @@ void ObjHgdoor_PlayCutscene(ObjHgdoor* this, PlayState* play) {
     }
 }
 
-void ObjHgdoor_SetupHandleCutscene(ObjHgdoor* this) {
+void ObjHgdoor_SetupCsAction(ObjHgdoor* this) {
     this->cueId = 99;
-    this->actionFunc = ObjHgdoor_HandleCutscene;
+    this->actionFunc = ObjHgdoor_HandleCsAction;
 }
 
-void ObjHgdoor_HandleCutscene(ObjHgdoor* this, PlayState* play) {
+void ObjHgdoor_HandleCsAction(ObjHgdoor* this, PlayState* play) {
     s32 cueChannel;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_483)) {
@@ -189,7 +191,7 @@ void ObjHgdoor_Open(ObjHgdoor* this) {
 }
 
 void ObjHgdoor_Update(Actor* thisx, PlayState* play) {
-    ObjHgdoor* this = (ObjHgdoor*)thisx;
+    ObjHgdoor* this = THIS;
 
     this->actionFunc(this, play);
     ObjHgdoor_Open(this);
@@ -200,7 +202,7 @@ void ObjHgdoor_Draw(Actor* thisx, PlayState* play) {
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     if (OBJHGDOOR_IS_RIGHT_DOOR(thisx)) {
         gSPDisplayList(POLY_OPA_DISP++, object_hgdoor_DL_001AB0);
         gSPDisplayList(POLY_OPA_DISP++, object_hgdoor_DL_001BA8);

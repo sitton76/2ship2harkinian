@@ -1,8 +1,7 @@
 #include "2s2h/resource/importer/scenecommand/SetAnimatedMaterialListFactory.h"
 #include "2s2h/resource/type/scenecommand/SetAnimatedMaterialList.h"
 #include "2s2h/resource/type/TextureAnimation.h"
-#include <ship/Context.h>
-#include <ship/resource/ResourceManager.h>
+#include <libultraship/libultraship.h>
 
 namespace SOH {
 

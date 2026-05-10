@@ -6,7 +6,9 @@
 
 #include "z_obj_swprize.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjSwprize*)thisx)
 
 void ObjSwprize_Init(Actor* thisx, PlayState* play);
 void ObjSwprize_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void func_80C25710(ObjSwprize* this);
 void func_80C2572C(ObjSwprize* this, PlayState* play);
 void ObjSwprize_SetupDoNothing(ObjSwprize* this);
 
-ActorProfile Obj_Swprize_Profile = {
+ActorInit Obj_Swprize_InitVars = {
     /**/ ACTOR_OBJ_SWPRIZE,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -80,7 +82,7 @@ void func_80C253D0(ObjSwprize* this, PlayState* play) {
 }
 
 void ObjSwprize_Init(Actor* thisx, PlayState* play) {
-    ObjSwprize* this = (ObjSwprize*)thisx;
+    ObjSwprize* this = THIS;
 
     if (Flags_GetSwitch(play, OBJ_SWPRIZE_GET_SWITCH_FLAG(&this->actor))) {
         ObjSwprize_SetupDoNothing(this);
@@ -139,7 +141,7 @@ void ObjSwprize_DoNothing(ObjSwprize* this, PlayState* play) {
 }
 
 void ObjSwprize_Update(Actor* thisx, PlayState* play) {
-    ObjSwprize* this = (ObjSwprize*)thisx;
+    ObjSwprize* this = THIS;
 
     this->actionFunc(this, play);
 }

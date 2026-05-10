@@ -9,7 +9,9 @@
 
 #include "2s2h/BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EffLastday*)thisx)
 
 void EffLastday_Init(Actor* thisx, PlayState* play2);
 void EffLastday_Destroy(Actor* thisx, PlayState* play);
@@ -28,7 +30,7 @@ typedef enum EffLastDayAction {
     /* 3 */ EFFLASTDAY_ACTION_3
 } EffLastDayAction;
 
-ActorProfile Eff_Lastday_Profile = {
+ActorInit Eff_Lastday_InitVars = {
     /**/ ACTOR_EFF_LASTDAY,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -42,7 +44,7 @@ ActorProfile Eff_Lastday_Profile = {
 
 void EffLastday_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EffLastday* this = (EffLastday*)thisx;
+    EffLastday* this = THIS;
 
     Actor_SetScale(&this->actor, 0.1f);
     switch (EFFLASTDAY_GET_F(&this->actor)) {
@@ -218,7 +220,7 @@ void func_80BEBF78(EffLastday* this, PlayState* play) {
 }
 
 void EffLastday_Update(Actor* thisx, PlayState* play) {
-    EffLastday* this = (EffLastday*)thisx;
+    EffLastday* this = THIS;
 
     this->actionFunc(this, play);
 }
@@ -233,7 +235,7 @@ void EffLastday_SetVtxAlpha(s16 alpha) {
 }
 
 void EffLastday_Draw(Actor* thisx, PlayState* play) {
-    EffLastday* this = (EffLastday*)thisx;
+    EffLastday* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

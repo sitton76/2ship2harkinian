@@ -7,7 +7,9 @@
 #include "z_bg_ladder.h"
 #include "objects/object_ladder/object_ladder.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgLadder*)thisx)
 
 void BgLadder_Init(Actor* thisx, PlayState* play);
 void BgLadder_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void BgLadder_StartCutscene(BgLadder* this, PlayState* play);
 void BgLadder_FadeIn(BgLadder* this, PlayState* play);
 void BgLadder_DoNothing(BgLadder* this, PlayState* play);
 
-ActorProfile Bg_Ladder_Profile = {
+ActorInit Bg_Ladder_InitVars = {
     /**/ ACTOR_BG_LADDER,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -42,7 +44,7 @@ static Gfx* sLadderDLists[] = {
 };
 
 void BgLadder_Init(Actor* thisx, PlayState* play) {
-    BgLadder* this = (BgLadder*)thisx;
+    BgLadder* this = THIS;
     BgLadderSize size;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
@@ -68,7 +70,7 @@ void BgLadder_Init(Actor* thisx, PlayState* play) {
     if (Flags_GetSwitch(play, this->switchFlag)) {
         // If the flag is set, then the ladder draws immediately
         this->alpha = 255;
-        this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED; // always update = off
+        this->dyna.actor.flags &= ~ACTOR_FLAG_10; // always update = off
         this->action = BgLadder_DoNothing;
     } else {
         // Otherwise, the ladder doesn't draw; wait for the flag to be set
@@ -80,7 +82,7 @@ void BgLadder_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgLadder_Destroy(Actor* thisx, PlayState* play) {
-    BgLadder* this = (BgLadder*)thisx;
+    BgLadder* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -112,7 +114,7 @@ void BgLadder_FadeIn(BgLadder* this, PlayState* play) {
         this->alpha = 255;
         CutsceneManager_Stop(this->dyna.actor.csId);
         DynaPoly_EnableCollision(play, &play->colCtx.dyna, this->dyna.bgId);
-        this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED; // always update = off
+        this->dyna.actor.flags &= ~ACTOR_FLAG_10; // always update = off
         this->action = BgLadder_DoNothing;
     }
 }
@@ -121,13 +123,13 @@ void BgLadder_DoNothing(BgLadder* this, PlayState* play) {
 }
 
 void BgLadder_Update(Actor* thisx, PlayState* play) {
-    BgLadder* this = (BgLadder*)thisx;
+    BgLadder* this = THIS;
 
     this->action(this, play);
 }
 
 void BgLadder_Draw(Actor* thisx, PlayState* play) {
-    BgLadder* this = (BgLadder*)thisx;
+    BgLadder* this = THIS;
     s32 pad;
     Gfx* gfx;
 
@@ -143,7 +145,7 @@ void BgLadder_Draw(Actor* thisx, PlayState* play) {
 
     gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
     gDPSetEnvColor(&gfx[1], 255, 255, 255, this->alpha);
-    MATRIX_FINALIZE_AND_LOAD(&gfx[2], play->state.gfxCtx);
+    gSPMatrix(&gfx[2], Matrix_NewMtx(play->state.gfxCtx), G_MTX_LOAD);
     gSPDisplayList(&gfx[3], sLadderDLists[this->dyna.actor.params]);
 
     if (this->alpha == 255) {

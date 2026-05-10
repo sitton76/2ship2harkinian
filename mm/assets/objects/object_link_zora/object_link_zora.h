@@ -12,32 +12,32 @@ static const ALIGN_ASSET(2) char gLinkZoraEyesHalfTex[] = dgLinkZoraEyesHalfTex;
 #define dgLinkZoraEyesClosedTex "__OTR__objects/object_link_zora/gLinkZoraEyesClosedTex"
 static const ALIGN_ASSET(2) char gLinkZoraEyesClosedTex[] = dgLinkZoraEyesClosedTex;
 
-#define dgLinkZoraEyesRightTex "__OTR__objects/object_link_zora/gLinkZoraEyesRightTex"
-static const ALIGN_ASSET(2) char gLinkZoraEyesRightTex[] = dgLinkZoraEyesRightTex;
+#define dgLinkZoraEyesRollRightTex "__OTR__objects/object_link_zora/gLinkZoraEyesRollRightTex"
+static const ALIGN_ASSET(2) char gLinkZoraEyesRollRightTex[] = dgLinkZoraEyesRollRightTex;
 
-#define dgLinkZoraEyesLeftTex "__OTR__objects/object_link_zora/gLinkZoraEyesLeftTex"
-static const ALIGN_ASSET(2) char gLinkZoraEyesLeftTex[] = dgLinkZoraEyesLeftTex;
+#define dgLinkZoraEyesRollLeftTex "__OTR__objects/object_link_zora/gLinkZoraEyesRollLeftTex"
+static const ALIGN_ASSET(2) char gLinkZoraEyesRollLeftTex[] = dgLinkZoraEyesRollLeftTex;
 
-#define dgLinkZoraEyesUpTex "__OTR__objects/object_link_zora/gLinkZoraEyesUpTex"
-static const ALIGN_ASSET(2) char gLinkZoraEyesUpTex[] = dgLinkZoraEyesUpTex;
+#define dgLinkZoraEyesRollUpTex "__OTR__objects/object_link_zora/gLinkZoraEyesRollUpTex"
+static const ALIGN_ASSET(2) char gLinkZoraEyesRollUpTex[] = dgLinkZoraEyesRollUpTex;
 
-#define dgLinkZoraEyesDownTex "__OTR__objects/object_link_zora/gLinkZoraEyesDownTex"
-static const ALIGN_ASSET(2) char gLinkZoraEyesDownTex[] = dgLinkZoraEyesDownTex;
+#define dgLinkZoraEyesRollDownTex "__OTR__objects/object_link_zora/gLinkZoraEyesRollDownTex"
+static const ALIGN_ASSET(2) char gLinkZoraEyesRollDownTex[] = dgLinkZoraEyesRollDownTex;
 
-#define dgLinkZoraEyesWincingTex "__OTR__objects/object_link_zora/gLinkZoraEyesWincingTex"
-static const ALIGN_ASSET(2) char gLinkZoraEyesWincingTex[] = dgLinkZoraEyesWincingTex;
+#define dobject_link_zora_Tex_003800 "__OTR__objects/object_link_zora/object_link_zora_Tex_003800"
+static const ALIGN_ASSET(2) char object_link_zora_Tex_003800[] = dobject_link_zora_Tex_003800;
 
 #define dgLinkZoraMouthClosedTex "__OTR__objects/object_link_zora/gLinkZoraMouthClosedTex"
 static const ALIGN_ASSET(2) char gLinkZoraMouthClosedTex[] = dgLinkZoraMouthClosedTex;
 
-#define dgLinkZoraMouthHalfTex "__OTR__objects/object_link_zora/gLinkZoraMouthHalfTex"
-static const ALIGN_ASSET(2) char gLinkZoraMouthHalfTex[] = dgLinkZoraMouthHalfTex;
+#define dobject_link_zora_Tex_004400 "__OTR__objects/object_link_zora/object_link_zora_Tex_004400"
+static const ALIGN_ASSET(2) char object_link_zora_Tex_004400[] = dobject_link_zora_Tex_004400;
 
-#define dgLinkZoraMouthOpenTex "__OTR__objects/object_link_zora/gLinkZoraMouthOpenTex"
-static const ALIGN_ASSET(2) char gLinkZoraMouthOpenTex[] = dgLinkZoraMouthOpenTex;
+#define dgLinkZoraMouthAngryTex "__OTR__objects/object_link_zora/gLinkZoraMouthAngryTex"
+static const ALIGN_ASSET(2) char gLinkZoraMouthAngryTex[] = dgLinkZoraMouthAngryTex;
 
-#define dgLinkZoraMouthSmileTex "__OTR__objects/object_link_zora/gLinkZoraMouthSmileTex"
-static const ALIGN_ASSET(2) char gLinkZoraMouthSmileTex[] = dgLinkZoraMouthSmileTex;
+#define dgLinkZoraMouthHappyTex "__OTR__objects/object_link_zora/gLinkZoraMouthHappyTex"
+static const ALIGN_ASSET(2) char gLinkZoraMouthHappyTex[] = dgLinkZoraMouthHappyTex;
 
 #define dobject_link_zora_TLUT_005000 "__OTR__objects/object_link_zora/object_link_zora_TLUT_005000"
 static const ALIGN_ASSET(2) char object_link_zora_TLUT_005000[] = dobject_link_zora_TLUT_005000;

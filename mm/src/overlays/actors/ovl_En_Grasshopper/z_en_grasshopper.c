@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Clear_Tag/z_en_clear_tag.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnGrasshopper*)thisx)
 
 void EnGrasshopper_Init(Actor* thisx, PlayState* play);
 void EnGrasshopper_Destroy(Actor* thisx, PlayState* play);
@@ -208,7 +210,7 @@ static DamageTable sDamageTable = {
     /* Powder Keg     */ DMG_ENTRY(1, DRAGONFLY_DMGEFF_HOOK),
 };
 
-ActorProfile En_Grasshopper_Profile = {
+ActorInit En_Grasshopper_InitVars = {
     /**/ ACTOR_EN_GRASSHOPPER,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -223,22 +225,22 @@ ActorProfile En_Grasshopper_Profile = {
 static ColliderJntSphElementInit sJntSphElementsInit[2] = {
     {
         {
-            ELEM_MATERIAL_UNK3,
+            ELEMTYPE_UNK3,
             { 0xF7CFFFFF, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NORMAL,
-            ACELEM_ON | ACELEM_HOOKABLE,
+            TOUCH_ON | TOUCH_SFX_NORMAL,
+            BUMP_ON | BUMP_HOOKABLE,
             OCELEM_ON,
         },
         { DRAGONFLY_LIMB_THORAX, { { 0, 0, 0 }, 0 }, 0 },
     },
     {
         {
-            ELEM_MATERIAL_UNK2,
+            ELEMTYPE_UNK2,
             { 0xF7CFFFFF, 0x07, 0x04 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_ON | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { DRAGONFLY_LIMB_TAIL_TIP, { { 0, 0, 0 }, 0 }, 0 },
@@ -247,7 +249,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[2] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_HIT2,
+        COLTYPE_HIT2,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_1,
@@ -259,11 +261,11 @@ static ColliderJntSphInit sJntSphInit = {
 };
 
 void EnGrasshopper_Init(Actor* thisx, PlayState* play) {
-    EnGrasshopper* this = (EnGrasshopper*)thisx;
+    EnGrasshopper* this = THIS;
     s32 i;
 
     this->actor.hintId = TATL_HINT_ID_DRAGONFLY;
-    this->actor.attentionRangeType = ATTENTION_RANGE_4;
+    this->actor.targetMode = TARGET_MODE_4;
     this->actor.colChkInfo.mass = 60;
     this->actor.colChkInfo.health = 2;
 
@@ -277,7 +279,7 @@ void EnGrasshopper_Init(Actor* thisx, PlayState* play) {
         this->collider.elements[0].dim.modelSphere.center.z = this->collider.elements[1].dim.modelSphere.center.y =
             this->collider.elements[1].dim.modelSphere.center.z = 0;
 
-    this->actor.flags |= ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR;
+    this->actor.flags |= ACTOR_FLAG_200;
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 1.0f);
     this->actor.colChkInfo.damageTable = &sDamageTable;
     Math_Vec3f_Copy(&this->flyingHomePos, &this->actor.home.pos);
@@ -322,7 +324,7 @@ void EnGrasshopper_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnGrasshopper_Destroy(Actor* thisx, PlayState* play) {
-    EnGrasshopper* this = (EnGrasshopper*)thisx;
+    EnGrasshopper* this = THIS;
 
     Collider_DestroyJntSph(play, &this->collider);
 
@@ -436,7 +438,7 @@ void EnGrasshopper_Fly(EnGrasshopper* this, PlayState* play) {
         collisionCheckPos.y = this->actor.world.pos.y;
         collisionCheckPos.z = (Math_CosS(this->actor.shape.rot.y) * 100.0f) + this->actor.world.pos.z;
 
-        if (this->collider.elements[0].base.ocElemFlags & OCELEM_HIT) {
+        if (this->collider.elements[0].info.ocElemFlags & OCELEM_HIT) {
             this->shouldTurn = true;
         }
 
@@ -524,10 +526,10 @@ void EnGrasshopper_RoamInCircles(EnGrasshopper* this, PlayState* play) {
             BgCheck_SphVsFirstPoly(&play->colCtx, &collisionCheckPos, 10.0f)) {
             EnGrasshopper_SetupBank(this);
         } else if (player->stateFlags1 & PLAYER_STATE1_8000000) {
-            this->collider.elements[0].base.atElemFlags |= (ATELEM_ON | ATELEM_SFX_WOOD);
+            this->collider.elements[0].info.toucherFlags |= (TOUCH_ON | TOUCH_SFX_WOOD);
             EnGrasshopper_RaiseTail(this);
         } else if (this->collider.base.atFlags & AT_BOUNCED) {
-            this->collider.elements[0].base.atElemFlags &= ~(ATELEM_ON | ATELEM_SFX_WOOD);
+            this->collider.elements[0].info.toucherFlags &= ~(TOUCH_ON | TOUCH_SFX_WOOD);
             EnGrasshopper_SetupBounced(this);
         } else {
             this->targetRot.z = (this->actor.world.rot.y - this->targetRot.y) * 0.2f;
@@ -610,7 +612,7 @@ void EnGrasshopper_Bounced(EnGrasshopper* this, PlayState* play) {
     this->targetRot.z *= 0.8f;
     Math_SmoothStepToS(&this->actor.world.rot.y, this->targetRot.y, 5, this->angularVelocity, 5);
     if (this->timer == 0) {
-        this->collider.elements[0].base.atElemFlags |= (ATELEM_ON | ATELEM_SFX_WOOD);
+        this->collider.elements[0].info.toucherFlags |= (TOUCH_ON | TOUCH_SFX_WOOD);
         this->timer = 0;
         this->action = DRAGONFLY_ACTION_ROAM_IN_CIRCLES;
         this->waitTimer = this->timer;
@@ -679,8 +681,8 @@ void EnGrasshopper_SetupAttack(EnGrasshopper* this) {
     Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.yawTowardsPlayer, 0xA, 0xFA0, 0xA);
     this->actor.speed = 3.0f;
     this->baseFlyHeight = this->actor.world.pos.y;
-    this->collider.elements[0].base.atElemFlags &= ~(ATELEM_ON | ATELEM_SFX_WOOD);
-    this->collider.elements[1].base.atElemFlags |= (ATELEM_ON | ATELEM_SFX_WOOD);
+    this->collider.elements[0].info.toucherFlags &= ~(TOUCH_ON | TOUCH_SFX_WOOD);
+    this->collider.elements[1].info.toucherFlags |= (TOUCH_ON | TOUCH_SFX_WOOD);
     Actor_PlaySfx(&this->actor, NA_SE_EN_BATTA_ATTACK);
     this->action = DRAGONFLY_ACTION_ATTACK;
     this->actionFunc = EnGrasshopper_Attack;
@@ -719,9 +721,9 @@ void EnGrasshopper_Attack(EnGrasshopper* this, PlayState* play) {
     this->bobPhase += 0xAF0;
     this->targetApproachPos.y = (Math_SinS(this->bobPhase) * 10.0f) + (player->actor.world.pos.y + 60.0f);
 
-    hitPos.x = this->collider.elements[1].base.acDmgInfo.hitPos.x;
-    hitPos.y = this->collider.elements[1].base.acDmgInfo.hitPos.y;
-    hitPos.z = this->collider.elements[1].base.acDmgInfo.hitPos.z;
+    hitPos.x = this->collider.elements[1].info.bumper.hitPos.x;
+    hitPos.y = this->collider.elements[1].info.bumper.hitPos.y;
+    hitPos.z = this->collider.elements[1].info.bumper.hitPos.z;
     diff.x = hitPos.x - player->actor.world.pos.x;
     diff.y = hitPos.y - player->actor.world.pos.y;
     diff.z = hitPos.z - player->actor.world.pos.z;
@@ -731,7 +733,7 @@ void EnGrasshopper_Attack(EnGrasshopper* this, PlayState* play) {
         ((player->stateFlags1 & PLAYER_STATE1_400000) && (playerToHitPosDist <= 60.0f) &&
          ((s16)((player->actor.shape.rot.y - this->actor.shape.rot.y) + 0x8000) < 0x2000) &&
          ((s16)((player->actor.shape.rot.y - this->actor.shape.rot.y) + 0x8000) > -0x2000))) {
-        this->collider.elements[1].base.atElemFlags &= ~(ATELEM_ON | ATELEM_SFX_WOOD);
+        this->collider.elements[1].info.toucherFlags &= ~(TOUCH_ON | TOUCH_SFX_WOOD);
     }
 
     Math_ApproachF(&this->actor.world.pos.y, this->targetApproachPos.y, 0.1f, this->approachSpeed);
@@ -750,7 +752,7 @@ void EnGrasshopper_SetupWaitAfterAttack(EnGrasshopper* this) {
     this->action = DRAGONFLY_ACTION_WAIT_AFTER_ATTACK;
     this->waitTimer = 20;
     this->actor.speed = 0.0f;
-    this->collider.elements[1].base.atElemFlags &= ~(ATELEM_ON | ATELEM_SFX_WOOD);
+    this->collider.elements[1].info.toucherFlags &= ~(TOUCH_ON | TOUCH_SFX_WOOD);
     this->actionFunc = EnGrasshopper_WaitAfterAttack;
 }
 
@@ -762,7 +764,7 @@ void EnGrasshopper_WaitAfterAttack(EnGrasshopper* this, PlayState* play) {
     this->targetPosY = (Math_SinS(this->bobPhase) * 10.0f) + this->baseFlyHeight;
     Math_ApproachF(&this->actor.world.pos.y, this->targetPosY, 0.1f, 10.0f);
     if (this->waitTimer == 0) {
-        this->collider.elements[0].base.atElemFlags |= (ATELEM_ON | ATELEM_SFX_WOOD);
+        this->collider.elements[0].info.toucherFlags |= (TOUCH_ON | TOUCH_SFX_WOOD);
         EnGrasshopper_RaiseTail(this);
     }
 }
@@ -772,9 +774,9 @@ void EnGrasshopper_SetupDamaged(EnGrasshopper* this, PlayState* play) {
 
     EnGrasshopper_ChangeAnim(this, DRAGONFLY_ANIM_DAMAGE);
     this->actor.speed = 0.0f;
-    this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     this->approachSpeed = 0.0f;
-    this->collider.elements[1].base.atElemFlags &= ~(ATELEM_ON | ATELEM_SFX_WOOD);
+    this->collider.elements[1].info.toucherFlags &= ~(TOUCH_ON | TOUCH_SFX_WOOD);
     Matrix_RotateYS(this->actor.yawTowardsPlayer, MTXMODE_NEW);
     Matrix_MultVecZ(-20.0f, &damagedVelocity);
     Math_Vec3f_Copy(&this->damagedVelocity, &damagedVelocity);
@@ -800,7 +802,7 @@ void EnGrasshopper_Damaged(EnGrasshopper* this, PlayState* play) {
 
 void EnGrasshopper_SetupDead(EnGrasshopper* this, PlayState* play) {
     EnGrasshopper_ChangeAnim(this, DRAGONFLY_ANIM_DEAD);
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
     this->actor.speed = 0.0f;
     this->approachSpeed = 0.0f;
     this->actor.velocity.y = 5.0f;
@@ -834,7 +836,7 @@ void EnGrasshopper_Dead(EnGrasshopper* this, PlayState* play) {
     }
 
     if (curFrame >= this->animEndFrame) {
-        this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_10;
         EnGrasshopper_SetupFall(this);
     }
 }
@@ -922,8 +924,8 @@ void EnGrasshopper_UpdateDamage(EnGrasshopper* this, PlayState* play) {
     s32 pad;
     s16 attackDealsDamage = false;
 
-    if ((this->collider.elements[0].base.acElemFlags & ACELEM_HIT) ||
-        (this->collider.elements[1].base.acElemFlags & ACELEM_HIT)) {
+    if ((this->collider.elements[0].info.bumperFlags & BUMP_HIT) ||
+        (this->collider.elements[1].info.bumperFlags & BUMP_HIT)) {
         this->collider.base.acFlags &= ~AC_HIT;
         if ((this->action != DRAGONFLY_ACTION_DAMAGED) && (this->action != DRAGONFLY_ACTION_DEAD) &&
             (this->action != DRAGONFLY_ACTION_FALL)) {
@@ -971,7 +973,7 @@ void EnGrasshopper_UpdateDamage(EnGrasshopper* this, PlayState* play) {
 
 void EnGrasshopper_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGrasshopper* this = (EnGrasshopper*)thisx;
+    EnGrasshopper* this = THIS;
 
     SkelAnime_Update(&this->skelAnime);
     EnGrasshopper_UpdateDamage(this, play);
@@ -1024,7 +1026,7 @@ void EnGrasshopper_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnGrasshopper_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnGrasshopper* this = (EnGrasshopper*)thisx;
+    EnGrasshopper* this = THIS;
     Vec3f sEffectOffsetFromTailTop = { 500.0f, 0.0f, 0.0f };
     Vec3f sZeroVec3f = { 0.0f, 0.0f, 0.0f };
 
@@ -1070,7 +1072,7 @@ void EnGrasshopper_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
 }
 
 void EnGrasshopper_Draw(Actor* thisx, PlayState* play) {
-    EnGrasshopper* this = (EnGrasshopper*)thisx;
+    EnGrasshopper* this = THIS;
     s32 i;
     u8* shadowTex = GRAPH_ALLOC(play->state.gfxCtx, SUBS_SHADOW_TEX_SIZE);
     u8* shadowTexIter;
@@ -1091,7 +1093,7 @@ void EnGrasshopper_Draw(Actor* thisx, PlayState* play) {
                               DRAGONFLY_SHADOW_BODYPART_MAX, sShadowSizes, sParentShadowBodyParts);
             //! FAKE: Needed to fix some regs and stack
             //! https://decomp.me/scratch/4wJBW
-            if (shadowTex && shadowTex && shadowTex) {}
+            if ((shadowTex && shadowTex) && shadowTex) {}
         }
 
         SubS_DrawShadowTex(&this->actor, &play->state, shadowTex);

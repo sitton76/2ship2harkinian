@@ -8,8 +8,9 @@
 #include "z_en_poh.h"
 #include "overlays/actors/ovl_En_Clear_Tag/z_en_clear_tag.h"
 
-#define FLAGS \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR | ACTOR_FLAG_IGNORE_QUAKE)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_200 | ACTOR_FLAG_IGNORE_QUAKE)
+
+#define THIS ((EnPoh*)thisx)
 
 void EnPoh_Init(Actor* thisx, PlayState* play);
 void EnPoh_Destroy(Actor* thisx, PlayState* play);
@@ -46,7 +47,7 @@ void func_80B2E3F8(EnPoh* this, PlayState* play);
 void func_80B2F328(Actor* thisx, PlayState* play);
 void func_80B2F37C(Actor* thisx, PlayState* play);
 
-ActorProfile En_Poh_Profile = {
+ActorInit En_Poh_InitVars = {
     /**/ ACTOR_EN_POH,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -60,7 +61,7 @@ ActorProfile En_Poh_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_NONE,
         AC_NONE | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -68,11 +69,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CBFFFE, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 20, 40, 20, { 0, 0, 0 } },
@@ -81,11 +82,11 @@ static ColliderCylinderInit sCylinderInit = {
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0xF7CFFFFF, 0x00, 0x08 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NORMAL,
-            ACELEM_NONE,
+            TOUCH_ON | TOUCH_SFX_NORMAL,
+            BUMP_NONE,
             OCELEM_ON,
         },
         { 18, { { 0, 1400, 0 }, 10 }, 100 },
@@ -94,7 +95,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -144,11 +145,11 @@ static CollisionCheckInfoInit sColChkInfoInit = { 3, 25, 50, 50 };
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_S8(hintId, TATL_HINT_ID_POE, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 3200, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 3200, ICHAIN_STOP),
 };
 
 void EnPoh_Init(Actor* thisx, PlayState* play) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
     s32 pad;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
@@ -171,7 +172,7 @@ void EnPoh_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnPoh_Destroy(Actor* thisx, PlayState* play) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
 
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
     Collider_DestroyJntSph(play, &this->colliderSph);
@@ -362,7 +363,7 @@ void func_80B2D07C(EnPoh* this, PlayState* play) {
 
 void func_80B2D0E8(EnPoh* this) {
     this->unk_197 = 0;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     Animation_PlayOnceSetSpeed(&this->skelAnime, &gPoeAppearAnim, 0.0f);
     this->actionFunc = func_80B2D140;
 }
@@ -371,7 +372,7 @@ void func_80B2D140(EnPoh* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
         this->unk_197 = 255;
         this->unk_190 = Rand_S16Offset(700, 300);
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
         func_80B2CB60(this);
     } else if (this->skelAnime.curFrame > 10.0f) {
         this->unk_197 = (this->skelAnime.curFrame - 10.0f) * 0.05f * 255.0f;
@@ -388,7 +389,7 @@ void func_80B2D2C0(EnPoh* this) {
     this->actor.world.rot.y = this->actor.shape.rot.y;
     this->unk_18E = 0;
     this->actor.hintId = TATL_HINT_ID_NONE;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actionFunc = func_80B2D300;
 }
 
@@ -504,7 +505,7 @@ void func_80B2D7D4(EnPoh* this, PlayState* play) {
     this->unk_197 = this->unk_18C * (255.0f / 32.0f);
     if (this->unk_18C == 0) {
         this->unk_190 = Rand_S16Offset(100, 50);
-        this->colliderCylinder.elem.acDmgInfo.dmgFlags = 0x40001;
+        this->colliderCylinder.info.bumper.dmgFlags = 0x40001;
         func_80B2CB60(this);
     }
 }
@@ -531,7 +532,7 @@ void func_80B2D980(EnPoh* this, PlayState* play) {
     if (this->unk_18C == 32) {
         this->unk_190 = Rand_S16Offset(700, 300);
         this->unk_18C = 0;
-        this->colliderCylinder.elem.acDmgInfo.dmgFlags = ~0x8340001;
+        this->colliderCylinder.info.bumper.dmgFlags = ~0x8340001;
         func_80B2CB60(this);
     }
 }
@@ -570,13 +571,13 @@ void func_80B2DC50(EnPoh* this, PlayState* play) {
     this->actor.world.pos.y = this->unk_3D8.yw;
     this->actor.world.pos.z = this->unk_3D8.zw;
     Actor_SetScale(&this->actor, 0.01f);
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     this->actor.gravity = -1.0f;
     this->actor.shape.yOffset = 1500.0f;
     this->actor.world.pos.y -= 15.0f;
     this->actor.shape.rot.x = -0x8000;
-    Actor_ChangeCategory(play, &play->actorCtx, &this->actor, ACTORCAT_MISC);
-    this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE);
+    func_800BC154(play, &play->actorCtx, &this->actor, 8);
+    this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY);
     this->actionFunc = func_80B2DD2C;
 }
 
@@ -645,7 +646,7 @@ void func_80B2E1D8(EnPoh* this) {
     Actor_SetFocus(&this->actor, -10.0f);
     this->unk_18E = 200;
     this->unk_18D = 32;
-    this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     this->actionFunc = func_80B2E230;
 }
 
@@ -707,10 +708,10 @@ void func_80B2E438(EnPoh* this, PlayState* play) {
                 if (this->actor.colChkInfo.damageEffect == 4) {
                     this->drawDmgEffAlpha = 4.0f;
                     this->drawDmgEffScale = 0.45f;
-                    Actor_Spawn(
-                        &play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->colliderCylinder.elem.acDmgInfo.hitPos.x,
-                        this->colliderCylinder.elem.acDmgInfo.hitPos.y, this->colliderCylinder.elem.acDmgInfo.hitPos.z,
-                        0, 0, 0, CLEAR_TAG_PARAMS(CLEAR_TAG_LARGE_LIGHT_RAYS));
+                    Actor_Spawn(&play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->colliderCylinder.info.bumper.hitPos.x,
+                                this->colliderCylinder.info.bumper.hitPos.y,
+                                this->colliderCylinder.info.bumper.hitPos.z, 0, 0, 0,
+                                CLEAR_TAG_PARAMS(CLEAR_TAG_LARGE_LIGHT_RAYS));
                 }
                 func_80B2CFF8(this);
             }
@@ -796,7 +797,7 @@ void func_80B2E8E0(EnPoh* this) {
 
 void EnPoh_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
     s32 pad;
 
     if (this->colliderSph.base.atFlags & AT_HIT) {
@@ -809,7 +810,7 @@ void EnPoh_Update(Actor* thisx, PlayState* play2) {
     this->actionFunc(this, play);
     Actor_MoveWithGravity(&this->actor);
     if ((this->actionFunc == func_80B2CF28) && (this->unk_18E < 10)) {
-        this->actor.flags |= ACTOR_FLAG_SFX_FOR_PLAYER_BODY_HIT;
+        this->actor.flags |= ACTOR_FLAG_1000000;
         CollisionCheck_SetAT(play, &play->colChkCtx, &this->colliderSph.base);
     }
 
@@ -847,14 +848,13 @@ void EnPoh_Update(Actor* thisx, PlayState* play2) {
 
 s32 EnPoh_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
                            Gfx** gfx) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
 
-    if ((this->unk_197 == 0) || (limbIndex == POE_LIMB_LANTERN) ||
-        ((this->actionFunc == func_80B2D300) && (this->unk_18E >= 2))) {
+    if ((this->unk_197 == 0) || (limbIndex == 18) || ((this->actionFunc == func_80B2D300) && (this->unk_18E >= 2))) {
         *dList = NULL;
     }
 
-    if (limbIndex == POE_LIMB_RIGHT_FOREARM) {
+    if (limbIndex == 19) {
         gDPPipeSync((*gfx)++);
         gDPSetEnvColor((*gfx)++, this->unk_194, this->unk_195, this->unk_196, this->unk_197);
     }
@@ -895,17 +895,16 @@ static Vec3f D_80B2F734[] = {
 void EnPoh_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx, Gfx** gfx) {
     s32 bodyPartIndex;
     Vec3f sp60;
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
     s32 pad;
 
     Collider_UpdateSpheres(limbIndex, &this->colliderSph);
-
-    if ((this->actionFunc == func_80B2D300) && (this->unk_18E >= 2) && (limbIndex == POE_LIMB_TOP_CLOAK)) {
-        MATRIX_FINALIZE_AND_LOAD((*gfx)++, play->state.gfxCtx);
+    if ((this->actionFunc == func_80B2D300) && (this->unk_18E >= 2) && (limbIndex == 5)) {
+        gSPMatrix((*gfx)++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList((*gfx)++, gPoeBurnDL);
     }
 
-    if (limbIndex == POE_LIMB_LANTERN) {
+    if (limbIndex == 18) {
         if ((this->actionFunc == func_80B2D300) && (this->unk_18E >= 19) && (this->actor.scale.x != 0.0f)) {
             Matrix_Scale(0.01f / this->actor.scale.x, 0.01f / this->actor.scale.x, 0.01f / this->actor.scale.x,
                          MTXMODE_APPLY);
@@ -940,7 +939,7 @@ void EnPoh_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot,
 }
 
 void EnPoh_Draw(Actor* thisx, PlayState* play) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
     Gfx* gfx;
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -976,7 +975,7 @@ void EnPoh_Draw(Actor* thisx, PlayState* play) {
 
     Matrix_Put(&this->unk_3D8);
 
-    MATRIX_FINALIZE_AND_LOAD(&gfx[2], play->state.gfxCtx);
+    gSPMatrix(&gfx[2], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[3], gPoeLanternDL);
 
     POLY_OPA_DISP = &gfx[4];
@@ -988,7 +987,7 @@ void EnPoh_Draw(Actor* thisx, PlayState* play) {
 }
 
 void func_80B2F328(Actor* thisx, PlayState* play) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
 
     this->actionFunc(this, play);
     if (this->actionFunc != func_80B2DD2C) {
@@ -999,7 +998,7 @@ void func_80B2F328(Actor* thisx, PlayState* play) {
 }
 
 void func_80B2F37C(Actor* thisx, PlayState* play) {
-    EnPoh* this = (EnPoh*)thisx;
+    EnPoh* this = THIS;
     s32 pad;
     Vec3f sp7C;
     Gfx* gfx;
@@ -1016,22 +1015,22 @@ void func_80B2F37C(Actor* thisx, PlayState* play) {
         Lights_PointGlowSetInfo(&this->lightInfo, this->actor.world.pos.x + sp7C.x, this->actor.world.pos.y + sp7C.y,
                                 this->actor.world.pos.z + sp7C.z, this->unk_198, this->unk_199, this->unk_19A, 200);
 
-        MATRIX_FINALIZE_AND_LOAD(&gfx[2], play->state.gfxCtx);
+        gSPMatrix(&gfx[2], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(&gfx[3], gPoeLanternDL);
 
         POLY_OPA_DISP = &gfx[4];
     } else {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
-        gSPSegment(POLY_XLU_DISP++, 0x08,
-                   Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (this->unk_190 * -8) & 0x1FF, 0x20,
-                                      0x80, 0, 0, 0, -8));
+        gSPSegment(
+            POLY_XLU_DISP++, 0x08,
+            Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (this->unk_190 * -8) & 0x1FF, 0x20, 0x80));
         gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 170, 255, this->unk_197);
         gDPSetEnvColor(POLY_XLU_DISP++, this->unk_194, this->unk_195, this->unk_196, 255);
 
         Matrix_RotateYF(BINANG_TO_RAD(Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) + 0x8000), MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gPoeSoulDL);
     }
 

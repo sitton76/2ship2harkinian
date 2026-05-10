@@ -1,7 +1,6 @@
 #include "ActorBehavior.h"
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/libultraship.h>
 #include "2s2h/ShipUtils.h"
-#include "2s2h/CustomMessage/CustomMessage.h"
 
 extern "C" {
 #include "variables.h"
@@ -25,8 +24,7 @@ void EnAkindonuts_ReplacePurchaseMessage(RandoCheckId randoCheckId, RandoInf ran
     auto entry = CustomMessage::LoadVanillaMessageTableEntry(*textId);
     entry.msg = "I'll sell you %g{{item}}%w for %r{{rupees}} Rupees%w!\xE0";
 
-    CustomMessage::Replace(&entry.msg, "{{item}}",
-                           Rando::StaticData::GetItemName(randoSaveCheck.randoItemId, true, randoCheckId));
+    CustomMessage::Replace(&entry.msg, "{{item}}", Rando::StaticData::GetItemName(randoSaveCheck.randoItemId));
     CustomMessage::Replace(&entry.msg, "{{rupees}}", std::to_string(cost));
 
     CustomMessage::LoadCustomMessageIntoFont(entry);
@@ -113,8 +111,7 @@ void Rando::ActorBehavior::InitEnAkindonutsBehavior() {
 
         CustomMessage::Replace(
             &entry.msg, "{{item}}",
-            Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_SOUTHERN_SWAMP_SCRUB_BEANS].randoItemId, true,
-                                           RC_SOUTHERN_SWAMP_SCRUB_BEANS));
+            Rando::StaticData::GetItemName(RANDO_SAVE_CHECKS[RC_SOUTHERN_SWAMP_SCRUB_BEANS].randoItemId));
         CustomMessage::LoadCustomMessageIntoFont(entry);
         *loadFromMessageTable = false;
     });

@@ -4,7 +4,6 @@
  * Description: Entering name on a new file, selecting options from the options menu
  */
 
-#include "prevent_bss_reordering.h"
 #include "z_file_select.h"
 #include "z64rumble.h"
 #include "misc/title_static/title_static.h"
@@ -203,7 +202,7 @@ void FileSelect_SetNameEntryVtx(GameState* thisx) {
 
     for (var_t1 = 0, var_s0 = 0x10; var_t1 < 2; var_t1++, var_s0 += 4) {
         gDPSetPrimColorOverride(POLY_OPA_DISP++, 0, 0, this->windowColor[0], this->windowColor[1], this->windowColor[2],
-                                255, COSMETIC_ID("Menus.FilePlates"));
+                                255, COSMETIC_ELEMENT_FILE_SELECT_PLATES);
         gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, 0);
         gDPLoadTextureBlock(POLY_OPA_DISP++, sBackspaceEndTextures[var_t1], G_IM_FMT_IA, G_IM_SIZ_16b,
                             sBackspaceEndWidths[var_t1], 16, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP,
@@ -266,7 +265,7 @@ void FileSelect_SetNameEntryVtx(GameState* thisx) {
     gDPSetCombineLERP(POLY_OPA_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0, PRIMITIVE,
                       ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
     gDPSetPrimColorOverride(POLY_OPA_DISP++, 0, 0, this->windowColor[0], this->windowColor[1], this->windowColor[2],
-                            this->nameEntryBoxAlpha, COSMETIC_ID("Menus.FilePlates"));
+                            this->nameEntryBoxAlpha, COSMETIC_ELEMENT_FILE_SELECT_PLATES);
     gSPVertex(POLY_OPA_DISP++, this->nameEntryVtx, 4, 0);
 
     gDPLoadTextureBlock(POLY_OPA_DISP++, gFileSelFileNameBoxTex, G_IM_FMT_IA, G_IM_SIZ_16b, 108, 16, 0,
@@ -516,7 +515,7 @@ void FileSelect_DrawNameEntry(GameState* thisx) {
                             if (validName) {
                                 Audio_PlaySfx(NA_SE_SY_FSEL_DECIDE_L);
                                 gSaveContext.fileNum = this->buttonIndex;
-                                time = CURRENT_TIME;
+                                time = ((void)0, gSaveContext.save.time);
                                 Sram_InitSave(this, sramCtx);
                                 gSaveContext.save.time = time;
 
@@ -947,20 +946,20 @@ void FileSelect_DrawOptionsImpl_NES_GC(GameState* thisx) {
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.1f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPVertex(POLY_OPA_DISP++, gOptionsDividerVtx, 12, 0);
     gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
     Matrix_Pop();
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.2f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSP1Quadrangle(POLY_OPA_DISP++, 4, 6, 7, 5, 0);
     Matrix_Pop();
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.4f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSP1Quadrangle(POLY_OPA_DISP++, 8, 10, 11, 9, 0);
     Matrix_Pop();
 
@@ -1175,21 +1174,21 @@ void FileSelect_DrawOptionsImpl(GameState* thisx) {
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.1f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPVertex(POLY_OPA_DISP++, gOptionsDividerTopVtx, 4, 0);
     gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
     Matrix_Pop();
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.2f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPVertex(POLY_OPA_DISP++, gOptionsDividerMiddleVtx, 4, 0);
     gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
     Matrix_Pop();
 
     Matrix_Push();
     Matrix_Translate(0.0f, 0.4f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, this->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(this->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPVertex(POLY_OPA_DISP++, gOptionsDividerBottomVtx, 4, 0);
     gSP1Quadrangle(POLY_OPA_DISP++, 0, 2, 3, 1, 0);
     Matrix_Pop();

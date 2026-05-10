@@ -7,7 +7,9 @@
 #include "z_dm_opstage.h"
 #include "objects/object_keikoku_demo/object_keikoku_demo.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DmOpstage*)thisx)
 
 void DmOpstage_Init(Actor* thisx, PlayState* play);
 void DmOpstage_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void DmOpstage_Draw(Actor* thisx, PlayState* play);
 
 void DmOpstage_HandleCutscene(DmOpstage* this, PlayState* play);
 
-ActorProfile Dm_Opstage_Profile = {
+ActorInit Dm_Opstage_InitVars = {
     /**/ ACTOR_DM_OPSTAGE,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -29,7 +31,7 @@ ActorProfile Dm_Opstage_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 300, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneScale, 300, ICHAIN_STOP),
 };
 
 void DmOpstage_SetupAction(DmOpstage* this, DmOpstageActionFunc actionFunc) {
@@ -37,7 +39,7 @@ void DmOpstage_SetupAction(DmOpstage* this, DmOpstageActionFunc actionFunc) {
 }
 
 void DmOpstage_Init(Actor* thisx, PlayState* play) {
-    DmOpstage* this = (DmOpstage*)thisx;
+    DmOpstage* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DmOpstage_SetupAction(this, DmOpstage_HandleCutscene);
@@ -60,7 +62,7 @@ void DmOpstage_Init(Actor* thisx, PlayState* play) {
 }
 
 void DmOpstage_Destroy(Actor* thisx, PlayState* play) {
-    DmOpstage* this = (DmOpstage*)thisx;
+    DmOpstage* this = THIS;
 
     if (DMOPSTAGE_GET_TYPE(&this->dyna.actor) == DMOPSTAGE_TYPE_GROUND) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -90,7 +92,7 @@ void DmOpstage_HandleCutscene(DmOpstage* this, PlayState* play) {
 }
 
 void DmOpstage_Update(Actor* thisx, PlayState* play) {
-    DmOpstage* this = (DmOpstage*)thisx;
+    DmOpstage* this = THIS;
 
     this->actionFunc(this, play);
     if ((play->sceneId == SCENE_SPOT00) && (gSaveContext.sceneLayer == 0) && (play->csCtx.curFrame == 480)) {
@@ -101,7 +103,7 @@ void DmOpstage_Update(Actor* thisx, PlayState* play) {
 }
 
 void DmOpstage_Draw(Actor* thisx, PlayState* play) {
-    DmOpstage* this = (DmOpstage*)thisx;
+    DmOpstage* this = THIS;
 
     if (DMOPSTAGE_GET_TYPE(&this->dyna.actor) > DMOPSTAGE_TYPE_GROUND) {
         // Assumption: worldPos is being manipulated by cutscene

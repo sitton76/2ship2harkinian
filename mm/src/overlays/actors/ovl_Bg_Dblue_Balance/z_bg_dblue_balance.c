@@ -10,6 +10,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgDblueBalance*)thisx)
+
 void BgDblueBalance_Init(Actor* thisx, PlayState* play);
 void BgDblueBalance_Destroy(Actor* thisx, PlayState* play);
 void BgDblueBalance_Update(Actor* thisx, PlayState* play);
@@ -28,7 +30,7 @@ void func_80B83758(Actor* thisx, PlayState* play);
 AnimatedMaterial* D_80B83C70;
 AnimatedMaterial* D_80B83C74;
 
-ActorProfile Bg_Dblue_Balance_Profile = {
+ActorInit Bg_Dblue_Balance_InitVars = {
     /**/ ACTOR_BG_DBLUE_BALANCE,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -101,7 +103,7 @@ s8 D_80B83A94[] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
@@ -172,11 +174,11 @@ s32 func_80B82454(BgDblueBalance* this, PlayState* play) {
 
 void func_80B8259C(BgDblueBalance* this, PlayState* play) {
     s32 pad;
-    WaterBox* waterBox;
+    WaterBox* sp30;
     f32 sp2C;
 
     if (WaterBox_GetSurface1_2(play, &play->colCtx, this->dyna.actor.world.pos.x, this->dyna.actor.world.pos.z, &sp2C,
-                               &waterBox)) {
+                               &sp30)) {
         this->dyna.actor.depthInWater = sp2C - this->dyna.actor.world.pos.y;
         this->unk_228 = sp2C;
         if ((this->dyna.actor.depthInWater < 150.0f) && (this->dyna.actor.depthInWater > -150.0f)) {
@@ -293,7 +295,7 @@ void func_80B8296C(PlayState* play, Vec3f* arg1, f32 arg2) {
     }
 }
 
-bool func_80B82B00(s16 arg0, s16 arg1, s16 arg2) {
+s32 func_80B82B00(s16 arg0, s16 arg1, s16 arg2) {
     if (arg0 < arg1) {
         return (arg0 < arg2 && arg1 >= arg2);
     }
@@ -302,7 +304,7 @@ bool func_80B82B00(s16 arg0, s16 arg1, s16 arg2) {
 
 void BgDblueBalance_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
     s32 sp2C = BGDBLUEBALANCE_GET_300(&this->dyna.actor);
     s32 pad2;
     s32 isSwitchFlagSet = Flags_GetSwitch(play, BGDBLUEBALANCE_GET_SWITCH_FLAG(&this->dyna.actor));
@@ -310,8 +312,8 @@ void BgDblueBalance_Init(Actor* thisx, PlayState* play) {
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
 
     this->dyna.actor.flags = sTypeInfo[sp2C].unk_08;
-    this->dyna.actor.cullingVolumeScale = sTypeInfo[sp2C].unk_0C;
-    this->dyna.actor.cullingVolumeDownward = sTypeInfo[sp2C].unk_10;
+    this->dyna.actor.uncullZoneScale = sTypeInfo[sp2C].unk_0C;
+    this->dyna.actor.uncullZoneDownward = sTypeInfo[sp2C].unk_10;
     this->dyna.actor.update = sTypeInfo[sp2C].update;
     this->dyna.actor.draw = sTypeInfo[sp2C].draw;
 
@@ -349,7 +351,7 @@ void BgDblueBalance_Init(Actor* thisx, PlayState* play) {
 
 void BgDblueBalance_Destroy(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
     s32 sp1C = BGDBLUEBALANCE_GET_300(&this->dyna.actor);
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -532,7 +534,7 @@ void func_80B82DE0(BgDblueBalance* this, PlayState* play) {
 }
 
 void BgDblueBalance_Update(Actor* thisx, PlayState* play) {
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
 
     this->unk_17A = this->unk_178;
 
@@ -542,7 +544,7 @@ void BgDblueBalance_Update(Actor* thisx, PlayState* play) {
 }
 
 void func_80B8330C(Actor* thisx, PlayState* play) {
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
 
     this->isSwitchPressed = DynaPolyActor_IsSwitchPressed(&this->dyna);
     this->isHeavySwitchPressed = DynaPolyActor_IsHeavySwitchPressed(&this->dyna);
@@ -567,7 +569,7 @@ void func_80B833A8(BgDblueBalance* this) {
 }
 
 void func_80B833C4(BgDblueBalance* this, PlayState* play) {
-    Actor* thisx = &this->dyna.actor;
+    s32 pad;
     s32 sp28 = false;
     s16 sp26;
     s16 sp24;
@@ -586,9 +588,12 @@ void func_80B833C4(BgDblueBalance* this, PlayState* play) {
         this->unk_187 = Math_StepToS(&this->unk_178, 0x1F4, 5);
     }
 
-    sp26 = thisx->shape.rot.x;
-    thisx->shape.rot.x += this->unk_178;
-    sp24 = thisx->shape.rot.x;
+    sp26 = this->dyna.actor.shape.rot.x;
+    this->dyna.actor.shape.rot.x += this->unk_178;
+    sp24 = this->dyna.actor.shape.rot.x;
+
+    //! FAKE:
+    if (sp24) {}
 
     if (this->isSwitchFlagSet) {
         if (this->unk_186 != 0) {
@@ -609,13 +614,13 @@ void func_80B833C4(BgDblueBalance* this, PlayState* play) {
     func_80B8264C(this);
 
     if (sp28) {
-        thisx->shape.rot.x = this->unk_184;
+        this->dyna.actor.shape.rot.x = this->unk_184;
         func_80B83344(this);
     }
 }
 
 void func_80B83518(Actor* thisx, PlayState* play) {
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
 
     this->isSwitchFlagSet = Flags_GetSwitch(play, BGDBLUEBALANCE_GET_SWITCH_FLAG(&this->dyna.actor));
 
@@ -641,7 +646,7 @@ void func_80B83518(Actor* thisx, PlayState* play) {
 
 void BgDblueBalance_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
     BgDblueBalanceTypeInfo* ptr2 = &sTypeInfo[BGDBLUEBALANCE_GET_300(&this->dyna.actor)];
     BgDblueBalance* sp38;
     Gfx* gfx;
@@ -661,7 +666,7 @@ void BgDblueBalance_Draw(Actor* thisx, PlayState* play) {
         gfx = POLY_XLU_DISP;
 
         gSPDisplayList(gfx++, gSetupDLs[SETUPDL_25]);
-        MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+        gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetEnvColor(gfx++, 0, 0, 0, this->unk_183);
         gSPDisplayList(gfx++, gGreatBayTempleObjectSeesawSplashDL);
 
@@ -673,7 +678,7 @@ void BgDblueBalance_Draw(Actor* thisx, PlayState* play) {
 
 void func_80B83758(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgDblueBalance* this = (BgDblueBalance*)thisx;
+    BgDblueBalance* this = THIS;
     f32 temp_f0;
     Gfx* gfx;
     s32 i;
@@ -692,7 +697,7 @@ void func_80B83758(Actor* thisx, PlayState* play) {
                                                 temp_f0, 0x20);
     }
 
-    if (this->dyna.actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) {
+    if (this->dyna.actor.flags & ACTOR_FLAG_40) {
         ptr2 = &sTypeInfo[BGDBLUEBALANCE_GET_300(&this->dyna.actor)];
         Gfx_DrawDListOpa(play, ptr2->opaDList);
 
@@ -714,7 +719,7 @@ void func_80B83758(Actor* thisx, PlayState* play) {
 
                     temp = ptr->unk_0E * (f32)this->unk_183 * 0.003921569f;
                     gDPSetEnvColor(gfx++, 0, 0, 0, temp);
-                    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+                    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                     gSPDisplayList(gfx++, gGreatBayTempleObjectWaterwheelSplashDL);
                 }
             }

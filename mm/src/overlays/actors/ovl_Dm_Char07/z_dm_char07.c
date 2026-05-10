@@ -7,7 +7,9 @@
 #include "z_dm_char07.h"
 #include "objects/object_milkbar/object_milkbar.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DmChar07*)thisx)
 
 void DmChar07_Init(Actor* thisx, PlayState* play);
 void DmChar07_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void DmChar07_Draw(Actor* thisx, PlayState* play);
 
 void DmChar07_DoNothing(DmChar07* this, PlayState* play);
 
-ActorProfile Dm_Char07_Profile = {
+ActorInit Dm_Char07_InitVars = {
     /**/ ACTOR_DM_CHAR07,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -33,7 +35,7 @@ void DmChar07_SetupAction(DmChar07* this, DmChar07ActionFunc actionFunc) {
 }
 
 void DmChar07_Init(Actor* thisx, PlayState* play) {
-    DmChar07* this = (DmChar07*)thisx;
+    DmChar07* this = THIS;
 
     this->isStage = 0;
     Actor_SetScale(&this->dyna.actor, 1.0f);
@@ -51,7 +53,7 @@ void DmChar07_Init(Actor* thisx, PlayState* play) {
 }
 
 void DmChar07_Destroy(Actor* thisx, PlayState* play) {
-    DmChar07* this = (DmChar07*)thisx;
+    DmChar07* this = THIS;
 
     if (this->isStage) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -62,19 +64,19 @@ void DmChar07_DoNothing(DmChar07* this, PlayState* play) {
 }
 
 void DmChar07_Update(Actor* thisx, PlayState* play) {
-    DmChar07* this = (DmChar07*)thisx;
+    DmChar07* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void DmChar07_Draw(Actor* thisx, PlayState* play) {
-    DmChar07* this = (DmChar07*)thisx;
+    DmChar07* this = THIS;
     s32 pad;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     switch (this->dyna.actor.params) {
         case DMCHAR07_STAGE:
             gSPDisplayList(POLY_OPA_DISP++, object_milkbar_DL_002CD0);
@@ -117,7 +119,7 @@ void DmChar07_Draw(Actor* thisx, PlayState* play) {
     }
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     switch (this->dyna.actor.params) {
         case DMCHAR07_STAGE:

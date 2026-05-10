@@ -8,7 +8,9 @@
 #include "z64quake.h"
 #include "objects/object_ikana_obj/object_ikana_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgIkanaShutter*)thisx)
 
 void BgIkanaShutter_Init(Actor* thisx, PlayState* play);
 void BgIkanaShutter_Destroy(Actor* thisx, PlayState* play);
@@ -34,7 +36,7 @@ void func_80BD5BD8(BgIkanaShutter* this, PlayState* play);
 void BgIkanaShutter_SetupDoNothing(BgIkanaShutter* this);
 void BgIkanaShutter_DoNothing(BgIkanaShutter* this, PlayState* play);
 
-ActorProfile Bg_Ikana_Shutter_Profile = {
+ActorInit Bg_Ikana_Shutter_InitVars = {
     /**/ ACTOR_BG_IKANA_SHUTTER,
     /**/ ACTORCAT_SWITCH,
     /**/ FLAGS,
@@ -47,13 +49,13 @@ ActorProfile Bg_Ikana_Shutter_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 500, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 500, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 500, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 500, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
-bool BgIkanaShutter_AllSwitchesPressed(BgIkanaShutter* this, PlayState* play) {
+s32 BgIkanaShutter_AllSwitchesPressed(BgIkanaShutter* this, PlayState* play) {
     return Flags_GetSwitch(play, BGIKANASHUTTER_GET_SWITCH_FLAG(&this->dyna.actor)) &&
            Flags_GetSwitch(play, BGIKANASHUTTER_GET_SWITCH_FLAG(&this->dyna.actor) + 1) &&
            Flags_GetSwitch(play, BGIKANASHUTTER_GET_SWITCH_FLAG(&this->dyna.actor) + 2) &&
@@ -61,7 +63,7 @@ bool BgIkanaShutter_AllSwitchesPressed(BgIkanaShutter* this, PlayState* play) {
 }
 
 void BgIkanaShutter_Init(Actor* thisx, PlayState* play) {
-    BgIkanaShutter* this = (BgIkanaShutter*)thisx;
+    BgIkanaShutter* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, 0);
@@ -82,7 +84,7 @@ void BgIkanaShutter_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgIkanaShutter_Destroy(Actor* thisx, PlayState* play) {
-    BgIkanaShutter* this = (BgIkanaShutter*)thisx;
+    BgIkanaShutter* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -205,7 +207,7 @@ void BgIkanaShutter_DoNothing(BgIkanaShutter* this, PlayState* play) {
 }
 
 void BgIkanaShutter_Update(Actor* thisx, PlayState* play) {
-    BgIkanaShutter* this = (BgIkanaShutter*)thisx;
+    BgIkanaShutter* this = THIS;
 
     this->actionFunc(this, play);
 }

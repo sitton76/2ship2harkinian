@@ -3,9 +3,8 @@
 #include "2s2h/resource/type/Scene.h"
 #include "2s2h/resource/type/scenecommand/SceneCommand.h"
 #include "2s2h/resource/importer/scenecommand/SceneCommandFactory.h"
-#include <ship/resource/Resource.h>
-#include <ship/resource/ResourceFactoryBinary.h>
-#include <unordered_map>
+#include "Resource.h"
+#include "ResourceFactoryBinary.h"
 
 namespace SOH {
 class ResourceFactoryBinarySceneV0 : public Ship::ResourceFactoryBinary {

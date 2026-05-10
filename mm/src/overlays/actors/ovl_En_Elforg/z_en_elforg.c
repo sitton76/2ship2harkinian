@@ -7,7 +7,9 @@
 #include "z_en_elforg.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnElforg*)thisx)
 
 void EnElforg_Init(Actor* thisx, PlayState* play);
 void EnElforg_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void EnElforg_FreeFloating(EnElforg* this, PlayState* play);
 void EnElforg_SetupTrappedByEnemy(EnElforg* this, PlayState* play);
 void EnElforg_HiddenByCollider(EnElforg* this, PlayState* play);
 
-ActorProfile En_Elforg_Profile = {
+ActorInit En_Elforg_InitVars = {
     /**/ ACTOR_EN_ELFORG,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -35,7 +37,7 @@ ActorProfile En_Elforg_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -43,11 +45,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 16, 32, 0, { 0, 0, 0 } },
@@ -66,7 +68,7 @@ void EnElforg_InitializeParams(EnElforg* this) {
 
 void EnElforg_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnElforg* this = (EnElforg*)thisx;
+    EnElforg* this = THIS;
 
     Actor_SetScale(thisx, 0.01f);
     this->strayFairyFlags = 0;
@@ -106,8 +108,8 @@ void EnElforg_Init(Actor* thisx, PlayState* play) {
             break;
     }
 
-    if (Map_IsInDungeonOrBossScene(play)) {
-        this->area = gSaveContext.dungeonSceneSharedIndex + STRAY_FAIRY_AREA_WOODFALL;
+    if (Map_IsInDungeonOrBossArea(play)) {
+        this->area = gSaveContext.dungeonIndex + STRAY_FAIRY_AREA_WOODFALL;
     } else {
         this->area = STRAY_FAIRY_GET_NON_DUNGEON_AREA(thisx);
     }
@@ -154,7 +156,7 @@ void EnElforg_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnElforg_Destroy(Actor* thisx, PlayState* play) {
-    EnElforg* this = (EnElforg*)thisx;
+    EnElforg* this = THIS;
 
     if (STRAY_FAIRY_TYPE(&this->actor) == STRAY_FAIRY_TYPE_COLLIDER) {
         Collider_DestroyCylinder(play, &this->collider);
@@ -231,7 +233,7 @@ void EnElforg_MoveToTargetFairyFountain(EnElforg* this, Vec3f* homePos) {
     }
 
     targetAngle += angleAdjustment;
-    Math_SmoothStepToS(&this->actor.world.rot.y, targetAngle, 2, 0xFA0, 0x3E8);
+    Math_SmoothStepToS(&this->actor.world.rot.y, targetAngle, 2, 4000, 1000);
     EnElforg_ApproachTargetSpeedXZ(this);
     Actor_MoveWithGravity(&this->actor);
 }
@@ -497,12 +499,11 @@ void EnElforg_FreeFloating(EnElforg* this, PlayState* play) {
                     return;
                 }
 
-                if (Map_IsInDungeonOrBossScene(play)) {
-                    gSaveContext.save.saveInfo.inventory.strayFairies[gSaveContext.dungeonSceneSharedIndex]++;
+                if (Map_IsInDungeonOrBossArea(play)) {
+                    gSaveContext.save.saveInfo.inventory.strayFairies[gSaveContext.dungeonIndex]++;
                     // You found a Stray Fairy!
                     Message_StartTextbox(play, 0x11, NULL);
-                    if (gSaveContext.save.saveInfo.inventory
-                            .strayFairies[(void)0, gSaveContext.dungeonSceneSharedIndex] >=
+                    if (gSaveContext.save.saveInfo.inventory.strayFairies[(void)0, gSaveContext.dungeonIndex] >=
                         STRAY_FAIRY_SCATTERED_TOTAL) {
                         // BENTODO This had | 0x900 which interfered with the 16 bit sequence IDs. Removing it doesn't
                         // seem to do anything bad.
@@ -600,7 +601,7 @@ void EnElforg_HiddenByCollider(EnElforg* this, PlayState* play) {
 }
 
 void EnElforg_Update(Actor* thisx, PlayState* play) {
-    EnElforg* this = (EnElforg*)thisx;
+    EnElforg* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -624,7 +625,7 @@ void EnElforg_Update(Actor* thisx, PlayState* play) {
 
 s32 EnElforg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx,
                               Gfx** gfx) {
-    EnElforg* this = (EnElforg*)thisx;
+    EnElforg* this = THIS;
 
     if (this->direction < 0) {
         if (limbIndex == STRAY_FAIRY_LIMB_LEFT_FACING_HEAD) {
@@ -639,7 +640,7 @@ s32 EnElforg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f
 
 void EnElforg_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnElforg* this = (EnElforg*)thisx;
+    EnElforg* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

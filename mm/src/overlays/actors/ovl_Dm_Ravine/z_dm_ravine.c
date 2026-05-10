@@ -6,7 +6,9 @@
 
 #include "z_dm_ravine.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DmRavine*)thisx)
 
 void DmRavine_Init(Actor* thisx, PlayState* play);
 void DmRavine_Destroy(Actor* thisx, PlayState* play);
@@ -14,7 +16,7 @@ void DmRavine_DoNothing(DmRavine* this, PlayState* play);
 void DmRavine_Update(Actor* thisx, PlayState* play);
 void DmRavine_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Dm_Ravine_Profile = {
+ActorInit Dm_Ravine_InitVars = {
     /**/ ACTOR_DM_RAVINE,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile Dm_Ravine_Profile = {
 
 void DmRavine_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    DmRavine* this = (DmRavine*)thisx;
+    DmRavine* this = THIS;
 
     if (CHECK_WEEKEVENTREG_ALT(WEEKEVENTREG_ENTERED_GORMAN_TRACK) | cREG(0)) {
         Actor_Kill(&this->actor);
@@ -50,7 +52,7 @@ void DmRavine_DoNothing(DmRavine* this, PlayState* play) {
 }
 
 void DmRavine_Update(Actor* thisx, PlayState* play) {
-    DmRavine* this = (DmRavine*)thisx;
+    DmRavine* this = THIS;
     RoomContext* roomCtx;
 
     switch (this->state) {

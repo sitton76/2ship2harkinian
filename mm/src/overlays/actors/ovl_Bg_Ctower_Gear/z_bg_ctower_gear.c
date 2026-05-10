@@ -7,7 +7,9 @@
 #include "z_bg_ctower_gear.h"
 #include "objects/object_ctower_rot/object_ctower_rot.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgCtowerGear*)thisx)
 
 void BgCtowerGear_Init(Actor* thisx, PlayState* play);
 void BgCtowerGear_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void BgCtowerGear_Draw(Actor* thisx, PlayState* play);
 void BgCtowerGear_UpdateOrgan(Actor* thisx, PlayState* play);
 void BgCtowerGear_DrawOrgan(Actor* thisx, PlayState* play);
 
-ActorProfile Bg_Ctower_Gear_Profile = {
+ActorInit Bg_Ctower_Gear_InitVars = {
     /**/ ACTOR_BG_CTOWER_GEAR,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -43,28 +45,28 @@ static Vec3f sEnterSplashOffsets[] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 400, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 400, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 400, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 400, ICHAIN_STOP),
 };
 
 static InitChainEntry sInitChainCenterCog[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 1500, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 2000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 1500, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 2000, ICHAIN_STOP),
 };
 
 static InitChainEntry sInitChainOrgan[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 420, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 570, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 420, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 570, ICHAIN_STOP),
 };
 
 static Gfx* sDLists[] = { gClockTowerCeilingCogDL, gClockTowerCenterCogDL, gClockTowerWaterWheelDL };
 
 void BgCtowerGear_Splash(BgCtowerGear* this, PlayState* play) {
     s32 i;
-    s32 flag40 = this->dyna.actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME;
+    s32 flag40 = this->dyna.actor.flags & ACTOR_FLAG_40;
     Vec3f splashSpawnPos;
     Vec3f splashOffset;
     s32 pad;
@@ -111,7 +113,7 @@ void BgCtowerGear_Splash(BgCtowerGear* this, PlayState* play) {
 }
 
 void BgCtowerGear_Init(Actor* thisx, PlayState* play) {
-    BgCtowerGear* this = (BgCtowerGear*)thisx;
+    BgCtowerGear* this = THIS;
     s32 type = BGCTOWERGEAR_GET_TYPE(&this->dyna.actor);
 
     Actor_SetScale(&this->dyna.actor, 0.1f);
@@ -135,7 +137,7 @@ void BgCtowerGear_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgCtowerGear_Destroy(Actor* thisx, PlayState* play) {
-    BgCtowerGear* this = (BgCtowerGear*)thisx;
+    BgCtowerGear* this = THIS;
     s32 type = BGCTOWERGEAR_GET_TYPE(&this->dyna.actor);
 
     if ((type == BGCTOWERGEAR_WATER_WHEEL) || (type == BGCTOWERGEAR_ORGAN)) {
@@ -144,7 +146,7 @@ void BgCtowerGear_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void BgCtowerGear_Update(Actor* thisx, PlayState* play) {
-    BgCtowerGear* this = (BgCtowerGear*)thisx;
+    BgCtowerGear* this = THIS;
     s32 type = BGCTOWERGEAR_GET_TYPE(&this->dyna.actor);
 
     if (type == BGCTOWERGEAR_CEILING_COG) {
@@ -159,7 +161,7 @@ void BgCtowerGear_Update(Actor* thisx, PlayState* play) {
 }
 
 void BgCtowerGear_UpdateOrgan(Actor* thisx, PlayState* play) {
-    BgCtowerGear* this = (BgCtowerGear*)thisx;
+    BgCtowerGear* this = THIS;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_104)) {
         switch (play->csCtx.actorCues[Cutscene_GetCueChannel(play, CS_CMD_ACTOR_CUE_104)]->id) {
@@ -191,10 +193,10 @@ void BgCtowerGear_DrawOrgan(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gClockTowerOrganDL);
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, gClockTowerOrganPipesDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

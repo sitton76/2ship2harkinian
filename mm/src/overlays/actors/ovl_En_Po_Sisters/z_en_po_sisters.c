@@ -8,9 +8,10 @@
 #include "overlays/actors/ovl_En_Clear_Tag/z_en_clear_tag.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_IGNORE_QUAKE | ACTOR_FLAG_CAN_ATTACH_TO_ARROW)
+#define FLAGS \
+    (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_IGNORE_QUAKE | ACTOR_FLAG_4000)
+
+#define THIS ((EnPoSisters*)thisx)
 
 void EnPoSisters_Init(Actor* thisx, PlayState* play);
 void EnPoSisters_Destroy(Actor* thisx, PlayState* play);
@@ -62,7 +63,7 @@ static Color_RGBA8 sPoSisterEnvColors[] = {
     { 0, 150, 0, 255 },   // Amy
 };
 
-ActorProfile En_Po_Sisters_Profile = {
+ActorInit En_Po_Sisters_InitVars = {
     /**/ ACTOR_EN_PO_SISTERS,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -76,7 +77,7 @@ ActorProfile En_Po_Sisters_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -84,11 +85,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x08 },
         { 0xF7CBFFFE, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 18, 60, 15, { 0, 0, 0 } },
@@ -142,11 +143,12 @@ static DamageTable sDamageTable = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 7, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 6000, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 6000, ICHAIN_STOP),
 };
 
 // clang-format off
 // PoSisters have their own flags variable for cross function behavior detection
+#define POE_SISTERS_FLAG_CLEAR                 (0)
 #define POE_SISTERS_FLAG_CHECK_AC              (1 << 0)
 #define POE_SISTERS_FLAG_UPDATE_SHAPE_ROT      (1 << 1)
 #define POE_SISTERS_FLAG_CHECK_Z_TARGET        (1 << 2) // Meg doesnt go invisible if you ztarget her for too long
@@ -159,7 +161,7 @@ static InitChainEntry sInitChain[] = {
 
 void EnPoSisters_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 50.0f);
@@ -184,7 +186,7 @@ void EnPoSisters_Init(Actor* thisx, PlayState* play) {
     this->fireCount = 1;
     this->poSisterFlags = POE_SISTERS_FLAG_UPDATE_FIRES;
     this->megDistToPlayer = 110.0f;
-    thisx->flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    thisx->flags &= ~ACTOR_FLAG_TARGETABLE;
 
     if (POE_SISTERS_GET_OBSERVER_FLAG(&this->actor)) {
         // "Flagged observer": non-enemy floating prop spawned by EnGb2 (Poe Hut Proprieter) for display
@@ -192,14 +194,14 @@ void EnPoSisters_Init(Actor* thisx, PlayState* play) {
     } else if (this->type == POE_SISTERS_TYPE_MEG) {
         if (this->megCloneId == POE_SISTERS_MEG_REAL) {
             this->actor.colChkInfo.health = 8;
-            this->collider.elem.atDmgInfo.damage = 16;
+            this->collider.info.toucher.damage = 16;
             this->collider.base.ocFlags1 = (OC1_TYPE_PLAYER | OC1_ON);
             EnPoSisters_SpawnMegClones(this, play);
             EnPoSisters_SetupSpawnPo(this);
         } else {
-            this->actor.flags &= ~(ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR | ACTOR_FLAG_CAN_ATTACH_TO_ARROW);
-            this->collider.elem.elemMaterial = ELEM_MATERIAL_UNK4;
-            this->collider.elem.acDmgInfo.dmgFlags |= (0x40000 | 0x1);
+            this->actor.flags &= ~(ACTOR_FLAG_200 | ACTOR_FLAG_4000);
+            this->collider.info.elemType = ELEMTYPE_UNK4;
+            this->collider.info.bumper.dmgFlags |= (0x40000 | 0x1);
             this->collider.base.ocFlags1 = OC1_NONE;
             EnPoSisters_MegCloneVanish(this, NULL);
         }
@@ -212,7 +214,7 @@ void EnPoSisters_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnPoSisters_Destroy(Actor* thisx, PlayState* play) {
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
 
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
     Collider_DestroyCylinder(play, &this->collider);
@@ -228,10 +230,12 @@ void EnPoSisters_UpdateDeathFlameSwirl(EnPoSisters* this, s32 deathTimerParam, V
 
     for (i = 0; i < this->fireCount; i++) {
         firePos = &this->firePos[i];
-        firePos->x = pos->x + Math_SinS(this->actor.shape.rot.y + (this->deathTimer * 0x800) + (i * 0x2000)) *
-                                  (SQ(deathTimerParamF) * 0.1f);
-        firePos->z = pos->z + Math_CosS(this->actor.shape.rot.y + (this->deathTimer * 0x800) + (i * 0x2000)) *
-                                  (SQ(deathTimerParamF) * 0.1f);
+        firePos->x = Math_SinS(this->actor.shape.rot.y + (this->deathTimer * 0x800) + (i * 0x2000)) *
+                         (SQ(deathTimerParamF) * 0.1f) +
+                     pos->x;
+        firePos->z = Math_CosS(this->actor.shape.rot.y + (this->deathTimer * 0x800) + (i * 0x2000)) *
+                         (SQ(deathTimerParamF) * 0.1f) +
+                     pos->z;
         firePos->y = pos->y + deathTimerParamF;
     }
 }
@@ -253,8 +257,8 @@ void EnPoSisters_MatchPlayerXZ(EnPoSisters* this, PlayState* play) {
         dist = this->actor.parent->xzDistToPlayer;
     }
 
-    this->actor.world.pos.x = player->actor.world.pos.x + (Math_SinS(BINANG_ROT180(this->actor.shape.rot.y)) * dist);
-    this->actor.world.pos.z = player->actor.world.pos.z + (Math_CosS(BINANG_ROT180(this->actor.shape.rot.y)) * dist);
+    this->actor.world.pos.x = (Math_SinS(BINANG_ROT180(this->actor.shape.rot.y)) * dist) + player->actor.world.pos.x;
+    this->actor.world.pos.z = (Math_CosS(BINANG_ROT180(this->actor.shape.rot.y)) * dist) + player->actor.world.pos.z;
 }
 
 void EnPoSisters_MatchPlayerY(EnPoSisters* this, PlayState* play) {
@@ -263,8 +267,10 @@ void EnPoSisters_MatchPlayerY(EnPoSisters* this, PlayState* play) {
     // equalize to player height
     Math_ApproachF(&this->actor.world.pos.y, player->actor.world.pos.y + 5.0f, 0.5f, 3.0f);
 
-    if ((u32)this->floatingBobbingTimer == 0) {
+    if (this->floatingBobbingTimer == 0) {
         this->floatingBobbingTimer = 32;
+        //! FAKE:
+        if (this->floatingBobbingTimer) {}
     }
 
     DECR(this->floatingBobbingTimer);
@@ -415,7 +421,7 @@ void EnPoSisters_Investigating(EnPoSisters* this, PlayState* play) {
  */
 void EnPoSisters_SetupSpinUp(EnPoSisters* this) {
     if (this->color.a != 0) {
-        this->collider.base.colMaterial = COL_MATERIAL_METAL;
+        this->collider.base.colType = COLTYPE_METAL;
         this->collider.base.acFlags |= AC_HARD;
     }
 
@@ -440,7 +446,7 @@ void EnPoSisters_SpinUp(EnPoSisters* this, PlayState* play) {
 void EnPoSisters_SetupSpinAttack(EnPoSisters* this) {
     this->actor.speed = 5.0f;
     if (this->type == POE_SISTERS_TYPE_MEG) {
-        this->collider.base.colMaterial = COL_MATERIAL_METAL;
+        this->collider.base.colType = COLTYPE_METAL;
         this->collider.base.acFlags |= AC_HARD;
         Animation_MorphToLoop(&this->skelAnime, &gPoeSistersAttackAnim, -5.0f);
     }
@@ -464,7 +470,7 @@ void EnPoSisters_SpinAttack(EnPoSisters* this, PlayState* play) {
 
         if (ABS_ALT(rotY) < 0x1000) {
             if (this->type != POE_SISTERS_TYPE_MEG) {
-                this->collider.base.colMaterial = COL_MATERIAL_HIT3;
+                this->collider.base.colType = COLTYPE_HIT3;
                 this->collider.base.acFlags &= ~AC_HARD;
                 EnPoSisters_SetupAimlessIdleFlying(this);
             } else {
@@ -486,7 +492,7 @@ void EnPoSisters_SetupAttackConnect(EnPoSisters* this) {
     Animation_MorphToLoop(&this->skelAnime, &gPoeSistersFloatAnim, -3.0f);
     this->actor.world.rot.y = BINANG_ROT180(this->actor.yawTowardsPlayer);
     if (this->type != POE_SISTERS_TYPE_MEG) {
-        this->collider.base.colMaterial = COL_MATERIAL_HIT3;
+        this->collider.base.colType = COLTYPE_HIT3;
         this->collider.base.acFlags &= ~AC_HARD;
     }
 
@@ -495,7 +501,7 @@ void EnPoSisters_SetupAttackConnect(EnPoSisters* this) {
 
 void EnPoSisters_AttackConnectDrift(EnPoSisters* this, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
-    this->actor.shape.rot.y -= TRUNCF_BINANG(this->actor.speed * 10.0f * 128.0f);
+    this->actor.shape.rot.y -= (s16)(this->actor.speed * 10.0f * 128.0f);
 
     if (Math_StepToF(&this->actor.speed, 0.0f, 0.1f)) { // wait to stop moving
         this->actor.world.rot.y = this->actor.shape.rot.y;
@@ -526,7 +532,7 @@ void EnPoSisters_SetupDamageFlinch(EnPoSisters* this) {
 }
 
 void EnPoSisters_DamageFlinch(EnPoSisters* this, PlayState* play) {
-    if (SkelAnime_Update(&this->skelAnime) && !(this->actor.flags & ACTOR_FLAG_ATTACHED_TO_ARROW)) {
+    if (SkelAnime_Update(&this->skelAnime) && !(this->actor.flags & ACTOR_FLAG_8000)) {
         if (this->actor.colChkInfo.health != 0) {
             if (this->type != POE_SISTERS_TYPE_MEG) {
                 EnPoSisters_SetupFlee(this);
@@ -597,7 +603,7 @@ void EnPoSisters_SetupSpinToInvis(EnPoSisters* this) {
 void EnPoSisters_SpinToInvis(EnPoSisters* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
         this->color.a = 0;
-        this->collider.elem.acDmgInfo.dmgFlags = (0x40000 | 0x1);
+        this->collider.info.bumper.dmgFlags = (0x40000 | 0x1);
         EnPoSisters_SetupAimlessIdleFlying(this);
     } else {
         s32 alpha = ((this->skelAnime.endFrame - this->skelAnime.curFrame) * 255.0f) / this->skelAnime.endFrame;
@@ -630,7 +636,7 @@ void EnPoSisters_SpinBackToVisible(EnPoSisters* this, PlayState* play) {
         this->color.a = 255; // fully visible
         if (this->type != POE_SISTERS_TYPE_MEG) {
             this->poSisterFlags |= POE_SISTERS_FLAG_CHECK_AC;
-            this->collider.elem.acDmgInfo.dmgFlags = ~(0x8000000 | 0x200000 | 0x100000 | 0x40000 | 0x1);
+            this->collider.info.bumper.dmgFlags = ~(0x8000000 | 0x200000 | 0x100000 | 0x40000 | 0x1);
 
             DECR(this->spinInvisibleTimer);
 
@@ -656,8 +662,8 @@ void EnPoSisters_SetupDeathStage1(EnPoSisters* this) {
     this->actor.speed = 0.0f;
     this->actor.world.pos.y += 42.0f;
     this->actor.shape.yOffset = -6000.0f;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
-    this->poSisterFlags = 0;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
+    this->poSisterFlags = POE_SISTERS_FLAG_CLEAR;
     this->actionFunc = EnPoSisters_DeathStage1;
 }
 
@@ -677,12 +683,12 @@ void EnPoSisters_DeathStage1(EnPoSisters* this, PlayState* play) {
         this->firePos[end] = this->firePos[end - 1];
     }
 
-    this->firePos[0].x =
-        this->actor.world.pos.x +
-        (Math_SinS((this->actor.shape.rot.y + (this->deathTimer * 0x3000)) - 0x4000) * (3000.0f * this->actor.scale.x));
-    this->firePos[0].z =
-        this->actor.world.pos.z +
-        (Math_CosS((this->actor.shape.rot.y + (this->deathTimer * 0x3000)) - 0x4000) * (3000.0f * this->actor.scale.x));
+    this->firePos[0].x = (Math_SinS((this->actor.shape.rot.y + (this->deathTimer * 0x3000)) - 0x4000) *
+                          (3000.0f * this->actor.scale.x)) +
+                         this->actor.world.pos.x;
+    this->firePos[0].z = (Math_CosS((this->actor.shape.rot.y + (this->deathTimer * 0x3000)) - 0x4000) *
+                          (3000.0f * this->actor.scale.x)) +
+                         this->actor.world.pos.z;
 
     if (this->deathTimer < 8) {
         this->firePos[0].y = this->firePos[1].y - 9.0f;
@@ -759,10 +765,10 @@ void EnPoSisters_MegCloneVanish(EnPoSisters* this, PlayState* play) {
     Vec3f pos;
 
     this->actor.draw = NULL;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->invisibleTimer = 100; // 5 seconds
     this->poSisterFlags = POE_SISTERS_FLAG_UPDATE_FIRES;
-    this->collider.base.colMaterial = COL_MATERIAL_HIT3;
+    this->collider.base.colType = COLTYPE_HIT3;
     this->collider.base.acFlags &= ~AC_HARD;
 
     if (play != NULL) {
@@ -806,7 +812,7 @@ void EnPoSisters_SetupMegSurroundPlayer(EnPoSisters* this) {
     this->megSurroundTimer = 300; // 15 seconds
     this->megClonesRemaining = 3;
     this->poSisterFlags |= (POE_SISTERS_FLAG_MATCH_PLAYER_HEIGHT | POE_SISTERS_FLAG_CHECK_AC);
-    this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     this->actionFunc = EnPoSisters_MegSurroundPlayer;
 }
 
@@ -820,8 +826,8 @@ void EnPoSisters_MegSurroundPlayer(EnPoSisters* this, PlayState* play) {
         if (this->megCloneId == POE_SISTERS_MEG_REAL) {
             if (ABS_ALT(16 - this->floatingBobbingTimer) < 14) {
                 // Every N frames rotate around player. The fewer Meg clones remaining the faster they spin.
-                this->actor.shape.rot.y += TRUNCF_BINANG((0x580 - (this->megClonesRemaining * 0x180)) *
-                                                         fabsf(Math_SinS(this->floatingBobbingTimer * 0x800)));
+                this->actor.shape.rot.y += (s16)((0x580 - (this->megClonesRemaining * 0x180)) *
+                                                 fabsf(Math_SinS(this->floatingBobbingTimer * 0x800)));
             }
 
             // Twirl the real Meg backwards for a bit for a visual tell to player.
@@ -884,7 +890,7 @@ void EnPoSisters_SetupSpawnPo(EnPoSisters* this) {
 void EnPoSisters_PoeSpawn(EnPoSisters* this, PlayState* play) {
     if (SkelAnime_Update(&this->skelAnime)) {
         this->color.a = 255;
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
         this->poSisterFlags |= (POE_SISTERS_FLAG_UPDATE_BGCHECK_INFO | POE_SISTERS_FLAG_MATCH_PLAYER_HEIGHT);
         if (this->type == POE_SISTERS_TYPE_MEG) {
             EnPoSisters_MegCloneVanish(this, play);
@@ -904,7 +910,7 @@ void EnPoSisters_CheckCollision(EnPoSisters* this, PlayState* play) {
 
     if (this->collider.base.acFlags & AC_HIT) {
         this->collider.base.acFlags &= ~AC_HIT;
-        Actor_SetDropFlag(&this->actor, &this->collider.elem);
+        Actor_SetDropFlag(&this->actor, &this->collider.info);
 
         if (this->megCloneId != POE_SISTERS_MEG_REAL) {
             ((EnPoSisters*)this->actor.parent)->megClonesRemaining--;
@@ -916,7 +922,7 @@ void EnPoSisters_CheckCollision(EnPoSisters* this, PlayState* play) {
                 pos.z = this->actor.world.pos.z;
                 Item_DropCollectible(play, &pos, ITEM00_ARROWS_10);
             }
-        } else if (this->collider.base.colMaterial != COL_MATERIAL_METAL) {
+        } else if (this->collider.base.colType != 9) {
             if (this->actor.colChkInfo.damageEffect == POE_SISTERS_DMGEFF_DEKUNUT) {
                 this->actor.world.rot.y = this->actor.shape.rot.y;
                 this->poSisterFlags |= POE_SISTERS_FLAG_UPDATE_SHAPE_ROT;
@@ -940,8 +946,8 @@ void EnPoSisters_CheckCollision(EnPoSisters* this, PlayState* play) {
                 if (this->actor.colChkInfo.damageEffect == POE_SISTERS_DMGEFF_LIGHTARROWS) {
                     this->drawDmgEffAlpha = 4.0f;
                     this->drawDmgEffScale = 0.5f;
-                    Actor_Spawn(&play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->collider.elem.acDmgInfo.hitPos.x,
-                                this->collider.elem.acDmgInfo.hitPos.y, this->collider.elem.acDmgInfo.hitPos.z, 0, 0, 0,
+                    Actor_Spawn(&play->actorCtx, play, ACTOR_EN_CLEAR_TAG, this->collider.info.bumper.hitPos.x,
+                                this->collider.info.bumper.hitPos.y, this->collider.info.bumper.hitPos.z, 0, 0, 0,
                                 CLEAR_TAG_PARAMS(CLEAR_TAG_LARGE_LIGHT_RAYS));
                 }
                 EnPoSisters_SetupDamageFlinch(this);
@@ -952,7 +958,7 @@ void EnPoSisters_CheckCollision(EnPoSisters* this, PlayState* play) {
 
 void EnPoSisters_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
     f32 alpha;
     Vec3f checkPos;
     s32 bgId;
@@ -1013,7 +1019,7 @@ void EnPoSisters_Update(Actor* thisx, PlayState* play) {
         }
 
         if (this->actionFunc == EnPoSisters_SpinAttack) {
-            this->actor.flags |= ACTOR_FLAG_SFX_FOR_PLAYER_BODY_HIT;
+            this->actor.flags |= ACTOR_FLAG_1000000;
             CollisionCheck_SetAT(play, &play->colChkCtx, &this->collider.base);
         }
 
@@ -1087,7 +1093,7 @@ s32 EnPoSisters_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Ve
         { 0, 70, 50, 0 },
         { 70, 70, 0, 0 },
     };
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
 
     if ((limbIndex == POE_SISTERS_LIMB_ROOT) && (this->poSisterFlags & POE_SISTERS_FLAG_REAL_MEG_ROTATION)) {
         if (this->megSurroundTimer >= 284) {
@@ -1135,7 +1141,7 @@ static s8 sLimbToBodyParts[POE_SISTERS_LIMB_MAX] = {
 };
 
 void EnPoSisters_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx, Gfx** gfx) {
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
     s32 end;
     f32 brightness;
 
@@ -1152,7 +1158,7 @@ void EnPoSisters_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s
 
     if ((this->actionFunc == EnPoSisters_DeathStage1) && (this->deathTimer >= 8) &&
         (limbIndex == POE_SISTERS_LIMB_MAIN_BODY)) {
-        MATRIX_FINALIZE_AND_LOAD((*gfx)++, play->state.gfxCtx);
+        gSPMatrix((*gfx)++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList((*gfx)++, gPoeSistersBurnBodyDL);
     }
 
@@ -1190,7 +1196,7 @@ void EnPoSisters_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s
 }
 
 void EnPoSisters_Draw(Actor* thisx, PlayState* play) {
-    EnPoSisters* this = (EnPoSisters*)thisx;
+    EnPoSisters* this = THIS;
     Color_RGBA8* sisterEnvColor = &sPoSisterEnvColors[this->type];
     Color_RGBA8* flameColor = &sPoSisterFlameColors[this->type];
     s32 pad;
@@ -1222,18 +1228,18 @@ void EnPoSisters_Draw(Actor* thisx, PlayState* play) {
     if (!(this->poSisterFlags & POE_SISTERS_FLAG_DRAW_TORCH)) {
         Matrix_Put(&this->mtxf);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gPoeSistersTorchDL);
     }
 
-    gSPSegment(POLY_XLU_DISP++, 0x08,
-               Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, 0, 32, 64, 1, 0, (play->gameplayFrames * -20) % 512, 32,
-                                  128, 0, 0, 0, -20));
+    gSPSegment(
+        POLY_XLU_DISP++, 0x08,
+        Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, 0, 32, 64, 1, 0, (play->gameplayFrames * -20) % 512, 32, 128));
     gDPSetEnvColor(POLY_XLU_DISP++, sisterEnvColor->r, sisterEnvColor->g, sisterEnvColor->b, sisterEnvColor->a);
 
     if (this->actionFunc == EnPoSisters_DeathStage2) {
         alpha = ((-this->deathTimer * 255) + 0x1FE0) / 32;
-        scale = (7 / 1.25f * 0.001f);
+        scale = (7 / 1.2500 * 0.001f);
     } else {
         alpha = 0;
         scale = this->actor.scale.x * 0.5f;
@@ -1256,7 +1262,7 @@ void EnPoSisters_Draw(Actor* thisx, PlayState* play) {
         }
         Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gEffFire1DL);
     }
 

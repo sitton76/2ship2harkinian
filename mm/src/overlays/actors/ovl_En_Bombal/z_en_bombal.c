@@ -9,7 +9,9 @@
 #include "assets/objects/object_fusen/object_fusen.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnBombal*)thisx)
 
 void EnBombal_Init(Actor* thisx, PlayState* play);
 void EnBombal_Destroy(Actor* thisx, PlayState* play);
@@ -22,9 +24,9 @@ void func_80C05DE8(EnBombal* this, PlayState* play);
 void func_80C05B24(EnBombal* this);
 void EnBombal_InitEffects(EnBombal* this, Vec3f* pos, s16 fadeDelay);
 void EnBombal_UpdateEffects(EnBombal* this, PlayState* play);
-void EnBombal_DrawEffects(EnBombal* this, PlayState* play);
+void EnBombal_DrawEffects(EnBombal*, PlayState*);
 
-ActorProfile En_Bombal_Profile = {
+ActorInit En_Bombal_InitVars = {
     /**/ ACTOR_EN_BOMBAL,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -38,7 +40,7 @@ ActorProfile En_Bombal_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -46,23 +48,23 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x004138B0, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 60, 90, -50, { 0, 0, 0 } },
 };
 
 void EnBombal_Init(Actor* thisx, PlayState* play) {
-    EnBombal* this = (EnBombal*)thisx;
+    EnBombal* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 25.0f);
     this->actor.colChkInfo.mass = 0;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
-    this->actor.attentionRangeType = ATTENTION_RANGE_6;
+    this->actor.targetMode = TARGET_MODE_6;
     this->actor.colChkInfo.health = 1;
     this->scale = 0.1f;
     this->csId = this->actor.csId;
@@ -70,7 +72,7 @@ void EnBombal_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBombal_Destroy(Actor* thisx, PlayState* play) {
-    EnBombal* this = (EnBombal*)thisx;
+    EnBombal* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -93,8 +95,8 @@ void func_80C05B3C(EnBombal* this, PlayState* play) {
             this->collider.base.acFlags &= ~AC_HIT;
             if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_75_40) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_73_10) &&
                 !CHECK_WEEKEVENTREG(WEEKEVENTREG_85_02)) {
-                player->stateFlags1 |= ACTOR_FLAG_DRAW_CULLING_DISABLED;
-                this->actor.flags |= ACTOR_FLAG_FREEZE_EXCEPTION;
+                player->stateFlags1 |= ACTOR_FLAG_20;
+                this->actor.flags |= ACTOR_FLAG_100000;
             }
             this->actionFunc = func_80C05C44;
         }
@@ -159,7 +161,7 @@ void func_80C05DE8(EnBombal* this, PlayState* play) {
 
 void EnBombal_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnBombal* this = (EnBombal*)thisx;
+    EnBombal* this = THIS;
 
     if (this->timer != 0) {
         this->timer--;
@@ -182,7 +184,7 @@ void EnBombal_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnBombal_Draw(Actor* thisx, PlayState* play) {
-    EnBombal* this = (EnBombal*)thisx;
+    EnBombal* this = THIS;
 
     if (this->isPopped != true) {
         Gfx_DrawDListOpa(play, gMajoraBalloonDL);
@@ -270,7 +272,7 @@ void EnBombal_DrawEffects(EnBombal* this, PlayState* play) {
             Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
             Matrix_RotateZF(DEG_TO_RAD(play->state.frames * 20.0f), MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, &gSunSparkleModelDL);
         }
     }

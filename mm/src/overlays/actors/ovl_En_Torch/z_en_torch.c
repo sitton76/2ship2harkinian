@@ -9,9 +9,11 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((EnTorch*)thisx)
+
 void EnTorch_Init(Actor* thisx, PlayState* play);
 
-ActorProfile En_Torch_Profile = {
+ActorInit En_Torch_InitVars = {
     /**/ ACTOR_EN_TORCH,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ static u8 sChestContents[] = {
 };
 
 void EnTorch_Init(Actor* thisx, PlayState* play) {
-    EnTorch* this = (EnTorch*)thisx;
+    EnTorch* this = THIS;
     s8 returnData = gSaveContext.respawn[RESPAWN_MODE_UNK_3].data;
 
     Actor_Spawn(&play->actorCtx, play, ACTOR_EN_BOX, this->actor.world.pos.x, this->actor.world.pos.y,

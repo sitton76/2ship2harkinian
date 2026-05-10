@@ -9,6 +9,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((BgKeikokuSaku*)thisx)
+
 void BgKeikokuSaku_Init(Actor* thisx, PlayState* play);
 void BgKeikokuSaku_Destroy(Actor* thisx, PlayState* play);
 void BgKeikokuSaku_Update(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void func_80A5389C(BgKeikokuSaku* this, PlayState* play);
 void func_80A538E0(BgKeikokuSaku* this, PlayState* play);
 void func_80A53994(BgKeikokuSaku* this, PlayState* play);
 
-ActorProfile Bg_Keikoku_Saku_Profile = {
+ActorInit Bg_Keikoku_Saku_InitVars = {
     /**/ ACTOR_BG_KEIKOKU_SAKU,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile Bg_Keikoku_Saku_Profile = {
 
 void BgKeikokuSaku_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgKeikokuSaku* this = (BgKeikokuSaku*)thisx;
+    BgKeikokuSaku* this = THIS;
     CollisionHeader* colHeader = NULL;
 
     DynaPolyActor_Init(&this->dyna, 0);
@@ -47,7 +49,7 @@ void BgKeikokuSaku_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgKeikokuSaku_Destroy(Actor* thisx, PlayState* play) {
-    BgKeikokuSaku* this = (BgKeikokuSaku*)thisx;
+    BgKeikokuSaku* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -75,7 +77,7 @@ void func_80A53994(BgKeikokuSaku* this, PlayState* play) {
 }
 
 void BgKeikokuSaku_Update(Actor* thisx, PlayState* play) {
-    BgKeikokuSaku* this = (BgKeikokuSaku*)thisx;
+    BgKeikokuSaku* this = THIS;
 
     if (this->timer) {
         this->timer--;
@@ -93,7 +95,7 @@ void BgKeikokuSaku_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, object_keikoku_obj_DL_001640);
 
     CLOSE_DISPS(play->state.gfxCtx);

@@ -8,7 +8,9 @@
 #include "objects/object_raillift/object_raillift.h"
 #include "overlays/actors/ovl_Obj_Etcetera/z_obj_etcetera.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjRaillift*)thisx)
 
 void ObjRaillift_Init(Actor* thisx, PlayState* play);
 void ObjRaillift_Destroy(Actor* thisx, PlayState* play);
@@ -26,7 +28,7 @@ void ObjRaillift_Teleport(ObjRaillift* this, PlayState* play);
 void ObjRaillift_Wait(ObjRaillift* this, PlayState* play);
 void ObjRaillift_Move(ObjRaillift* this, PlayState* play);
 
-ActorProfile Obj_Raillift_Profile = {
+ActorInit Obj_Raillift_InitVars = {
     /**/ ACTOR_OBJ_RAILLIFT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -39,20 +41,20 @@ ActorProfile Obj_Raillift_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 200, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 400, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 400, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
 static CollisionHeader* sColHeaders[] = { &object_raillift_Colheader_004FF8, &object_raillift_Colheader_0048D0 };
 
 void ObjRaillift_UpdatePosition(ObjRaillift* this, s32 index) {
-    Math_Vec3s_ToVec3f(&this->dyna.actor.world.pos, &this->pathPoints[index]);
+    Math_Vec3s_ToVec3f(&this->dyna.actor.world.pos, &this->points[index]);
 }
 
 void ObjRaillift_Init(Actor* thisx, PlayState* play) {
-    ObjRaillift* this = (ObjRaillift*)thisx;
+    ObjRaillift* this = THIS;
     s32 pad;
     Path* path;
     s32 type = OBJRAILLIFT_GET_TYPE(thisx);
@@ -88,7 +90,7 @@ void ObjRaillift_Init(Actor* thisx, PlayState* play) {
         this->curPoint = OBJRAILLIFT_GET_STARTING_POINT(thisx);
         this->endPoint = path->count - 1;
         this->direction = 1;
-        this->pathPoints = Lib_SegmentedToVirtual(path->points);
+        this->points = Lib_SegmentedToVirtual(path->points);
         ObjRaillift_UpdatePosition(this, this->curPoint);
         if (OBJRAILLIFT_HAS_FLAG(thisx) && !Flags_GetSwitch(play, OBJRAILLIFT_GET_SWITCH_FLAG(thisx))) {
             this->actionFunc = ObjRaillift_Idle;
@@ -99,7 +101,7 @@ void ObjRaillift_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjRaillift_Destroy(Actor* thisx, PlayState* play) {
-    ObjRaillift* this = (ObjRaillift*)thisx;
+    ObjRaillift* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -128,7 +130,7 @@ void ObjRaillift_Move(ObjRaillift* this, PlayState* play) {
         }
     }
 
-    Math_Vec3s_ToVec3f(&nextPoint, this->pathPoints + this->curPoint + this->direction);
+    Math_Vec3s_ToVec3f(&nextPoint, this->points + this->curPoint + this->direction);
     Math_Vec3f_Diff(&nextPoint, &thisx->world.pos, &thisx->velocity);
     speed = Math3D_Vec3fMagnitude(&thisx->velocity);
     if ((speed < (this->speed * 8.0f)) && (this->speed > 2.0f)) {
@@ -157,10 +159,10 @@ void ObjRaillift_Move(ObjRaillift* this, PlayState* play) {
                 this->waitTimer = 10;
                 this->actionFunc = ObjRaillift_Wait;
             } else {
-                endPoint = &this->pathPoints[this->endPoint];
+                endPoint = &this->points[this->endPoint];
                 this->curPoint = this->direction > 0 ? 0 : this->endPoint;
-                if ((this->pathPoints[0].x != endPoint->x) || (this->pathPoints[0].y != endPoint->y) ||
-                    (this->pathPoints[0].z != endPoint->z)) {
+                if ((this->points[0].x != endPoint->x) || (this->points[0].y != endPoint->y) ||
+                    (this->points[0].z != endPoint->z)) {
                     this->actionFunc = ObjRaillift_Teleport;
                     DynaPoly_DisableCollision(play, &play->colCtx.dyna, this->dyna.bgId);
                     isPosUpdated = false;
@@ -212,7 +214,7 @@ void ObjRaillift_StartCutscene(ObjRaillift* this, PlayState* play) {
 }
 
 void ObjRaillift_Update(Actor* thisx, PlayState* play) {
-    ObjRaillift* this = (ObjRaillift*)thisx;
+    ObjRaillift* this = THIS;
 
     this->actionFunc(this, play);
     Actor_SetFocus(thisx, 10.0f);
@@ -261,7 +263,7 @@ void ObjRaillift_Draw(Actor* thisx, PlayState* play) {
     gSPSegment(POLY_OPA_DISP++, 0x08,
                Gfx_TwoTexScrollEnvColor(play->state.gfxCtx, 0, play->gameplayFrames, 0, 32, 32, 1, 0, 0, 32, 32, 0, 0,
                                         0, 160));
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, object_raillift_DL_004BF0);
 
     CLOSE_DISPS(play->state.gfxCtx);

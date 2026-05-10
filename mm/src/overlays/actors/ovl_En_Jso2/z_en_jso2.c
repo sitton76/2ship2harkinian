@@ -9,9 +9,11 @@
 #include "overlays/actors/ovl_En_Clear_Tag/z_en_clear_tag.h"
 #include "overlays/actors/ovl_En_Col_Man/z_en_col_man.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_FREEZE_EXCEPTION | ACTOR_FLAG_MINIMAP_ICON_ENABLED)
+#define FLAGS                                                                                            \
+    (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_100000 | \
+     ACTOR_FLAG_80000000)
+
+#define THIS ((EnJso2*)thisx)
 
 void EnJso2_Init(Actor* thisx, PlayState* play);
 void EnJso2_Destroy(Actor* thisx, PlayState* play);
@@ -209,7 +211,7 @@ static Vec3f sSlashFlameOffsets[] = {
     { 600.0f, -100.0f, -100.0f }, { 300.0f, -100.0f, -80.0f }, { 100.0f, -100.0f, -60.0f },
 };
 
-ActorProfile En_Jso2_Profile = {
+ActorInit En_Jso2_InitVars = {
     /**/ ACTOR_EN_JSO2,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -223,7 +225,7 @@ ActorProfile En_Jso2_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -231,11 +233,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x08, 0x04 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 22, 70, 0, { 0, 0, 0 } },
@@ -243,7 +245,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 static ColliderQuadInit sQuadInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_ENEMY,
         AC_NONE,
         OC1_NONE,
@@ -251,11 +253,11 @@ static ColliderQuadInit sQuadInit = {
         COLSHAPE_QUAD,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x09, 0x10 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL | ATELEM_UNK7,
-        ACELEM_NONE,
+        TOUCH_ON | TOUCH_SFX_NORMAL | TOUCH_UNK7,
+        BUMP_NONE,
         OCELEM_NONE,
     },
     { { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } } },
@@ -338,12 +340,12 @@ static u8 sAnimationModes[EN_JSO2_ANIM_MAX] = {
 };
 
 void EnJso2_Init(Actor* thisx, PlayState* play) {
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
     EffectBlureInit1 rightSwordBlureInit;
     EffectBlureInit1 leftSwordBlureInit;
 
     this->actor.hintId = TATL_HINT_ID_GARO_MASTER;
-    this->actor.attentionRangeType = ATTENTION_RANGE_5;
+    this->actor.targetMode = TARGET_MODE_5;
     this->actor.colChkInfo.mass = 80;
     this->actor.colChkInfo.health = 14;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 0.0f);
@@ -391,8 +393,8 @@ void EnJso2_Init(Actor* thisx, PlayState* play) {
 
     if (this->type == EN_JSO2_TYPE_LIGHT_ARROW_ROOM) {
         this->actor.draw = NULL;
-        this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-        this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+        this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
         this->actor.shape.yOffset = 0.0f;
         EnJso2_SetupIntroCutscene(this);
     } else {
@@ -404,7 +406,7 @@ void EnJso2_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnJso2_Destroy(Actor* thisx, PlayState* play) {
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
 
     Collider_DestroyCylinder(play, &this->bodyCollider);
     Collider_DestroyQuad(play, &this->rightSwordCollider);
@@ -449,7 +451,7 @@ void EnJso2_UpdateSubCam(EnJso2* this, PlayState* play) {
 }
 
 s32 EnJso2_ShouldAdvanceMessage(PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         return true;
     }
@@ -518,8 +520,8 @@ void EnJso2_IntroCutscene(EnJso2* this, PlayState* play) {
                 Math_Vec3f_Copy(&this->subCamEye, &this->subCamEyeNext);
                 Math_Vec3f_Copy(&this->subCamAt, &this->subCamAtNext);
                 Player_SetCsActionWithHaltedActors(play, &this->actor, PLAYER_CSACTION_END);
-                Player_InitOverrideInput(play, &this->overrideInputEntry, ARRAY_COUNT(sPlayerOverrideInputPosList),
-                                         sPlayerOverrideInputPosList);
+                func_80122744(play, &this->overrideInputEntry, ARRAY_COUNT(sPlayerOverrideInputPosList),
+                              sPlayerOverrideInputPosList);
                 this->cutsceneState++;
             }
             break;
@@ -539,7 +541,7 @@ void EnJso2_IntroCutscene(EnJso2* this, PlayState* play) {
             Math_Vec3f_Copy(&this->subCamEye, &this->subCamEyeNext);
             Math_Vec3f_Copy(&this->subCamAt, &this->subCamAtNext);
 
-            if (Player_UpdateOverrideInput(play, &this->overrideInputEntry, 60.0f)) {
+            if (func_80122760(play, &this->overrideInputEntry, 60.0f)) {
                 Player_SetCsActionWithHaltedActors(play, NULL, PLAYER_CSACTION_19);
                 this->cutsceneTimer = 10;
                 this->cutsceneState++;
@@ -729,10 +731,10 @@ void EnJso2_IntroCutscene(EnJso2* this, PlayState* play) {
             if (curFrame >= this->animEndFrame) {
                 CutsceneManager_Stop(this->actor.csId);
                 this->subCamId = SUB_CAM_ID_DONE;
-                this->actor.flags &= ~ACTOR_FLAG_FREEZE_EXCEPTION;
+                this->actor.flags &= ~ACTOR_FLAG_100000;
                 this->actor.gravity = -3.0f;
-                this->actor.flags &= ~ACTOR_FLAG_LOCK_ON_DISABLED;
-                this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+                this->actor.flags &= ~ACTOR_FLAG_CANT_LOCK_ON;
+                this->actor.flags |= ACTOR_FLAG_TARGETABLE;
                 EnJso2_SetupCirclePlayer(this, play);
             }
             break;
@@ -748,7 +750,7 @@ void EnJso2_IntroCutscene(EnJso2* this, PlayState* play) {
 void EnJso2_SetupAppear(EnJso2* this) {
     this->swordState = EN_JSO2_SWORD_STATE_NONE_DRAWN;
     this->bodyCollider.base.acFlags |= AC_HARD;
-    this->actor.flags &= ~ACTOR_FLAG_FREEZE_EXCEPTION;
+    this->actor.flags &= ~ACTOR_FLAG_100000;
     EnJso2_ChangeAnim(this, EN_JSO2_ANIM_APPEAR_AND_DRAW_SWORDS);
     this->actionFunc = EnJso2_Appear;
 }
@@ -988,7 +990,7 @@ void EnJso2_SetupTeleport(EnJso2* this) {
     this->actor.gravity = 0.0f;
     this->actor.velocity.y = 10.0f;
     Actor_PlaySfx(&this->actor, NA_SE_EN_ANSATSUSYA_JUMP);
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
     this->action = EN_JSO2_ACTION_TELEPORT;
     this->actionFunc = EnJso2_Teleport;
 }
@@ -1031,7 +1033,7 @@ void EnJso2_FallFromTeleport(EnJso2* this, PlayState* play) {
         this->isTeleporting = false;
         this->scale = 0.042f;
         this->actor.shape.shadowScale = 17.0f;
-        this->actor.flags &= ~ACTOR_FLAG_LOCK_ON_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_CANT_LOCK_ON;
         EnJso2_SetupSlash(this, play);
     }
 }
@@ -1284,8 +1286,8 @@ void EnJso2_SetupDead(EnJso2* this, PlayState* play) {
         this->drawDmgEffType = ACTOR_DRAW_DMGEFF_FIRE;
     }
 
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-    this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE);
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+    this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY);
     this->actor.speed = 0.0f;
     this->disableBlure = true;
     this->timer = 30;
@@ -1330,7 +1332,7 @@ void EnJso2_SetupDeathCutscene(EnJso2* this) {
     this->cutsceneState = EN_JSO2_DEATH_CS_STATE_STARTED;
     this->cutsceneTimer = 0;
     this->subCamId = SUB_CAM_ID_DONE;
-    this->actor.flags |= ACTOR_FLAG_FREEZE_EXCEPTION;
+    this->actor.flags |= ACTOR_FLAG_100000;
     this->timer = 30;
     this->action = EN_JSO2_ACTION_BLOW_UP;
     this->actionFunc = EnJso2_DeathCutscene;
@@ -1629,7 +1631,7 @@ void EnJso2_UpdateDamage(EnJso2* this, PlayState* play) {
 }
 
 void EnJso2_Update(Actor* thisx, PlayState* play) {
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
     s32 pad;
     s32 i;
 
@@ -1708,7 +1710,7 @@ void EnJso2_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnJso2_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
 
     if (this->swordState == EN_JSO2_SWORD_STATE_NONE_DRAWN) {
         if ((limbIndex == GARO_MASTER_LIMB_LEFT_SWORD) && (this->action != EN_JSO2_ACTION_BLOW_UP)) {
@@ -1728,7 +1730,7 @@ void EnJso2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot
     static Vec3f sSwordBaseOffset = { 0.0f, 0.0f, 0.0f };
     static Vec3f sSwordTipQuadOffset = { 1700.0f, 0.0f, 0.0f };
     static Vec3f sSwordBaseQuadOffset = { 0.0f, 0.0f, 0.0f };
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
     Vec3f swordTipPos;
     Vec3f swordBasePos;
     Vec3f bombOffset = { 0.0f, 0.0f, 0.0f };
@@ -1823,7 +1825,7 @@ void EnJso2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot
 
         OPEN_DISPS(play->state.gfxCtx);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gGaroMasterEyesDL);
 
         CLOSE_DISPS(play->state.gfxCtx);
@@ -1836,7 +1838,7 @@ void EnJso2_Draw(Actor* thisx, PlayState* play2) {
     static s16 sAfterimageAlpha[EN_JSO2_AFTERIMAGE_COUNT] = {
         128, 0, 0, 0, 0, 128, 0, 0, 0, 0, 128, 0, 0, 0, 0, 128, 0, 0, 0, 0,
     };
-    EnJso2* this = (EnJso2*)thisx;
+    EnJso2* this = THIS;
     PlayState* play = play2;
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -1898,14 +1900,13 @@ void EnJso2_Draw(Actor* thisx, PlayState* play2) {
             Matrix_Translate(this->flamePos[i].x, this->flamePos[i].y, this->flamePos[i].z, MTXMODE_NEW);
             Matrix_Scale(this->flameScale[i].x, this->flameScale[i].y, this->flameScale[i].z, MTXMODE_APPLY);
             gSPSegment(POLY_XLU_DISP++, 0x08,
-                       Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, 0, 0, 32, 64, 1, 0,
-                                          ((this->flameScroll * 10) - (play->state.frames * 20)) & 0x1FF, 32, 128, 0, 0,
-                                          0, -20));
+                       Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, 0, 0, 32, 64, 1, 0,
+                                        ((this->flameScroll * 10) - (play->state.frames * 20)) & 0x1FF, 32, 128));
             gDPPipeSync(POLY_XLU_DISP++);
             gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 170, 255);
             gDPSetEnvColor(POLY_XLU_DISP++, 255, 50, 0, 255);
             Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gEffFire1DL);
             Matrix_Pop();
         }

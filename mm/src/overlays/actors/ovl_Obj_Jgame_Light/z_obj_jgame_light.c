@@ -8,7 +8,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "objects/object_syokudai/object_syokudai.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjJgameLight*)thisx)
 
 typedef enum {
     /* 0 */ OBJJGAMELIGHT_NONE,
@@ -25,7 +27,7 @@ void func_80C15474(ObjJgameLight* this, PlayState* play);
 void ObjJgameLight_UpdateCollision(ObjJgameLight* this, PlayState* play);
 void func_80C15718(ObjJgameLight* this, PlayState* play);
 
-ActorProfile Obj_Jgame_Light_Profile = {
+ActorInit Obj_Jgame_Light_InitVars = {
     /**/ ACTOR_OBJ_JGAME_LIGHT,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -39,7 +41,7 @@ ActorProfile Obj_Jgame_Light_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -47,11 +49,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x00100000, 0x00, 0x00 },
         { 0xF6CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 12, 45, 0, { 0, 0, 0 } },
@@ -60,7 +62,7 @@ static ColliderCylinderInit sCylinderInit = {
 #include "assets/overlays/ovl_Obj_Jgame_Light/ovl_Obj_Jgame_Light.h"
 
 void ObjJgameLight_Init(Actor* thisx, PlayState* play) {
-    ObjJgameLight* this = (ObjJgameLight*)thisx;
+    ObjJgameLight* this = THIS;
     LightInfo* lights = &this->lightInfo;
 
     Actor_SetScale(&this->actor, 1.0f);
@@ -82,7 +84,7 @@ void ObjJgameLight_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjJgameLight_Destroy(Actor* thisx, PlayState* play) {
-    ObjJgameLight* this = (ObjJgameLight*)thisx;
+    ObjJgameLight* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
     LightContext_RemoveLight(play, &play->lightCtx, this->lightNode);
@@ -156,7 +158,7 @@ void func_80C15718(ObjJgameLight* this, PlayState* play) {
 }
 
 void ObjJgameLight_Update(Actor* thisx, PlayState* play) {
-    ObjJgameLight* this = (ObjJgameLight*)thisx;
+    ObjJgameLight* this = THIS;
 
     func_80C15718(this, play);
     func_80C15474(this, play);
@@ -166,12 +168,12 @@ void ObjJgameLight_Update(Actor* thisx, PlayState* play) {
 
 void ObjJgameLight_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjJgameLight* this = (ObjJgameLight*)thisx;
+    ObjJgameLight* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, &gObjectSyokudaiTypeSwitchCausesFlameDL);
     if (this->alpha > 0) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
@@ -180,7 +182,7 @@ void ObjJgameLight_Draw(Actor* thisx, PlayState* play) {
         } else {
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 210, 64, 32, this->alpha);
         }
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         if (this->signal == OBJJGAMELIGHT_CORRECT) {
             gSPDisplayList(POLY_XLU_DISP++, gObjJgameLightCorrectDL);
         } else if (this->signal == OBJJGAMELIGHT_INCORRECT) {
@@ -193,15 +195,15 @@ void ObjJgameLight_Draw(Actor* thisx, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         scale = (this->flameScaleProportion * 27.0f) / 10000.0f;
         gSPSegment(POLY_XLU_DISP++, 0x08,
-                   Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (this->flameScroll * -20) & 0x1FF,
-                                      0x20, 0x80, 0, 0, 0, -20));
+                   Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, (this->flameScroll * -20) & 0x1FF,
+                                    0x20, 0x80));
         gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 255, 255, 0, 255);
         gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 0);
         Matrix_Translate(0.0f, 52.0f, 0.0f, MTXMODE_APPLY);
         Matrix_RotateYS(((Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) - this->actor.shape.rot.y) + 0x8000),
                         MTXMODE_APPLY);
         Matrix_Scale(scale, scale, scale, MTXMODE_APPLY);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gEffFire1DL);
     }
     CLOSE_DISPS(play->state.gfxCtx);

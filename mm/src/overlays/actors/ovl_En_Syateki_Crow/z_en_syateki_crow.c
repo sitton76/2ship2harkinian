@@ -7,7 +7,9 @@
 #include "z_en_syateki_crow.h"
 #include "overlays/actors/ovl_En_Syateki_Man/z_en_syateki_man.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnSyatekiCrow*)thisx)
 
 void EnSyatekiCrow_Init(Actor* thisx, PlayState* play2);
 void EnSyatekiCrow_Destroy(Actor* thisx, PlayState* play);
@@ -23,7 +25,7 @@ void EnSyatekiCrow_Dead(EnSyatekiCrow* this, PlayState* play);
 
 static Vec3f sZeroVec = { 0.0f, 0.0f, 0.0f };
 
-ActorProfile En_Syateki_Crow_Profile = {
+ActorInit En_Syateki_Crow_InitVars = {
     /**/ ACTOR_EN_SYATEKI_CROW,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -38,11 +40,11 @@ ActorProfile En_Syateki_Crow_Profile = {
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0xF7CFFFFF, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_ON,
         },
         { 1, { { 0, 60, 0 }, 50 }, 100 },
@@ -51,7 +53,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -63,15 +65,15 @@ static ColliderJntSphInit sJntSphInit = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 3000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 3000, ICHAIN_CONTINUE),
     ICHAIN_S8(hintId, TATL_HINT_ID_GUAY, ICHAIN_CONTINUE),
     ICHAIN_F32_DIV1000(gravity, -500, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 2000, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 2000, ICHAIN_STOP),
 };
 
 void EnSyatekiCrow_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
     Path* path;
     EnSyatekiMan* syatekiMan = (EnSyatekiMan*)this->actor.parent;
     s32 i;
@@ -107,7 +109,7 @@ void EnSyatekiCrow_Init(Actor* thisx, PlayState* play2) {
 }
 
 void EnSyatekiCrow_Destroy(Actor* thisx, PlayState* play) {
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
 
     Collider_DestroyJntSph(play, &this->collider);
 }
@@ -273,7 +275,7 @@ void EnSyatekiCrow_UpdateDamage(EnSyatekiCrow* this, PlayState* play) {
 }
 
 void EnSyatekiCrow_Update(Actor* thisx, PlayState* play) {
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -287,12 +289,12 @@ void EnSyatekiCrow_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnSyatekiCrow_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
 
     if (limbIndex == OBJECT_CROW_LIMB_UPPER_TAIL) {
-        rot->y += TRUNCF_BINANG(0xC00 * Math_SinF(this->skelAnime.curFrame * (M_PIf / 4)));
+        rot->y += (s16)(0xC00 * Math_SinF(this->skelAnime.curFrame * (M_PIf / 4)));
     } else if (limbIndex == OBJECT_CROW_LIMB_TAIL) {
-        rot->y += TRUNCF_BINANG(0x1400 * Math_SinF((this->skelAnime.curFrame + 2.5f) * (M_PIf / 4)));
+        rot->y += (s16)(0x1400 * Math_SinF((this->skelAnime.curFrame + 2.5f) * (M_PIf / 4)));
     }
 
     return false;
@@ -301,7 +303,7 @@ s32 EnSyatekiCrow_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, 
 static Vec3f sBodyOffset = { 2500.0f, 0.0f, 0.0f };
 
 void EnSyatekiCrow_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
     Vec3f* bodyPartPos;
 
     if (limbIndex == OBJECT_CROW_LIMB_BODY) {
@@ -316,7 +318,7 @@ void EnSyatekiCrow_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec
 }
 
 void EnSyatekiCrow_Draw(Actor* thisx, PlayState* play) {
-    EnSyatekiCrow* this = (EnSyatekiCrow*)thisx;
+    EnSyatekiCrow* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,

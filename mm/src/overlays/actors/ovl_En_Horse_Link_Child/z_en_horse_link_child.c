@@ -9,7 +9,9 @@
 #include "z64horse.h"
 #include "objects/object_horse_link_child/object_horse_link_child.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((EnHorseLinkChild*)thisx)
 
 void EnHorseLinkChild_Init(Actor* thisx, PlayState* play);
 void EnHorseLinkChild_Destroy(Actor* thisx, PlayState* play);
@@ -28,7 +30,7 @@ void EnHorseLinkChild_ActionFunc5(EnHorseLinkChild* this, PlayState* play);
 void EnHorseLinkChild_SetupActionFunc4(EnHorseLinkChild* this);
 void EnHorseLinkChild_ActionFunc4(EnHorseLinkChild* this, PlayState* play);
 
-ActorProfile En_Horse_Link_Child_Profile = {
+ActorInit En_Horse_Link_Child_InitVars = {
     /**/ ACTOR_EN_HORSE_LINK_CHILD,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -60,11 +62,11 @@ static AnimationHeader* sAnimations[OOT_CHILD_EPONA_ANIM_MAX] = {
 static ColliderJntSphElementInit sJntSphElementsInit[] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_NONE,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_NONE,
             OCELEM_ON,
         },
         { 13, { { 0, 0, 0 }, 10 }, 100 },
@@ -73,7 +75,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -98,7 +100,7 @@ static f32 sAnimPlaySpeeds[OOT_CHILD_EPONA_ANIM_MAX] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 1200, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneScale, 1200, ICHAIN_STOP),
 };
 
 typedef enum {
@@ -171,7 +173,7 @@ f32 EnHorseLinkChild_GetAnimSpeed(EnHorseLinkChild* this) {
 }
 
 void EnHorseLinkChild_Init(Actor* thisx, PlayState* play) {
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     Actor_SetScale(&this->actor, 64.8f * 0.0001f);
@@ -209,7 +211,7 @@ void EnHorseLinkChild_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHorseLinkChild_Destroy(Actor* thisx, PlayState* play) {
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
 
     Skin_Free(&play->state, &this->skin);
     Collider_DestroyCylinder(play, &this->colldierCylinder);
@@ -585,7 +587,7 @@ void EnHorseLinkChild_ActionFunc4(EnHorseLinkChild* this, PlayState* play) {
 
 void EnHorseLinkChild_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
 
     sActionFuncs[this->action](this, play);
 
@@ -615,7 +617,7 @@ void EnHorseLinkChild_Update(Actor* thisx, PlayState* play) {
 void EnHorseLinkChild_PostSkinDraw(Actor* thisx, PlayState* play, Skin* skin) {
     Vec3f sp4C;
     Vec3f sp40;
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
     s32 i;
 
     for (i = 0; i < this->colliderJntSph.count; i++) {
@@ -636,7 +638,7 @@ void EnHorseLinkChild_PostSkinDraw(Actor* thisx, PlayState* play, Skin* skin) {
 }
 
 s32 EnHorseLinkChild_OverrideSkinDraw(Actor* thisx, PlayState* play, s32 limbIndex, Skin* skin) {
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -652,7 +654,7 @@ s32 EnHorseLinkChild_OverrideSkinDraw(Actor* thisx, PlayState* play, s32 limbInd
 }
 
 void EnHorseLinkChild_Draw(Actor* thisx, PlayState* play) {
-    EnHorseLinkChild* this = (EnHorseLinkChild*)thisx;
+    EnHorseLinkChild* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     func_80138258(&this->actor, play, &this->skin, EnHorseLinkChild_PostSkinDraw, EnHorseLinkChild_OverrideSkinDraw,

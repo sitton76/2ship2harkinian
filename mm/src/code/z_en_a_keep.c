@@ -1,7 +1,9 @@
 #include "global.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnAObj*)thisx)
 
 void EnAObj_Init(Actor* thisx, PlayState* play);
 void EnAObj_Destroy(Actor* thisx, PlayState* play);
@@ -11,7 +13,7 @@ void EnAObj_Draw(Actor* thisx, PlayState* play);
 void EnAObj_Idle(EnAObj* this, PlayState* play);
 void EnAObj_Talk(EnAObj* this, PlayState* play);
 
-ActorProfile En_A_Obj_Profile = {
+ActorInit En_A_Obj_InitVars = {
     /**/ ACTOR_EN_A_OBJ,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -25,7 +27,7 @@ ActorProfile En_A_Obj_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -33,22 +35,22 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE,
-        ACELEM_NONE,
+        TOUCH_NONE,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 25, 60, 0, { 0, 0, 0 } },
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_0, ICHAIN_STOP),
+    ICHAIN_U8(targetMode, TARGET_MODE_0, ICHAIN_STOP),
 };
 
 void EnAObj_Init(Actor* thisx, PlayState* play) {
-    EnAObj* this = (EnAObj*)thisx;
+    EnAObj* this = THIS;
 
     this->actor.textId = AOBJ_GET_TEXTID(&this->actor);
     this->actor.params = AOBJ_GET_TYPE(&this->actor);
@@ -61,7 +63,7 @@ void EnAObj_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnAObj_Destroy(Actor* thisx, PlayState* play) {
-    EnAObj* this = (EnAObj*)thisx;
+    EnAObj* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collision);
 }
@@ -69,7 +71,7 @@ void EnAObj_Destroy(Actor* thisx, PlayState* play) {
 void EnAObj_Idle(EnAObj* this, PlayState* play) {
     s32 yawDiff;
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->actionFunc = EnAObj_Talk;
     } else {
         yawDiff = ABS_ALT((s16)(this->actor.yawTowardsPlayer - this->actor.shape.rot.y));
@@ -87,7 +89,7 @@ void EnAObj_Talk(EnAObj* this, PlayState* play) {
 }
 
 void EnAObj_Update(Actor* thisx, PlayState* play) {
-    EnAObj* this = (EnAObj*)thisx;
+    EnAObj* this = THIS;
 
     this->actionFunc(this, play);
     Actor_SetFocus(&this->actor, 45.0f);

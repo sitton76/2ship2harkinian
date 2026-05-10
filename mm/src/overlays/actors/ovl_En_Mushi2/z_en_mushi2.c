@@ -6,8 +6,11 @@
 
 #include "overlays/actors/ovl_Obj_Bean/z_obj_bean.h"
 #include "z_en_mushi2.h"
+#include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnMushi2*)thisx)
 
 void EnMushi2_Init(Actor* thisx, PlayState* play);
 void EnMushi2_Destroy(Actor* thisx, PlayState* play);
@@ -29,7 +32,7 @@ void func_80A6AE7C(EnMushi2* this, PlayState* play);
 void func_80A6B078(EnMushi2* this);
 void func_80A6B0D8(EnMushi2* this, PlayState* play);
 
-ActorProfile En_Mushi2_Profile = {
+ActorInit En_Mushi2_InitVars = {
     /**/ ACTOR_EN_MUSHI2,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -44,11 +47,11 @@ ActorProfile En_Mushi2_Profile = {
 static ColliderJntSphElementInit sJntSphElementsInit[1] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_NONE,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_NONE,
             OCELEM_ON,
         },
         { 0, { { 0, 0, 0 }, 5 }, 100 },
@@ -57,7 +60,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[1] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_PLAYER | OC1_TYPE_1,
@@ -95,9 +98,9 @@ static MtxF D_80A6B9C4 = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 10, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 700, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 20, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 20, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 700, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 20, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 20, ICHAIN_STOP),
 };
 
 f32 D_80A6BA14[] = {
@@ -123,18 +126,17 @@ void func_80A68808(EnMushi2* this) {
 
 s32 func_80A68860(EnMushi2* this, PlayState* play) {
     s32 pad;
-    s32 bgId;
+    s32 sp40;
     CollisionPoly* sp3C;
-    f32 temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp3C, &bgId, &this->actor, &this->actor.world.pos);
-    WaterBox* waterBox;
+    f32 temp_f0 = BgCheck_EntityRaycastFloor5(&play->colCtx, &sp3C, &sp40, &this->actor, &this->actor.world.pos);
+    WaterBox* sp34;
     f32 sp30;
 
     if ((temp_f0 > (BGCHECK_Y_MIN + 1)) && ((this->actor.world.pos.y - 150.0f) < temp_f0)) {
         return true;
     }
 
-    return WaterBox_GetSurface1_2(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp30,
-                                  &waterBox);
+    return WaterBox_GetSurface1_2(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp30, &sp34);
 }
 
 s32 func_80A68910(EnMushi2* this, PlayState* play) {
@@ -198,7 +200,7 @@ void func_80A68B6C(EnMushi2* this) {
     }
 }
 
-bool func_80A68BA0(EnMushi2* this) {
+s32 func_80A68BA0(EnMushi2* this) {
     return (D_80A6B994 > 3) && this->unk_34C == NULL;
 }
 
@@ -527,7 +529,7 @@ void func_80A697C4(EnMushi2* this, PlayState* play) {
     s32 bgId = this->polyBgId;
 
     if (!(this->unk_30C & (0x10 | 0x4))) {
-        WaterBox* waterBox;
+        WaterBox* sp30;
         f32 sp2C;
 
         this->unk_30C &= ~(0x40 | 0x8 | 0x2);
@@ -536,7 +538,7 @@ void func_80A697C4(EnMushi2* this, PlayState* play) {
         }
 
         if (WaterBox_GetSurface1_2(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp2C,
-                                   &waterBox)) {
+                                   &sp30)) {
             this->actor.depthInWater = sp2C - this->actor.world.pos.y;
             if (this->actor.depthInWater >= 1.0f) {
                 this->unk_30C |= 0x20;
@@ -576,7 +578,7 @@ void func_80A697C4(EnMushi2* this, PlayState* play) {
 
 s32 func_80A699E4(EnMushi2* this, PlayState* play) {
     s32 pad;
-    WaterBox* waterBox;
+    WaterBox* sp40;
     f32 sp3C;
 
     if (this->unk_328.y < 0.0f) {
@@ -584,7 +586,7 @@ s32 func_80A699E4(EnMushi2* this, PlayState* play) {
         f32 y = (2.0f * this->unk_328.y) + this->actor.world.pos.y;
         f32 z = (2.0f * this->unk_328.z) + this->actor.world.pos.z;
 
-        if (WaterBox_GetSurface1_2(play, &play->colCtx, x, z, &sp3C, &waterBox) && (y <= sp3C)) {
+        if (WaterBox_GetSurface1_2(play, &play->colCtx, x, z, &sp3C, &sp40) && (y <= sp3C)) {
             return true;
         }
     }
@@ -596,7 +598,7 @@ f32 func_80A69AA8(f32 x, f32 y, f32 z, Vec3f* pos) {
 }
 
 void func_80A69ADC(Actor* thisx) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
     ObjBean* bean = this->unk_34C;
     f32 sp44;
     f32 sp40;
@@ -620,7 +622,7 @@ void func_80A69ADC(Actor* thisx) {
             } else {
                 this->unk_366 = ((s32)Rand_Next() > 0) ? 2000 : -2000;
             }
-            this->unk_366 += TRUNCF_BINANG(((Rand_ZeroOne() * (1.0f - this->unk_358)) - 0.5f) * 0x400);
+            this->unk_366 += (s16)(((Rand_ZeroOne() * (1.0f - this->unk_358)) - 0.5f) * 0x400);
         } else {
             this->unk_360 = 0.0f;
             this->unk_364 = -0x8000;
@@ -630,7 +632,7 @@ void func_80A69ADC(Actor* thisx) {
 }
 
 void func_80A69CE0(Actor* thisx) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
 
     this->unk_360 = Rand_ZeroOne() * 1500.0f;
     this->unk_364 = 0;
@@ -674,7 +676,7 @@ void func_80A69D3C(EnMushi2* this) {
     }
 }
 
-s32 EnMushi2_IsUnderwater(EnMushi2* this, PlayState* play) {
+s32 func_80A69EE4(EnMushi2* this, PlayState* play) {
     s32 pad;
     WaterBox* waterBox;
     f32 waterSurface;
@@ -689,7 +691,7 @@ s32 EnMushi2_IsUnderwater(EnMushi2* this, PlayState* play) {
 }
 
 void func_80A69F5C(Actor* thisx, PlayState* play) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
     s32 i;
 
     for (i = 0; i < 7; i++) {
@@ -736,7 +738,7 @@ void func_80A6A0D8(EnMushi2* this) {
 }
 
 void EnMushi2_Init(Actor* thisx, PlayState* play) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
     s32 pad;
     s32 sp3C;
 
@@ -749,13 +751,13 @@ void EnMushi2_Init(Actor* thisx, PlayState* play) {
     this->actor.world.rot.y = this->actor.shape.rot.y;
     func_80A68F24(this);
     SkelAnime_Init(play, &this->skelAnime, &gameplay_keep_Skel_0527A0, &gameplay_keep_Anim_05140C, this->jointTable,
-                   this->morphTable, BUG_LIMB_MAX);
+                   this->morphTable, 24);
     Animation_Change(&this->skelAnime, &gameplay_keep_Anim_05140C, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP_INTERP, 0.0f);
     Collider_InitJntSph(play, &this->collider);
     Collider_SetJntSph(play, &this->collider, &this->actor, &sJntSphInit, this->colliderElements);
     func_80A68808(this);
     this->actor.colChkInfo.mass = 30;
-    sp3C = EnMushi2_IsUnderwater(this, play);
+    sp3C = func_80A69EE4(this, play);
 
     if ((sp3C == 0) && func_80A68860(this, play) && func_80A68910(this, play) &&
         (ENMUSHI2_GET_3(&this->actor) == ENMUSHI2_0)) {
@@ -778,7 +780,7 @@ void EnMushi2_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnMushi2_Destroy(Actor* thisx, PlayState* play) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
 
     Collider_DestroyJntSph(play, &this->collider);
     func_80A68B6C(this);
@@ -832,7 +834,7 @@ void func_80A6A36C(EnMushi2* this, PlayState* play) {
 }
 
 void func_80A6A508(Actor* thisx) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
 
     if (this->unk_36A > 100) {
         this->unk_35C = Rand_ZeroOne() + 1.0f;
@@ -992,7 +994,7 @@ void func_80A6AB08(EnMushi2* this, PlayState* play) {
     Math_ScaledStepToS(&this->actor.world.rot.z, 0, 0xBB8);
     this->actor.shape.rot.z = this->actor.world.rot.z;
 
-    if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) && (Rand_ZeroOne() < 0.03f)) {
+    if ((this->actor.flags & ACTOR_FLAG_40) && (Rand_ZeroOne() < 0.03f)) {
         Vec3f sp3C;
 
         sp3C.x = this->actor.world.pos.x;
@@ -1027,14 +1029,14 @@ void func_80A6AE7C(EnMushi2* this, PlayState* play) {
     this->actor.shape.rot.y += 0xC8;
     this->actor.speed += (Rand_ZeroOne() - 0.5f) * 0.16f;
     this->actor.speed *= 0.9f;
-    this->actor.world.rot.y += TRUNCF_BINANG((Rand_ZeroOne() - 0.5f) * 2000.0f);
+    this->actor.world.rot.y += (s16)((Rand_ZeroOne() - 0.5f) * 2000.0f);
     this->actor.gravity = -0.04f - (Rand_ZeroOne() * 0.02f);
     this->actor.velocity.y *= 0.95f;
     Actor_MoveWithGravity(&this->actor);
     func_80A69424(this, play);
     temp_f2 = this->actor.scale.x - (1.0f / 20000.0f);
     Actor_SetScale(&this->actor, CLAMP_MIN(temp_f2, 0.001f));
-    if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) && (this->actor.depthInWater > 5.0f) &&
+    if ((this->actor.flags & ACTOR_FLAG_40) && (this->actor.depthInWater > 5.0f) &&
         (this->actor.depthInWater < 30.0f) && ((s32)(Rand_Next() & 0x1FF) < this->unk_368)) {
         EffectSsBubble_Spawn(play, &this->actor.world.pos, -5.0f, 5.0f, 5.0f,
                              ((Rand_ZeroOne() * 4.0f) + 2.0f) * this->actor.scale.x);
@@ -1083,7 +1085,7 @@ void func_80A6B0D8(EnMushi2* this, PlayState* play) {
     this->actor.velocity.z =
         (this->actor.speed * this->unk_328.z) + (-0.01f * this->unk_31C.z) + (this->unk_310.z * temp_f2);
 
-    if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) && (this->unk_368 > 20) && (Rand_ZeroOne() < 0.15f)) {
+    if ((this->actor.flags & ACTOR_FLAG_40) && (this->unk_368 > 20) && (Rand_ZeroOne() < 0.15f)) {
         Vec3f sp48;
         s32 sp44 = 0;
 
@@ -1114,7 +1116,7 @@ void func_80A6B0D8(EnMushi2* this, PlayState* play) {
 }
 
 void EnMushi2_Update(Actor* thisx, PlayState* play) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
     s32 pad;
     f32 sp4C;
     f32 phi_f0;
@@ -1197,7 +1199,7 @@ void EnMushi2_Update(Actor* thisx, PlayState* play) {
 
         SkelAnime_Update(&this->skelAnime);
 
-        if (this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) {
+        if (this->actor.flags & ACTOR_FLAG_40) {
             if ((this->actionFunc != func_80A6AE7C) && (this->actionFunc != func_80A6B0D8) &&
                 ((this->actionFunc != func_80A6A36C) || (this->unk_36A < 0xDD)) &&
                 (((this->actionFunc != func_80A6A5C0) && (this->actionFunc != func_80A6A824) &&
@@ -1215,11 +1217,11 @@ void EnMushi2_Update(Actor* thisx, PlayState* play) {
                 }
 
                 if (phi_v0) {
-                    ColliderJntSphElement* jntSphElem = &this->collider.elements[0];
+                    ColliderJntSphElement* element = &this->collider.elements[0];
 
-                    jntSphElem->dim.worldSphere.center.x = this->actor.world.pos.x;
-                    jntSphElem->dim.worldSphere.center.y = this->actor.world.pos.y;
-                    jntSphElem->dim.worldSphere.center.z = this->actor.world.pos.z;
+                    element->dim.worldSphere.center.x = this->actor.world.pos.x;
+                    element->dim.worldSphere.center.y = this->actor.world.pos.y;
+                    element->dim.worldSphere.center.z = this->actor.world.pos.z;
                     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
                 }
             }
@@ -1232,7 +1234,7 @@ void EnMushi2_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnMushi2_Draw(Actor* thisx, PlayState* play) {
-    EnMushi2* this = (EnMushi2*)thisx;
+    EnMushi2* this = THIS;
 
     func_80A687A0(this);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);

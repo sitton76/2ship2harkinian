@@ -7,12 +7,14 @@
 #include "z_obj_funen.h"
 #include "objects/object_funen/object_funen.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjFunen*)thisx)
 
 void ObjFunen_Init(Actor* thisx, PlayState* play);
 void ObjFunen_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Funen_Profile = {
+ActorInit Obj_Funen_InitVars = {
     /**/ ACTOR_OBJ_FUNEN,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -27,7 +29,7 @@ ActorProfile Obj_Funen_Profile = {
 f32 D_80A198D0[] = { 0.1f, 0.024390244f };
 
 void ObjFunen_Init(Actor* thisx, PlayState* play) {
-    ObjFunen* this = (ObjFunen*)thisx;
+    ObjFunen* this = THIS;
 
     Actor_SetScale(&this->actor, D_80A198D0[this->actor.params & 1]);
 }
@@ -41,7 +43,7 @@ void ObjFunen_Draw(Actor* thisx, PlayState* play) {
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
     Matrix_RotateYS((s16)(Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) - 0x8000), MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
 
     temp = -(play->gameplayFrames & 0x7FFFFFFF) & 0x7F;
 

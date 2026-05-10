@@ -10,8 +10,8 @@ namespace ActorBehavior {
 void Init();
 void OnFileLoad();
 
-RandoCheckId GetObjectRandoCheckId(void* actor);
-void SetObjectRandoCheckId(const void* object, RandoCheckId rc);
+RandoCheckId GetActorRandoCheckId(Actor* actor);
+void SetActorRandoCheckId(Actor* actor, RandoCheckId rc);
 
 void InitDmChar01Behavior();
 void InitDmChar05Behavior();
@@ -35,7 +35,6 @@ void InitEnDnhBehavior();
 void InitEnElfgrpBehavior();
 void InitEnElforgBehavior();
 void InitEnFish2Behavior();
-void InitEnemyDropBehavior();
 void InitEnFsnBehavior();
 void InitEnFuBehavior();
 void InitEnGamelupyBehavior();
@@ -49,7 +48,6 @@ void InitEnGoBehavior();
 void InitEnGsBehavior();
 void InitEnHgBehavior();
 void InitEnInBehavior();
-void InitEnInvadepohBehavior();
 void InitEnItem00Behavior();
 void InitEnJgameTsnBehavior();
 void InitEnJgBehavior();
@@ -61,7 +59,6 @@ void InitEnKujiyaBehavior();
 void InitEnLiftNutsBehavior();
 void InitEnMa4Behavior();
 void InitEnMaYtoBehavior();
-void InitEnMinifrogBehavior();
 void InitEnMnkBehavior();
 void InitEnNbBehavior();
 void InitEnOsnBehavior();
@@ -79,9 +76,7 @@ void InitEnSshBehavior();
 void InitEnStoneheishiBehavior();
 void InitEnSyatekiManBehavior();
 void InitEnTabBehavior();
-void InitEnTakarayaBehavior();
 void InitEnTalkBehavior();
-void InitEnTimeTagBehavior();
 void InitEnTotoBehavior();
 void InitEnTrtBehavior();
 void InitEnYbBehavior();
@@ -89,18 +84,13 @@ void InitEnZogBehavior();
 void InitEnZotBehavior();
 void InitEnZowBehavior();
 void InitItemBHeartBehavior();
-void InitItemGetBehavior();
 void InitObjKibakoBehavior();
-void InitObjGrassBehavior();
 void InitObjMoonStoneBehavior();
 void InitObjSnowballBehavior();
 void InitObjTaruBehavior();
-void InitObjTreeBehavior();
 void InitObjTsuboBehavior();
 void InitObjWarpstoneBehavior();
-void InitPlayerBehavior();
 void InitSoulsBehavior();
-void InitTrapsBehavior();
 
 } // namespace ActorBehavior
 

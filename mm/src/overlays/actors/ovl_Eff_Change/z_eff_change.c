@@ -7,7 +7,9 @@
 #include "z_eff_change.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EffChange*)thisx)
 
 void EffChange_Init(Actor* thisx, PlayState* play);
 void EffChange_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void EffChange_Draw(Actor* thisx, PlayState* play);
 void EffChange_SetColors(EffChange* this, s32 arg1);
 void func_80A4C5CC(EffChange* this, PlayState* play);
 
-ActorProfile Eff_Change_Profile = {
+ActorInit Eff_Change_InitVars = {
     /**/ ACTOR_EFF_CHANGE,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -42,26 +44,26 @@ static u8 D_80A4C920[] = {
 };
 
 void EffChange_Init(Actor* thisx, PlayState* play) {
-    EffChange* this = (EffChange*)thisx;
+    EffChange* this = THIS;
 
     this->actionFunc = func_80A4C5CC;
     this->actor.draw = EffChange_Draw;
     EffChange_SetColors(this, EFFCHANGE_GET_COLORS(thisx));
     Actor_SetScale(&this->actor, 0.075f);
     this->primColors[3] = 0;
-    Keyframe_InitFlex(&this->kfSkelAnime, gGameplayKeepKFSkel_2900C, gGameplayKeepKFAnim_281DC, this->jointTable,
+    Keyframe_InitFlex(&this->skeletonInfo, gGameplayKeepKFSkel_2900C, gGameplayKeepKFAnim_281DC, this->jointTable,
                       this->morphTable, NULL);
-    Keyframe_FlexPlayOnce(&this->kfSkelAnime, gGameplayKeepKFAnim_281DC);
+    Keyframe_FlexPlayOnce(&this->skeletonInfo, gGameplayKeepKFAnim_281DC);
     this->step = 0;
     this->actor.shape.rot.y = 0;
-    this->kfSkelAnime.frameCtrl.speed = (2.0f / 3.0f);
+    this->skeletonInfo.frameCtrl.speed = (2.0f / 3.0f);
     CutsceneManager_Queue(CS_ID_GLOBAL_ELEGY);
 }
 
 void EffChange_Destroy(Actor* thisx, PlayState* play) {
-    EffChange* this = (EffChange*)thisx;
+    EffChange* this = THIS;
 
-    Keyframe_DestroyFlex(&this->kfSkelAnime);
+    Keyframe_DestroyFlex(&this->skeletonInfo);
 }
 
 void EffChange_SetColors(EffChange* this, s32 arg1) {
@@ -77,7 +79,7 @@ void EffChange_SetColors(EffChange* this, s32 arg1) {
 void func_80A4C5CC(EffChange* this, PlayState* play) {
     f32 phi_fv0;
 
-    if (Keyframe_UpdateFlex(&this->kfSkelAnime)) {
+    if (Keyframe_UpdateFlex(&this->skeletonInfo)) {
         Actor_Kill(&this->actor);
         CutsceneManager_Stop(CS_ID_GLOBAL_ELEGY);
         Environment_AdjustLights(play, 0.0f, 850.0f, 0.2f, 0.0f);
@@ -85,13 +87,13 @@ void func_80A4C5CC(EffChange* this, PlayState* play) {
     }
 
     this->step++;
-    if (this->kfSkelAnime.frameCtrl.curTime < 20.0f) {
+    if (this->skeletonInfo.frameCtrl.curTime < 20.0f) {
         if ((this->primColors[3]) < 242) {
             this->primColors[3] += 13;
         } else {
             this->primColors[3] = 255;
         }
-    } else if (this->kfSkelAnime.frameCtrl.curTime > 70.0f) {
+    } else if (this->skeletonInfo.frameCtrl.curTime > 70.0f) {
         if ((this->primColors[3]) >= 14) {
             this->primColors[3] -= 13;
         } else {
@@ -118,20 +120,20 @@ void func_80A4C5CC(EffChange* this, PlayState* play) {
 }
 
 void EffChange_Update(Actor* thisx, PlayState* play) {
-    EffChange* this = (EffChange*)thisx;
+    EffChange* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void EffChange_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    Mtx* mtxStack;
-    EffChange* this = (EffChange*)thisx;
+    Mtx* mtx;
+    EffChange* this = THIS;
 
     AnimatedMat_DrawStepXlu(play, Lib_SegmentedToVirtual(&gameplay_keep_Matanimheader_028FEC), this->step);
-    mtxStack = GRAPH_ALLOC(play->state.gfxCtx, this->kfSkelAnime.skeleton->dListCount * sizeof(Mtx));
+    mtx = GRAPH_ALLOC(play->state.gfxCtx, this->skeletonInfo.skeleton->dListCount * sizeof(Mtx));
 
-    if (mtxStack != NULL) {
+    if (mtx != NULL) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Matrix_RotateYS((Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) + 0x8000), MTXMODE_APPLY);
 
@@ -140,7 +142,7 @@ void EffChange_Draw(Actor* thisx, PlayState* play) {
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, this->primColors[0], this->primColors[1], this->primColors[2],
                         this->primColors[3]);
         gDPSetEnvColor(POLY_XLU_DISP++, this->envColors[0], this->envColors[1], this->envColors[2], 255);
-        Keyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, NULL, NULL, &this->actor);
+        Keyframe_DrawFlex(play, &this->skeletonInfo, mtx, NULL, NULL, &this->actor);
 
         CLOSE_DISPS(play->state.gfxCtx);
     }

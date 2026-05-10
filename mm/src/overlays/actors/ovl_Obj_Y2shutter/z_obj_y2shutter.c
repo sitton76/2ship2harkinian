@@ -7,7 +7,9 @@
 #include "z_obj_y2shutter.h"
 #include "objects/object_kaizoku_obj/object_kaizoku_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjY2shutter*)thisx)
 
 void ObjY2shutter_Init(Actor* thisx, PlayState* play);
 void ObjY2shutter_Destroy(Actor* thisx, PlayState* play);
@@ -27,7 +29,7 @@ typedef struct ShutterInfo {
     /* 0x1E */ u8 openTimer;
 } ShutterInfo; // size = 0x20
 
-ActorProfile Obj_Y2shutter_Profile = {
+ActorInit Obj_Y2shutter_InitVars = {
     /**/ ACTOR_OBJ_Y2SHUTTER,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -46,15 +48,15 @@ ShutterInfo sShutterInfo[] = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 800, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 800, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 800, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 800, ICHAIN_STOP),
 };
 
 void ObjY2shutter_Init(Actor* thisx, PlayState* play) {
     s32 pad[2];
     ShutterInfo* info = &sShutterInfo[OBJY2SHUTTER_GET_TYPE(thisx)];
-    ObjY2shutter* this = (ObjY2shutter*)thisx;
+    ObjY2shutter* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, 0);
@@ -62,7 +64,7 @@ void ObjY2shutter_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjY2shutter_Destroy(Actor* thisx, PlayState* play) {
-    ObjY2shutter* this = (ObjY2shutter*)thisx;
+    ObjY2shutter* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -77,7 +79,7 @@ void ObjY2shutter_SetupOpen(ObjY2shutter* this, ShutterInfo* info, ShutterType s
 
 void ObjY2shutter_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjY2shutter* this = (ObjY2shutter*)thisx;
+    ObjY2shutter* this = THIS;
     ShutterType shutterType = OBJY2SHUTTER_GET_TYPE(&this->dyna.actor);
     ShutterInfo* info = &sShutterInfo[shutterType];
     f32 targetPosY = this->dyna.actor.world.pos.y;
@@ -106,9 +108,9 @@ void ObjY2shutter_Update(Actor* thisx, PlayState* play) {
             s16 csId = this->dyna.actor.csId;
 
             if (this->openTimer == 0) {
-                if ((csId > CS_ID_NONE) && !CutsceneManager_IsNext(csId)) {
+                if ((csId >= 0) && !CutsceneManager_IsNext(csId)) {
                     CutsceneManager_Queue(csId);
-                } else if (csId > CS_ID_NONE) {
+                } else if (csId >= 0) {
                     CutsceneManager_StartWithPlayerCs(csId, &this->dyna.actor);
                     this->openTimer = -1;
                 } else {
@@ -167,7 +169,7 @@ void ObjY2shutter_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjY2shutter_Draw(Actor* thisx, PlayState* play) {
-    ObjY2shutter* this = (ObjY2shutter*)thisx;
+    ObjY2shutter* this = THIS;
     ShutterInfo* info = &sShutterInfo[(OBJY2SHUTTER_GET_TYPE(&this->dyna.actor))];
 
     Gfx_DrawDListOpa(play, info->dList);

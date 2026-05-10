@@ -4,13 +4,16 @@
  * Description: Snowhead Temple Central Pillar
  */
 
+#include "prevent_bss_reordering.h"
 #include "z_bg_hakugin_post.h"
 #include "z64quake.h"
 #include "z64rumble.h"
 #include "objects/object_hakugin_obj/object_hakugin_obj.h"
 #include <string.h>
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((BgHakuginPost*)thisx)
 
 void BgHakuginPost_Init(Actor* thisx, PlayState* play);
 void BgHakuginPost_Destroy(Actor* thisx, PlayState* play);
@@ -38,7 +41,7 @@ void func_80A9D61C(Actor* thisx, PlayState* play);
 BgHakuginPostColliders D_80A9DDC0;
 BgHakuginPostUnkStruct D_80A9E028;
 
-ActorProfile Bg_Hakugin_Post_Profile = {
+ActorInit Bg_Hakugin_Post_InitVars = {
     /**/ ACTOR_BG_HAKUGIN_POST,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -63,7 +66,7 @@ static BgHakuginPostUnkStruct3 D_80A9D880[] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -71,11 +74,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000100, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 276, 0, 20, { 0, 0, 0 } },
@@ -694,7 +697,7 @@ static s32 D_80A9D8FC = 1;
 void BgHakuginPost_Init(Actor* thisx, PlayState* play) {
     // static s32 D_80A9D8FC = 1;
     // #endregion
-    BgHakuginPost* this = (BgHakuginPost*)thisx;
+    BgHakuginPost* this = THIS;
 
     if (D_80A9D8FC != 0) {
         D_80A9D8FC = 0;
@@ -719,7 +722,7 @@ void BgHakuginPost_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgHakuginPost_Destroy(Actor* thisx, PlayState* play) {
-    BgHakuginPost* this = (BgHakuginPost*)thisx;
+    BgHakuginPost* this = THIS;
 
     if (BGHAKUGINPOST_GET_7(&this->dyna.actor) == 7) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -807,7 +810,7 @@ void func_80A9CD14(BgHakuginPost* this, PlayState* play) {
         Audio_PlaySfx_2(NA_SE_EV_STONEDOOR_STOP);
         func_80A9CE00(this);
     } else {
-        Actor_PlaySfx_FlaggedCentered2(&this->dyna.actor, NA_SE_EV_ICE_PILLAR_RISING - SFX_FLAG);
+        Actor_PlaySfx_FlaggedCentered3(&this->dyna.actor, NA_SE_EV_ICE_PILLAR_RISING - SFX_FLAG);
     }
 }
 
@@ -885,7 +888,7 @@ void func_80A9D0B4(BgHakuginPost* this, PlayState* play) {
         Audio_PlaySfx_2(NA_SE_EV_STONEDOOR_STOP);
         func_80A9CC84(this);
     } else {
-        Actor_PlaySfx_FlaggedCentered2(&this->dyna.actor, NA_SE_EV_ICE_PILLAR_FALL - SFX_FLAG);
+        Actor_PlaySfx_FlaggedCentered3(&this->dyna.actor, NA_SE_EV_ICE_PILLAR_FALL - SFX_FLAG);
     }
 }
 
@@ -929,7 +932,7 @@ void func_80A9D2C4(BgHakuginPost* this, BgHakuginPostFunc unkFunc, f32 arg2, s16
 void func_80A9D360(BgHakuginPost* this, PlayState* play) {
     if (CutsceneManager_IsNext(this->csId)) {
         CutsceneManager_StartWithPlayerCs(this->csId, &this->dyna.actor);
-        if (this->additionalCsId > CS_ID_NONE) {
+        if (this->additionalCsId >= 0) {
             func_80A9D3E4(this);
         } else {
             this->unkFunc(this);
@@ -957,7 +960,7 @@ void func_80A9D434(BgHakuginPost* this, PlayState* play) {
 }
 
 void BgHakuginPost_Update(Actor* thisx, PlayState* play) {
-    BgHakuginPost* this = (BgHakuginPost*)thisx;
+    BgHakuginPost* this = THIS;
     f32 temp;
 
     func_80A9B46C(this, play);
@@ -1009,7 +1012,7 @@ void func_80A9D61C(Actor* thisx, PlayState* play) {
         object_hakugin_obj_DL_00D098,
         object_hakugin_obj_DL_00D098,
     };
-    BgHakuginPost* this = (BgHakuginPost*)thisx;
+    BgHakuginPost* this = THIS;
     BgHakuginPostUnkStruct1* unkStruct1;
     BgHakuginPostUnkStruct2* unkStruct2;
     Vec3f sp68;
@@ -1030,7 +1033,7 @@ void func_80A9D61C(Actor* thisx, PlayState* play) {
             sp68.z = unkStruct1->unk_14.z + this->dyna.actor.home.pos.z;
             func_80A9B384(&sp68);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_OPA_DISP++, D_80A9D900[unkStruct1->unk_00]);
         }
     }
@@ -1043,7 +1046,8 @@ void func_80A9D61C(Actor* thisx, PlayState* play) {
                                              &unkStruct2->unk_20);
                 Matrix_Scale(unkStruct2->unk_00, unkStruct2->unk_00, unkStruct2->unk_00, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+                gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx),
+                          G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_OPA_DISP++, D_80A9D91C[unkStruct2->unk_2D]);
             }
         }

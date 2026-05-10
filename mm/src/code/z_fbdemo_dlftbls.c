@@ -1,14 +1,11 @@
-#include "z64transition.h"
+#include "global.h"
 
-#include "segment_symbols.h"
-#include "z64lib.h"
-
-// Profile and Linker symbol declarations (used in the table below)
+// InitVars and Linker symbol declarations (used in the table below)
 #define DEFINE_TRANSITION(_enumValue, structName, _instanceName, name) \
-    extern TransitionProfile structName##_Profile;                     \
+    extern TransitionInit structName##_InitVars;                       \
     DECLARE_OVERLAY_SEGMENT(name)
 
-#define DEFINE_TRANSITION_INTERNAL(_enumValue, structName, _instanceName) extern TransitionProfile structName##_Profile;
+#define DEFINE_TRANSITION_INTERNAL(_enumValue, structName, _instanceName) extern TransitionInit structName##_InitVars;
 
 #include "tables/transition_table.h"
 
@@ -22,12 +19,12 @@
         SEGMENT_END(ovl_##name),                                       \
         SEGMENT_ROM_START(ovl_##name),                                 \
         SEGMENT_ROM_END(ovl_##name),                                   \
-        &structName##_Profile,                                         \
+        &structName##_InitVars,                                        \
         sizeof(structName),                                            \
     },
 
 #define DEFINE_TRANSITION_INTERNAL(_enumValue, structName, _instanceName) \
-    { { 0, 0 }, NULL, NULL, 0, 0, &structName##_Profile, sizeof(structName) },
+    { { 0, 0 }, NULL, NULL, 0, 0, &structName##_InitVars, sizeof(structName) },
 
 TransitionOverlay gTransitionOverlayTable[] = {
 #include "tables/transition_table.h"
@@ -39,25 +36,25 @@ TransitionOverlay gTransitionOverlayTable[] = {
 void Transition_Init(TransitionContext* transitionCtx) {
     TransitionOverlay* overlayEntry;
     ptrdiff_t relocOffset;
-    TransitionProfile* profile[1];
+    TransitionInit* initInfo[1];
 
     overlayEntry = &gTransitionOverlayTable[transitionCtx->fbdemoType];
     TransitionOverlay_Load(overlayEntry);
 
     relocOffset = (uintptr_t)Lib_PhysicalToVirtual(overlayEntry->loadInfo.addr) - (uintptr_t)overlayEntry->vramStart;
-    profile[0] = NULL;
-    profile[0] = (overlayEntry->profile != NULL) ? (TransitionProfile*)((uintptr_t)overlayEntry->profile + relocOffset)
-                                                 : profile[0];
+    initInfo[0] = NULL;
+    initInfo[0] = (overlayEntry->initInfo != NULL) ? (TransitionInit*)((uintptr_t)overlayEntry->initInfo + relocOffset)
+                                                   : initInfo[0];
 
-    transitionCtx->init = profile[0]->init;
-    transitionCtx->destroy = profile[0]->destroy;
-    transitionCtx->start = profile[0]->start;
-    transitionCtx->isDone = profile[0]->isDone;
-    transitionCtx->draw = profile[0]->draw;
-    transitionCtx->update = profile[0]->update;
-    transitionCtx->setType = profile[0]->setType;
-    transitionCtx->setColor = profile[0]->setColor;
-    transitionCtx->setEnvColor = profile[0]->setEnvColor;
+    transitionCtx->init = initInfo[0]->init;
+    transitionCtx->destroy = initInfo[0]->destroy;
+    transitionCtx->start = initInfo[0]->start;
+    transitionCtx->isDone = initInfo[0]->isDone;
+    transitionCtx->draw = initInfo[0]->draw;
+    transitionCtx->update = initInfo[0]->update;
+    transitionCtx->setType = initInfo[0]->setType;
+    transitionCtx->setColor = initInfo[0]->setColor;
+    transitionCtx->setEnvColor = initInfo[0]->setEnvColor;
 }
 
 void Transition_Destroy(TransitionContext* transitionCtx) {

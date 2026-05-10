@@ -8,7 +8,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnTorch2*)thisx)
 
 void EnTorch2_Init(Actor* thisx, PlayState* play);
 void EnTorch2_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void EnTorch2_Draw(Actor* thisx, PlayState* play2);
 void EnTorch2_UpdateIdle(Actor* thisx, PlayState* play);
 void EnTorch2_UpdateDeath(Actor* thisx, PlayState* play);
 
-ActorProfile En_Torch2_Profile = {
+ActorInit En_Torch2_InitVars = {
     /**/ ACTOR_EN_TORCH2,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile En_Torch2_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER | OC1_TYPE_1 | OC1_TYPE_2,
@@ -40,11 +42,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK2,
+        ELEMTYPE_UNK2,
         { 0x00100000, 0, 0 },
         { 0xF7CFFFFF, 0, 0 },
-        ATELEM_NONE,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_NONE,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 20, 60, 0, { 0, 0, 0 } },
@@ -61,31 +63,31 @@ static Gfx* sShellDLists[] = {
 };
 
 void EnTorch2_Init(Actor* thisx, PlayState* play) {
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
 
     if (this->actor.params != TORCH2_PARAM_DEKU) {
-        this->actor.flags |= ACTOR_FLAG_CAN_PRESS_SWITCHES;
+        this->actor.flags |= ACTOR_FLAG_CAN_PRESS_SWITCH;
         if (this->actor.params == TORCH2_PARAM_GORON) {
-            this->actor.flags |= ACTOR_FLAG_CAN_PRESS_HEAVY_SWITCHES;
+            this->actor.flags |= ACTOR_FLAG_CAN_PRESS_HEAVY_SWITCH;
         }
     }
     this->framesUntilNextState = 20;
 }
 
 void EnTorch2_Destroy(Actor* thisx, PlayState* play) {
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
-    Play_SetRespawnData(play, this->actor.params + RESPAWN_MODE_GORON - 1, 0xFF, 0,
-                        PLAYER_PARAMS(0xFF, PLAYER_START_MODE_B), &this->actor.world.pos, this->actor.shape.rot.y);
+    Play_SetRespawnData(&play->state, this->actor.params + RESPAWN_MODE_GORON - 1, 0xFF, 0,
+                        PLAYER_PARAMS(0xFF, PLAYER_INITMODE_B), &this->actor.world.pos, this->actor.shape.rot.y);
     play->actorCtx.elegyShells[this->actor.params] = NULL;
 }
 
 void EnTorch2_Update(Actor* thisx, PlayState* play) {
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
     u16 targetAlpha;
     u16 remainingFrames;
     s32 pad[2];
@@ -133,7 +135,7 @@ void EnTorch2_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnTorch2_UpdateIdle(Actor* thisx, PlayState* play) {
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
 
     if (this->state == TORCH2_STATE_DYING) {
         // Start death animation
@@ -143,7 +145,7 @@ void EnTorch2_UpdateIdle(Actor* thisx, PlayState* play) {
 }
 
 void EnTorch2_UpdateDeath(Actor* thisx, PlayState* play) {
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
 
     // Fall down and become transparent, then delete once invisible
     if (Math_StepToS(&this->alpha, 0, 8)) {
@@ -157,7 +159,7 @@ void EnTorch2_UpdateDeath(Actor* thisx, PlayState* play) {
 
 void EnTorch2_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnTorch2* this = (EnTorch2*)thisx;
+    EnTorch2* this = THIS;
     Gfx* gfx = sShellDLists[this->actor.params];
 
     OPEN_DISPS(play->state.gfxCtx);

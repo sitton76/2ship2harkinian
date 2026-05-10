@@ -1,6 +1,8 @@
 
 #include "CustomMessage.h"
+#include <libultraship/bridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
+#include <map>
 
 extern "C" {
 #include "variables.h"
@@ -8,20 +10,6 @@ extern f32 sNESFontWidths[160];
 }
 
 CustomMessage::Entry activeCustomMessage;
-
-std::string CustomMessage::RemoveColorCodes(const std::string& input) {
-    std::string output = input;
-    const std::vector<std::string> codes = { "%r", "%w", "%y", "%g", "%b", "%p" };
-
-    for (const auto& code : codes) {
-        size_t pos = 0;
-        while ((pos = output.find(code, pos)) != std::string::npos) {
-            output.erase(pos, code.length());
-        }
-    }
-
-    return output;
-}
 
 void CustomMessage::StartTextbox(std::string msg, CustomMessage::Entry options) {
     options.msg = msg;
@@ -65,70 +53,37 @@ void CustomMessage::AddLineBreaks(std::string* msg) {
     for (size_t i = 0; i < msg->size(); ++i) {
         char currentChar = (*msg)[i];
 
-        // Handle existing newlines
+        if ((uint8_t)currentChar >= 0x20 && (uint8_t)currentChar < 0x20 + ARRAY_COUNTU(sNESFontWidths)) {
+            currentLineWidth += sNESFontWidths[(uint8_t)currentChar - 0x20];
+        }
+
+        // Increment for existing new liens
         if (currentChar == 0x11) {
             currentLineWidth = 0.0f;
             lastSpaceIndex = std::string::npos;
             ++currentLineCount;
-            continue;
         }
 
-        // Handle existing box breaks
-        if (currentChar == 0x10) {
-            currentLineWidth = 0.0f;
-            lastSpaceIndex = std::string::npos;
-            currentLineCount = 0;
-            continue;
-        }
-
-        // Track spaces for word wrapping
         if (currentChar == ' ') {
             lastSpaceIndex = i;
         }
-
-        // Calculate width for printable characters
-        float charWidth = 0.0f;
-        if ((uint8_t)currentChar >= 0x20 && (uint8_t)currentChar < 0x20 + ARRAY_COUNTU(sNESFontWidths)) {
-            charWidth = sNESFontWidths[(uint8_t)currentChar - 0x20];
-        }
-
-        // Check if adding this character would exceed width
-        if (currentLineWidth + charWidth > MAX_TEXTBOX_WIDTH) {
+        if (currentLineWidth > MAX_TEXTBOX_WIDTH) {
             if (lastSpaceIndex != std::string::npos) {
-                // Break at the last space
                 (*msg)[lastSpaceIndex] = 0x11;
-
-                // Recalculate width from after the space to current position
-                currentLineWidth = 0.0f;
-                for (size_t j = lastSpaceIndex + 1; j < i; ++j) {
-                    char c = (*msg)[j];
-                    if ((uint8_t)c >= 0x20 && (uint8_t)c < 0x20 + ARRAY_COUNTU(sNESFontWidths)) {
-                        currentLineWidth += sNESFontWidths[(uint8_t)c - 0x20];
-                    }
-                }
-                // Add current character's width
-                currentLineWidth += charWidth;
-
-                lastSpaceIndex = std::string::npos;
+                i = lastSpaceIndex;
             } else {
-                // No space found, force break before current character
                 msg->insert(i, 1, 0x11);
-                currentLineWidth = charWidth; // Current char is now first on new line
-                ++i;                          // Skip the inserted newline character
             }
 
+            currentLineWidth = 0.0f;
+            lastSpaceIndex = std::string::npos;
             ++currentLineCount;
 
             if (currentLineCount >= MAX_LINES_PER_PAGE) {
-                // Find the newline we just added and replace it with box break
-                size_t newlinePos = (lastSpaceIndex != std::string::npos) ? lastSpaceIndex : i - 1;
-                (*msg)[newlinePos] = 0x10;
+                // Replace the added new line for a box break instead
+                (*msg)[i] = 0x10;
                 currentLineCount = 0;
-                lastSpaceIndex = std::string::npos;
             }
-        } else {
-            // Character fits on current line
-            currentLineWidth += charWidth;
         }
     }
 }
@@ -142,7 +97,7 @@ void CustomMessage::EnsureMessageEnd(std::string* msg) {
 
 CustomMessage::Entry CustomMessage::LoadVanillaMessageTableEntry(u16 textId) {
     MessageContext* msgCtx = &gPlayState->msgCtx;
-    MessageTableEntry* msgEntry = msgCtx->messageTableNES;
+    MessageTableEntry* msgEntry = msgCtx->messageEntryTableNes;
     while (msgEntry->textId != 0xFFFF) {
         if (msgEntry->textId == textId) {
             break;

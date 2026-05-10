@@ -7,7 +7,9 @@
 #include "z_obj_aqua.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjAqua*)thisx)
 
 void ObjAqua_Init(Actor* thisx, PlayState* play);
 void ObjAqua_Destroy(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ void func_80ACBDFC(ObjAqua* this, PlayState* play);
 
 void func_80ACBD34(ObjAqua* this);
 
-ActorProfile Obj_Aqua_Profile = {
+ActorInit Obj_Aqua_InitVars = {
     /**/ ACTOR_OBJ_AQUA,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ ActorProfile Obj_Aqua_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_ON | AT_TYPE_OTHER,
         AC_NONE,
         OC1_NONE,
@@ -44,24 +46,21 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NONE,
-        ACELEM_NONE,
+        TOUCH_ON | TOUCH_SFX_NONE,
+        BUMP_NONE,
         OCELEM_NONE,
     },
     { 6, 10, 0, { 0, 0, 0 } },
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_VEC3S(shape.rot, 0, ICHAIN_CONTINUE),
-    ICHAIN_VEC3S(world.rot, 0, ICHAIN_CONTINUE),
-    ICHAIN_F32_DIV1000(gravity, -900, ICHAIN_CONTINUE),
-    ICHAIN_F32_DIV1000(terminalVelocity, -4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 300, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 300, ICHAIN_STOP),
+    ICHAIN_VEC3S(shape.rot, 0, ICHAIN_CONTINUE),          ICHAIN_VEC3S(world.rot, 0, ICHAIN_CONTINUE),
+    ICHAIN_F32_DIV1000(gravity, -900, ICHAIN_CONTINUE),   ICHAIN_F32_DIV1000(terminalVelocity, -4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE), ICHAIN_F32(uncullZoneScale, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 300, ICHAIN_STOP),
 };
 
 Vec3f D_80ACC308 = { 1.0f / 1000.0f, 7.0f / 10000.0f, 1.0f / 1000.0f };
@@ -94,8 +93,8 @@ void func_80ACB7F4(ObjAqua* this, PlayState* play) {
 
     effectPos.y = this->actor.floorHeight;
     for (i = 0; i < 4; i++) {
-        effectPos.x = this->actor.world.pos.x + Math_SinS((s32)(Rand_ZeroOne() * 7200.0f) + angleOffset) * 8.0f;
-        effectPos.z = this->actor.world.pos.z + Math_CosS((s32)(Rand_ZeroOne() * 7200.0f) + angleOffset) * 8.0f;
+        effectPos.x = (this->actor.world.pos.x + Math_SinS((s32)(Rand_ZeroOne() * 7200.0f) + angleOffset) * 8.0f);
+        effectPos.z = (this->actor.world.pos.z + Math_CosS((s32)(Rand_ZeroOne() * 7200.0f) + angleOffset) * 8.0f);
         EffectSsGSplash_Spawn(play, &effectPos, NULL, NULL, 0, 120);
         angleOffset += 0x4000;
     }
@@ -107,15 +106,15 @@ void func_80ACB7F4(ObjAqua* this, PlayState* play) {
 void func_80ACB940(ObjAqua* this, PlayState* play) {
     s32 pad;
     Vec3f effectPos;
-    Vec3f effectVelocity;
+    Vec3f effectVel;
 
-    effectVelocity.x = Rand_ZeroOne() - 0.5f;
-    effectVelocity.y = 2.0f;
-    effectVelocity.z = Rand_ZeroOne() - 0.5f;
-    effectPos.x = this->actor.world.pos.x + (effectVelocity.x * 40.0f);
+    effectVel.x = Rand_ZeroOne() - 0.5f;
+    effectVel.y = 2.0f;
+    effectVel.z = Rand_ZeroOne() - 0.5f;
+    effectPos.x = this->actor.world.pos.x + (effectVel.x * 40.0f);
     effectPos.y = this->actor.world.pos.y;
-    effectPos.z = this->actor.world.pos.z + (effectVelocity.z * 40.0f);
-    EffectSsIceSmoke_Spawn(play, &effectPos, &effectVelocity, &gZeroVec3f, (s32)(Rand_ZeroOne() * 24.0f) + 70);
+    effectPos.z = this->actor.world.pos.z + (effectVel.z * 40.0f);
+    EffectSsIceSmoke_Spawn(play, &effectPos, &effectVel, &gZeroVec3f, (s32)(Rand_ZeroOne() * 24.0f) + 70);
 }
 
 void func_80ACBA10(ObjAqua* this) {
@@ -127,37 +126,40 @@ void func_80ACBA10(ObjAqua* this) {
     Matrix_MtxFToYXZRot(&sp2C, &this->actor.shape.rot, false);
 }
 
-s32 ObjAqua_IsUnderwater(ObjAqua* this, PlayState* play) {
+s32 func_80ACBA60(ObjAqua* this, PlayState* play) {
     s32 pad;
     WaterBox* waterBox;
-    f32 waterSurface;
+    f32 ySurface;
     s32 bgId;
 
-    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &waterSurface,
+    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &ySurface,
                                 &waterBox, &bgId) &&
-        (this->actor.world.pos.y < waterSurface)) {
+        (this->actor.world.pos.y < ySurface)) {
         return true;
     }
     return false;
 }
 
 void ObjAqua_Init(Actor* thisx, PlayState* play) {
-    ObjAqua* this = (ObjAqua*)thisx;
+    ObjAqua* this = THIS;
     s32 i;
 
-    Actor_ProcessInitChain(thisx, sInitChain);
+    Actor_ProcessInitChain(&this->actor, sInitChain);
     this->actor.scale.x = 0.0009f;
     this->actor.scale.y = 0.0005f;
     this->actor.scale.z = 0.0009f;
     Collider_InitCylinder(play, &this->collider);
-    Collider_SetCylinder(play, &this->collider, thisx, &sCylinderInit);
-    ActorShape_Init(&thisx->shape, 0.0f, ActorShadow_DrawCircle, 60.0f);
+    Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
+    ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 60.0f);
 
-    thisx->shape.shadowAlpha = 140;
+    //! FAKE:
+    if (1) {}
+
+    this->actor.shape.shadowAlpha = 140;
     this->alpha = 255;
-    if (ObjAqua_IsUnderwater(this, play)) {
+    if (func_80ACBA60(this, play)) {
         for (i = 0; i < 8; i++) {
-            EffectSsBubble_Spawn(play, &thisx->world.pos, -4.0f, 4.0f, 4.0f, (Rand_ZeroOne() * 0.09f) + 0.03f);
+            EffectSsBubble_Spawn(play, &this->actor.world.pos, -4.0f, 4.0f, 4.0f, (Rand_ZeroOne() * 0.09f) + 0.03f);
         }
         func_80ACBDCC(this);
     } else {
@@ -166,7 +168,7 @@ void ObjAqua_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjAqua_Destroy(Actor* thisx, PlayState* play) {
-    ObjAqua* this = (ObjAqua*)thisx;
+    ObjAqua* this = THIS;
     Collider_DestroyCylinder(play, &this->collider);
 }
 
@@ -238,14 +240,14 @@ void func_80ACBDFC(ObjAqua* this, PlayState* play) {
 }
 
 void ObjAqua_Update(Actor* thisx, PlayState* play) {
-    ObjAqua* this = (ObjAqua*)thisx;
+    ObjAqua* this = THIS;
     s32 pad;
 
     if (this->counter > 0) {
         this->counter--;
     }
     this->actionFunc(this, play);
-    if (this->actor.update != NULL) {
+    if (this->actor.update) {
         if (this->actionFunc == func_80ACBC8C) {
             Math_Vec3f_StepTo(&this->actor.scale, &D_80ACC308, 0.00006f);
         } else if (this->actionFunc == func_80ACBD48) {
@@ -265,7 +267,7 @@ void ObjAqua_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjAqua_Draw(Actor* thisx, PlayState* play) {
-    ObjAqua* this = (ObjAqua*)thisx;
+    ObjAqua* this = THIS;
     s32 framesTemp;
     s32 pad;
     s16 yaw = Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) + 0x8000;
@@ -279,8 +281,7 @@ void ObjAqua_Draw(Actor* thisx, PlayState* play) {
         framesTemp >>= 1;
     }
     gSPSegment(POLY_XLU_DISP++, 0x08,
-               Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, framesTemp, 0x20, 0x80, 0, 0, 0,
-                                  actionFuncTemp ? -5 : -0xA));
+               Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, 0, 0x20, 0x40, 1, 0, framesTemp, 0x20, 0x80));
     gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 170, 255, 255, this->alpha);
     gDPSetEnvColor(POLY_XLU_DISP++, 0, 150, 255, 0);
     if (actionFuncTemp) {
@@ -293,7 +294,7 @@ void ObjAqua_Draw(Actor* thisx, PlayState* play) {
     }
 
     Matrix_RotateYS(yaw, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_XLU_DISP++, gEffFire1DL);
 
     CLOSE_DISPS(play->state.gfxCtx);

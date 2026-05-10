@@ -8,14 +8,16 @@
 #include "assets/overlays/ovl_Oceff_Wipe5/ovl_Oceff_Wipe5.h"
 #include "BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((OceffWipe5*)thisx)
 
 void OceffWipe5_Init(Actor* thisx, PlayState* play);
 void OceffWipe5_Destroy(Actor* thisx, PlayState* play);
 void OceffWipe5_Update(Actor* thisx, PlayState* play);
 void OceffWipe5_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Oceff_Wipe5_Profile = {
+ActorInit Oceff_Wipe5_InitVars = {
     ACTOR_OCEFF_WIPE5,
     ACTORCAT_ITEMACTION,
     FLAGS,
@@ -27,11 +29,11 @@ ActorProfile Oceff_Wipe5_Profile = {
     (ActorFunc)OceffWipe5_Draw,
 };
 
-static s32 sBssPad;
+UNK_TYPE4 D_80BC9260;
 static Vtx* gOceff5VtxData;
 
 void OceffWipe5_Init(Actor* thisx, PlayState* play) {
-    OceffWipe5* this = (OceffWipe5*)thisx;
+    OceffWipe5* this = THIS;
 
     gOceff5VtxData = ResourceMgr_LoadVtxByName(gOceff5Vtx);
 
@@ -41,14 +43,14 @@ void OceffWipe5_Init(Actor* thisx, PlayState* play) {
 }
 
 void OceffWipe5_Destroy(Actor* thisx, PlayState* play) {
-    OceffWipe5* this = (OceffWipe5*)thisx;
+    OceffWipe5* this = THIS;
 
     Magic_Reset(play);
     play->msgCtx.ocarinaSongEffectActive = false;
 }
 
 void OceffWipe5_Update(Actor* thisx, PlayState* play) {
-    OceffWipe5* this = (OceffWipe5*)thisx;
+    OceffWipe5* this = THIS;
 
     this->actor.world.pos = GET_ACTIVE_CAM(play)->eye;
     if (this->counter < 100) {
@@ -67,7 +69,7 @@ static u8 sEnvColors[] = {
 };
 
 void OceffWipe5_Draw(Actor* thisx, PlayState* play) {
-    OceffWipe5* this = (OceffWipe5*)thisx;
+    OceffWipe5* this = THIS;
     f32 z;
     s32 pad;
     s32 i;
@@ -133,7 +135,7 @@ void OceffWipe5_Draw(Actor* thisx, PlayState* play) {
     Matrix_RotateXS(0x708, MTXMODE_APPLY);
     Matrix_Translate(0.0f, 0.0f, -z, MTXMODE_APPLY);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, sPrimColors[colorIndex], sPrimColors[colorIndex + 1],
                     sPrimColors[colorIndex + 2], 255);
     gDPSetEnvColor(POLY_XLU_DISP++, sEnvColors[colorIndex], sEnvColors[colorIndex + 1], sEnvColors[colorIndex + 2],

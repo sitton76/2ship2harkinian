@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <string>
-#include <ship/resource/Resource.h>
+#include "Resource.h"
 
 namespace SOH {
 

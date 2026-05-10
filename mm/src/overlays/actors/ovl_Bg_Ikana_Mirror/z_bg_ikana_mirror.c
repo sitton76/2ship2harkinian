@@ -12,7 +12,9 @@
 #include "z_bg_ikana_mirror.h"
 #include "objects/object_ikana_obj/object_ikana_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgIkanaMirror*)thisx)
 
 void BgIkanaMirror_Init(Actor* thisx, PlayState* play2);
 void BgIkanaMirror_Destroy(Actor* thisx, PlayState* play);
@@ -24,7 +26,7 @@ void BgIkanaMirror_Wait(BgIkanaMirror* this, PlayState* play);
 void BgIkanaMirror_SetupEmitLight(BgIkanaMirror* this);
 void BgIkanaMirror_EmitLight(BgIkanaMirror* this, PlayState* play);
 
-ActorProfile Bg_Ikana_Mirror_Profile = {
+ActorInit Bg_Ikana_Mirror_InitVars = {
     /**/ ACTOR_BG_IKANA_MIRROR,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -39,99 +41,99 @@ ActorProfile Bg_Ikana_Mirror_Profile = {
 static ColliderTrisElementInit sMirrorColliderElementsInit[] = {
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 21.6f, 13.7f }, { -25.3f, 6.0f, 8.4f }, { 25.3f, 6.0f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { -25.3f, 6.0f, 8.4f }, { 0.0f, 21.6f, 13.7f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { 0.0f, 21.6f, 13.7f }, { 25.3f, 6.0f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { -25.3f, 45.0f, 8.4f }, { -25.3f, 6.0f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { 25.3f, 6.0f, 8.4f }, { 25.3f, 45.0f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { -17.9f, 64.1f, 8.4f }, { -25.3f, 45.0f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { 25.3f, 45.0f, 8.4f }, { 17.9f, 64.1f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { 0.0f, 72.0f, 8.4f }, { -17.9f, 64.1f, 8.4f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00200000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, 45.0f, 13.7f }, { 17.9f, 64.1f, 8.4f }, { 0.0f, 72.0f, 8.4f } } },
@@ -140,7 +142,7 @@ static ColliderTrisElementInit sMirrorColliderElementsInit[] = {
 
 static ColliderTrisInit sMirrorColliderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER | AC_TYPE_OTHER,
         OC1_NONE,
@@ -154,7 +156,7 @@ static ColliderTrisInit sMirrorColliderInit = {
 static ColliderQuadInit sLightRaysCollidersInit[] = {
     {
         {
-            COL_MATERIAL_NONE,
+            COLTYPE_NONE,
             AT_ON | AT_TYPE_OTHER,
             AC_NONE,
             OC1_NONE,
@@ -162,18 +164,18 @@ static ColliderQuadInit sLightRaysCollidersInit[] = {
             COLSHAPE_QUAD,
         },
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00200000, 0x00, 0x00 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NONE,
-            ACELEM_NONE,
+            TOUCH_ON | TOUCH_SFX_NONE,
+            BUMP_NONE,
             OCELEM_NONE,
         },
         { { { 0.0f, 72.0f, 20.0f }, { 0.0f, 72.0f, 240.0f }, { 0.0f, 6.0f, 20.0f }, { 0.0f, 6.0f, 240.0f } } },
     },
     {
         {
-            COL_MATERIAL_NONE,
+            COLTYPE_NONE,
             AT_ON | AT_TYPE_OTHER,
             AC_NONE,
             OC1_NONE,
@@ -181,11 +183,11 @@ static ColliderQuadInit sLightRaysCollidersInit[] = {
             COLSHAPE_QUAD,
         },
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00200000, 0x00, 0x00 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NONE,
-            ACELEM_NONE,
+            TOUCH_ON | TOUCH_SFX_NONE,
+            BUMP_NONE,
             OCELEM_NONE,
         },
         { { { 25.3f, 20.0f, 20.0f }, { 25.3f, 20.0f, 240.0f }, { -25.3f, 20.0f, 20.0f }, { -25.3f, 20.0f, 240.0f } } },
@@ -193,9 +195,9 @@ static ColliderQuadInit sLightRaysCollidersInit[] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 220, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 220, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 200, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
@@ -226,7 +228,7 @@ void BgIkanaMirror_SetQuadVertices(BgIkanaMirror* this) {
 
 void BgIkanaMirror_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    BgIkanaMirror* this = (BgIkanaMirror*)thisx;
+    BgIkanaMirror* this = THIS;
     ColliderTrisElementInit* element;
     Vec3f vertices[3];
     s32 i;
@@ -261,7 +263,7 @@ void BgIkanaMirror_Init(Actor* thisx, PlayState* play2) {
 }
 
 void BgIkanaMirror_Destroy(Actor* thisx, PlayState* play) {
-    BgIkanaMirror* this = (BgIkanaMirror*)thisx;
+    BgIkanaMirror* this = THIS;
     s32 i;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -325,7 +327,7 @@ void BgIkanaMirror_Wait(BgIkanaMirror* this, PlayState* play) {
 }
 
 void BgIkanaMirror_SetupEmitLight(BgIkanaMirror* this) {
-    this->dyna.actor.flags |= ACTOR_FLAG_DRAW_CULLING_DISABLED;
+    this->dyna.actor.flags |= ACTOR_FLAG_20;
     this->actionFunc = BgIkanaMirror_EmitLight;
 }
 
@@ -362,32 +364,32 @@ void BgIkanaMirror_EmitLight(BgIkanaMirror* this, PlayState* play) {
         }
 
     } else {
-        this->dyna.actor.flags &= ~ACTOR_FLAG_DRAW_CULLING_DISABLED;
+        this->dyna.actor.flags &= ~ACTOR_FLAG_20;
         BgIkanaMirror_SetupWait(this);
     }
 }
 
 void BgIkanaMirror_Update(Actor* thisx, PlayState* play) {
-    BgIkanaMirror* this = (BgIkanaMirror*)thisx;
+    BgIkanaMirror* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void BgIkanaMirror_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgIkanaMirror* this = (BgIkanaMirror*)thisx;
+    BgIkanaMirror* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gStoneTowerTempleMirrorDL);
 
     if (this->lightAbsorptionAlpha > 0) {
         AnimatedMat_Draw(play, this->lightAbsorptionTexScroll);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, 255, 255, 255, this->lightAbsorptionAlpha);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gStoneTowerTempleMirrorLightAbsorptionDL);
     }
 
@@ -399,7 +401,7 @@ void BgIkanaMirror_Draw(Actor* thisx, PlayState* play) {
         AnimatedMat_Draw(play, this->lightEmissionTexScroll);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, 255, 255, 255, primColorAlpha);
         gDPSetEnvColor(POLY_XLU_DISP++, 215, 215, 255, envColorAlpha);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gStoneTowerTempleMirrorLightEmissionDL);
     }
 

@@ -7,7 +7,9 @@
 #include "z_en_egblock.h"
 #include "objects/object_eg/object_eg.h"
 
-#define FLAGS (ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnEgblock*)thisx)
 
 typedef enum {
     /* 0 */ EGBLOCK_EFFECT_DEBRIS_SOLID,
@@ -27,7 +29,7 @@ void EnEgblock_SpawnEffect(EnEgblock* this, Vec3f* pos, s16 lifetime, s16 arg3);
 void EnEgblock_UpdateEffects(EnEgblock* this, PlayState* play);
 void EnEgblock_DrawEffects(EnEgblock* this, PlayState* play);
 
-ActorProfile En_Egblock_Profile = {
+ActorInit En_Egblock_InitVars = {
     /**/ ACTOR_EN_EGBLOCK,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -40,7 +42,7 @@ ActorProfile En_Egblock_Profile = {
 };
 
 void EnEgblock_Init(Actor* thisx, PlayState* play) {
-    EnEgblock* this = (EnEgblock*)thisx;
+    EnEgblock* this = THIS;
     CollisionHeader* colHeader = NULL;
     s32 pad;
 
@@ -62,7 +64,7 @@ void EnEgblock_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnEgblock_Destroy(Actor* thisx, PlayState* play) {
-    EnEgblock* this = (EnEgblock*)thisx;
+    EnEgblock* this = THIS;
 
     if (this->dyna.actor.colChkInfo.health == 1) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -95,7 +97,7 @@ void EnEgblock_DoNothing(EnEgblock* this, PlayState* play) {
 }
 
 void EnEgblock_Update(Actor* thisx, PlayState* play) {
-    EnEgblock* this = (EnEgblock*)thisx;
+    EnEgblock* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -106,14 +108,14 @@ void EnEgblock_Update(Actor* thisx, PlayState* play) {
 
 void EnEgblock_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnEgblock* this = (EnEgblock*)thisx;
+    EnEgblock* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
     if (this->inactive != true) {
         OPEN_DISPS(play->state.gfxCtx);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_OPA_DISP++, 0x00, 0x80, 255, 255, 255, 255);
         gDPSetEnvColor(POLY_OPA_DISP++, 255, 255, 255, 255);
         gSPDisplayList(POLY_OPA_DISP++, gEyegoreBlockDL);
@@ -206,7 +208,7 @@ void EnEgblock_DrawEffects(EnEgblock* this, PlayState* play) {
                     Matrix_RotateXS(effect->rot.x, MTXMODE_APPLY);
                     Matrix_RotateZS(effect->rot.z, MTXMODE_APPLY);
 
-                    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gfxCtx);
+                    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                     gDPSetPrimColor(POLY_OPA_DISP++, 0x00, 0x80, 255, 255, 255, 255);
                     gDPSetEnvColor(POLY_OPA_DISP++, 255, 255, 255, effect->alpha);
 

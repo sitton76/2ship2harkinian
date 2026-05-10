@@ -9,14 +9,16 @@
 
 #include "2s2h/ShipUtils.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjHamishi*)thisx)
 
 void ObjHamishi_Init(Actor* thisx, PlayState* play);
 void ObjHamishi_Destroy(Actor* thisx, PlayState* play2);
 void ObjHamishi_Update(Actor* thisx, PlayState* play);
 void ObjHamishi_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Hamishi_Profile = {
+ActorInit Obj_Hamishi_InitVars = {
     /**/ ACTOR_OBJ_HAMISHI,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -30,7 +32,7 @@ ActorProfile Obj_Hamishi_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -38,11 +40,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x81C37FB6, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 50, 70, 0, { 0, 0, 0 } },
@@ -56,13 +58,13 @@ s16 D_809A1AD4[] = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 400, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 2000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 250, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 500, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 2000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 250, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 500, ICHAIN_STOP),
 };
 
 void func_809A0F20(Actor* thisx, PlayState* play) {
-    ObjHamishi* this = (ObjHamishi*)thisx;
+    ObjHamishi* this = THIS;
 
     Collider_InitCylinder(play, &this->collider);
     Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
@@ -126,7 +128,7 @@ void func_809A10F4(ObjHamishi* this, PlayState* play) {
         }
 
         EffectSsKakera_Spawn(play, &spBC, &spC8, &this->actor.world.pos, gravity, phi_v0, 30, 5, 0, D_809A1AD4[i], 3, 0,
-                             70, 1, GAMEPLAY_FIELD_KEEP, gFieldSilverBoulderDebrisDL);
+                             70, 1, GAMEPLAY_FIELD_KEEP, gameplay_field_keep_DL_006420);
     }
 
     func_800BBFB0(play, &this->actor.world.pos, 140.0f, 6, 180, 90, 1);
@@ -136,37 +138,37 @@ void func_809A10F4(ObjHamishi* this, PlayState* play) {
 void func_809A13A0(ObjHamishi* this, PlayState* play) {
     s32 pad;
     Vec3f sp28;
-    s32 bgId;
+    s32 sp24;
 
     sp28.x = this->actor.world.pos.x;
     sp28.y = this->actor.world.pos.y + 30.0f;
     sp28.z = this->actor.world.pos.z;
 
     this->actor.floorHeight =
-        BgCheck_EntityRaycastFloor5(&play->colCtx, &this->actor.floorPoly, &bgId, &this->actor, &sp28);
+        BgCheck_EntityRaycastFloor5(&play->colCtx, &this->actor.floorPoly, &sp24, &this->actor, &sp28);
 }
 
-s32 ObjHamishi_IsUnderwater(ObjHamishi* this, PlayState* play) {
+s32 func_809A1408(ObjHamishi* this, PlayState* play) {
     s32 pad;
-    WaterBox* waterBox;
-    f32 waterSurface;
-    s32 bgId;
+    WaterBox* sp30;
+    f32 sp2C;
+    s32 sp28;
 
-    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &waterSurface,
-                                &waterBox, &bgId) &&
-        (this->actor.world.pos.y < waterSurface)) {
+    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp2C, &sp30,
+                                &sp28) &&
+        (this->actor.world.pos.y < sp2C)) {
         return true;
     }
     return false;
 }
 
 void ObjHamishi_Init(Actor* thisx, PlayState* play) {
-    ObjHamishi* this = (ObjHamishi*)thisx;
+    ObjHamishi* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
 
     if (play->csCtx.state != CS_STATE_IDLE) {
-        this->actor.cullingVolumeDistance += 1000.0f;
+        this->actor.uncullZoneForward += 1000.0f;
     }
 
     if (this->actor.shape.rot.y == 0) {
@@ -187,21 +189,21 @@ void ObjHamishi_Init(Actor* thisx, PlayState* play) {
 
     this->actor.shape.yOffset = 80.0f;
 
-    if (ObjHamishi_IsUnderwater(this, play)) {
+    if (func_809A1408(this, play)) {
         this->unk_1A2 |= 1;
     }
 }
 
 void ObjHamishi_Destroy(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjHamishi* this = (ObjHamishi*)thisx;
+    ObjHamishi* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void ObjHamishi_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjHamishi* this = (ObjHamishi*)thisx;
+    ObjHamishi* this = THIS;
     s32 sp24 = (this->collider.base.acFlags & AC_HIT) != 0;
 
     func_809A0F78(this);
@@ -212,14 +214,14 @@ void ObjHamishi_Update(Actor* thisx, PlayState* play) {
     }
 
     if (sp24) {
-        if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x80000500) {
-            if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x400) {
+        if (this->collider.info.acHitInfo->toucher.dmgFlags & 0x80000500) {
+            if (this->collider.info.acHitInfo->toucher.dmgFlags & 0x400) {
                 this->unk_1A0 = 26;
             } else {
                 this->unk_1A0 = 11;
             }
 
-            if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x80000000) {
+            if (this->collider.info.acHitInfo->toucher.dmgFlags & 0x80000000) {
                 this->unk_19E = 2;
             } else {
                 this->unk_19E++;
@@ -242,15 +244,15 @@ void ObjHamishi_Update(Actor* thisx, PlayState* play) {
         if (this->unk_1A1 > 0) {
             this->unk_1A1--;
             if (this->unk_1A1 == 0) {
-                this->collider.base.colMaterial = COL_MATERIAL_HARD;
+                this->collider.base.colType = COLTYPE_HARD;
             } else {
-                this->collider.base.colMaterial = COL_MATERIAL_NONE;
+                this->collider.base.colType = COLTYPE_NONE;
             }
         }
 
         if (this->unk_1A0 > 0) {
             this->unk_1A0--;
-        } else if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) && (this->actor.xzDistToPlayer < 1000.0f)) {
+        } else if ((this->actor.flags & ACTOR_FLAG_40) && (this->actor.xzDistToPlayer < 1000.0f)) {
             CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
         }
 
@@ -261,7 +263,7 @@ void ObjHamishi_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjHamishi_Draw(Actor* thisx, PlayState* play) {
-    ObjHamishi* this = (ObjHamishi*)thisx;
+    ObjHamishi* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -272,9 +274,9 @@ void ObjHamishi_Draw(Actor* thisx, PlayState* play) {
         Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
         gSPSegment(POLY_OPA_DISP++, 0x08, D_801AEFA0);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_OPA_DISP++, 0, 0, 255, 170, 130, 255);
-        gSPDisplayList(POLY_OPA_DISP++, gFieldSilverBoulderDL);
+        gSPDisplayList(POLY_OPA_DISP++, gameplay_field_keep_DL_0061E8);
     } else if (thisx->projectedPos.z < 2250.0f) {
         f32 sp20 = (2250.0f - thisx->projectedPos.z) * 2.55f;
 
@@ -282,9 +284,9 @@ void ObjHamishi_Draw(Actor* thisx, PlayState* play) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 
         gSPSegment(POLY_XLU_DISP++, 0x08, D_801AEF88);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 170, 130, (s32)sp20);
-        gSPDisplayList(POLY_XLU_DISP++, gFieldSilverBoulderDL);
+        gSPDisplayList(POLY_XLU_DISP++, gameplay_field_keep_DL_0061E8);
     } else {
         thisx->shape.shadowAlpha = 0;
     }

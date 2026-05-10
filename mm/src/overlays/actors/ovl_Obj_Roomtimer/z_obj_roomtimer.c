@@ -6,7 +6,9 @@
 
 #include "z_obj_roomtimer.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjRoomtimer*)thisx)
 
 void ObjRoomtimer_Init(Actor* thisx, PlayState* play);
 void ObjRoomtimer_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void func_80973CD8(ObjRoomtimer* this, PlayState* play);
 void func_80973D3C(ObjRoomtimer* this, PlayState* play);
 void func_80973DE0(ObjRoomtimer* this, PlayState* play);
 
-ActorProfile Obj_Roomtimer_Profile = {
+ActorInit Obj_Roomtimer_InitVars = {
     /**/ ACTOR_OBJ_ROOMTIMER,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -29,7 +31,7 @@ ActorProfile Obj_Roomtimer_Profile = {
 };
 
 void ObjRoomtimer_Init(Actor* thisx, PlayState* play) {
-    ObjRoomtimer* this = (ObjRoomtimer*)thisx;
+    ObjRoomtimer* this = THIS;
 
     this->switchFlag = ROOMTIMER_GET_SWITCH_FLAG(thisx);
     this->actor.params &= 0x1FF;
@@ -41,7 +43,7 @@ void ObjRoomtimer_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjRoomtimer_Destroy(Actor* thisx, PlayState* play) {
-    ObjRoomtimer* this = (ObjRoomtimer*)thisx;
+    ObjRoomtimer* this = THIS;
 
     if ((this->actor.params != 0x1FF) && (gSaveContext.timerStates[TIMER_ID_MINIGAME_2] >= TIMER_STATE_START)) {
         gSaveContext.timerStates[TIMER_ID_MINIGAME_2] = TIMER_STATE_STOP;
@@ -53,7 +55,7 @@ void func_80973CD8(ObjRoomtimer* this, PlayState* play) {
         Interface_StartTimer(TIMER_ID_MINIGAME_2, this->actor.params);
     }
 
-    Actor_ChangeCategory(play, &play->actorCtx, &this->actor, ACTORCAT_PROP);
+    func_800BC154(play, &play->actorCtx, &this->actor, ACTORCAT_PROP);
     this->actionFunc = func_80973D3C;
 }
 
@@ -66,7 +68,7 @@ void func_80973D3C(ObjRoomtimer* this, PlayState* play) {
         this->actionFunc = func_80973DE0;
     } else if ((this->actor.params != 0x1FF) && (gSaveContext.timerStates[TIMER_ID_MINIGAME_2] == TIMER_STATE_OFF)) {
         Audio_PlaySfx(NA_SE_OC_ABYSS);
-        func_80169EFC(play);
+        func_80169EFC(&play->state);
         Actor_Kill(&this->actor);
     }
 }
@@ -86,7 +88,7 @@ void func_80973DE0(ObjRoomtimer* this, PlayState* play) {
 }
 
 void ObjRoomtimer_Update(Actor* thisx, PlayState* play) {
-    ObjRoomtimer* this = (ObjRoomtimer*)thisx;
+    ObjRoomtimer* this = THIS;
 
     this->actionFunc(this, play);
 }

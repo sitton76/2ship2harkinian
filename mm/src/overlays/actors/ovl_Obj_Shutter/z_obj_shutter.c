@@ -7,14 +7,16 @@
 #include "z_obj_shutter.h"
 #include "objects/object_f53_obj/object_f53_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjShutter*)thisx)
 
 void ObjShutter_Init(Actor* thisx, PlayState* play);
 void ObjShutter_Destroy(Actor* thisx, PlayState* play);
 void ObjShutter_Update(Actor* thisx, PlayState* play2);
 void ObjShutter_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Shutter_Profile = {
+ActorInit Obj_Shutter_InitVars = {
     /**/ ACTOR_OBJ_SHUTTER,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -39,7 +41,7 @@ static u8 sScheduleScript[] = {
 };
 
 void ObjShutter_Update(Actor* thisx, PlayState* play2) {
-    ObjShutter* this = (ObjShutter*)thisx;
+    ObjShutter* this = THIS;
     PlayState* play = play2;
     ScheduleOutput scheduleOutput;
 
@@ -74,7 +76,7 @@ void ObjShutter_Update(Actor* thisx, PlayState* play2) {
 }
 
 void ObjShutter_Draw(Actor* thisx, PlayState* play) {
-    ObjShutter* this = (ObjShutter*)thisx;
+    ObjShutter* this = THIS;
 
     Matrix_Translate(this->actor.world.pos.x, this->actor.world.pos.y + this->verticalOffset, this->actor.world.pos.z,
                      MTXMODE_NEW);
@@ -84,7 +86,7 @@ void ObjShutter_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gBankShutterDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

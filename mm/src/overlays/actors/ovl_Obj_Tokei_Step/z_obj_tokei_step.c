@@ -9,7 +9,9 @@
 #include "z64rumble.h"
 #include "objects/object_tokei_step/object_tokei_step.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_IGNORE_LEGACY_POINT_LIGHTS)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_400000)
+
+#define THIS ((ObjTokeiStep*)thisx)
 
 void ObjTokeiStep_Init(Actor* thisx, PlayState* play);
 void ObjTokeiStep_Destroy(Actor* thisx, PlayState* play);
@@ -26,7 +28,7 @@ void ObjTokeiStep_SetupDoNothingOpen(ObjTokeiStep* this);
 void ObjTokeiStep_DoNothingOpen(ObjTokeiStep* this, PlayState* play);
 void ObjTokeiStep_DrawOpen(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Tokei_Step_Profile = {
+ActorInit Obj_Tokei_Step_InitVars = {
     /**/ ACTOR_OBJ_TOKEI_STEP,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -45,13 +47,13 @@ static f32 sDustSpawnXOffsets[] = { -60.0f, -40.0f, -20.0f, 0.0f, 20.0f, 40.0f, 
 static Vec3f sDustEffectAccel = { 0.0f, 0.3f, 0.0f };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 300, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 300, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
-void ObjTokeiStep_SetMatrixTranslation(ObjTokeiStepPanel* panel) {
+void ObjTokeiStep_SetSysMatrix(ObjTokeiStepPanel* panel) {
     MtxF* mtx = Matrix_GetCurrent();
 
     mtx->xw = panel->pos.x;
@@ -189,7 +191,7 @@ s32 ObjTokeiStep_OpenProcess(ObjTokeiStep* this, PlayState* play) {
 }
 
 void ObjTokeiStep_Init(Actor* thisx, PlayState* play) {
-    ObjTokeiStep* this = (ObjTokeiStep*)thisx;
+    ObjTokeiStep* this = THIS;
 
     Actor_ProcessInitChain(&this->dyna.actor, sInitChain);
     DynaPolyActor_Init(&this->dyna, 0);
@@ -197,7 +199,7 @@ void ObjTokeiStep_Init(Actor* thisx, PlayState* play) {
         DynaPolyActor_LoadMesh(play, &this->dyna, &gClocktowerPanelCol);
         ObjTokeiStep_InitSteps(this);
         ObjTokeiStep_SetupBeginOpen(this);
-    } else if (((CURRENT_DAY == 3) && (CURRENT_TIME < CLOCK_TIME(6, 0))) || (gSaveContext.save.day >= 4)) {
+    } else if (((CURRENT_DAY == 3) && (gSaveContext.save.time < CLOCK_TIME(6, 0))) || (gSaveContext.save.day >= 4)) {
         this->dyna.actor.draw = ObjTokeiStep_DrawOpen;
         ObjTokeiStep_InitStepsOpen(this);
         ObjTokeiStep_SetupDoNothingOpen(this);
@@ -209,7 +211,7 @@ void ObjTokeiStep_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjTokeiStep_Destroy(Actor* thisx, PlayState* play) {
-    ObjTokeiStep* this = (ObjTokeiStep*)thisx;
+    ObjTokeiStep* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -251,7 +253,7 @@ void ObjTokeiStep_Open(ObjTokeiStep* this, PlayState* play) {
 }
 
 void ObjTokeiStep_SetupDoNothingOpen(ObjTokeiStep* this) {
-    this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->dyna.actor.flags &= ~ACTOR_FLAG_10;
     this->actionFunc = ObjTokeiStep_DoNothingOpen;
 }
 
@@ -259,19 +261,19 @@ void ObjTokeiStep_DoNothingOpen(ObjTokeiStep* this, PlayState* play) {
 }
 
 void ObjTokeiStep_Update(Actor* thisx, PlayState* play) {
-    ObjTokeiStep* this = (ObjTokeiStep*)thisx;
+    ObjTokeiStep* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void ObjTokeiStep_Draw(Actor* thisx, PlayState* play) {
-    ObjTokeiStep* this = (ObjTokeiStep*)thisx;
+    ObjTokeiStep* this = THIS;
 
     Gfx_DrawDListOpa(play, gClocktowerPanelDL);
 }
 
 void ObjTokeiStep_DrawOpen(Actor* thisx, PlayState* play) {
-    ObjTokeiStep* this = (ObjTokeiStep*)thisx;
+    ObjTokeiStep* this = THIS;
     s32 i;
     ObjTokeiStepPanel* panel;
     Gfx* gfx;
@@ -283,8 +285,8 @@ void ObjTokeiStep_DrawOpen(Actor* thisx, PlayState* play) {
 
     for (i = 0; i < ARRAY_COUNT(this->panels); i++) {
         panel = &this->panels[i];
-        ObjTokeiStep_SetMatrixTranslation(panel);
-        MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+        ObjTokeiStep_SetSysMatrix(panel);
+        gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(gfx++, gClocktowerPanelDL);
     }
     POLY_OPA_DISP = gfx;

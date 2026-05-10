@@ -9,7 +9,9 @@
 #include "objects/object_daiku/object_daiku.h"
 #include "objects/object_bombiwa/object_bombiwa.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnDaiku2*)thisx)
 
 void EnDaiku2_Init(Actor* thisx, PlayState* play);
 void EnDaiku2_Destroy(Actor* thisx, PlayState* play);
@@ -30,7 +32,7 @@ void func_80BE71D8(EnDaiku2* this, PlayState* play);
 void func_80BE7504(EnDaiku2* this, Vec3f* arg1, Vec3f* arg2, Vec3f* arg3, f32 arg4, s16 arg5);
 void func_80BE7718(EnDaiku2* this, PlayState* play);
 
-ActorProfile En_Daiku2_Profile = {
+ActorInit En_Daiku2_InitVars = {
     /**/ ACTOR_EN_DAIKU2,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -48,7 +50,7 @@ static u16 sTextIds[] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -56,11 +58,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 20, 60, 0, { 0, 0, 0 } },
@@ -75,14 +77,14 @@ void func_80BE61D0(EnDaiku2* this) {
 }
 
 void EnDaiku2_Init(Actor* thisx, PlayState* play) {
-    EnDaiku2* this = (EnDaiku2*)thisx;
+    EnDaiku2* this = THIS;
     s32 day = gSaveContext.save.day;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 40.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &object_daiku_Skel_00A850, &object_daiku_Anim_002FA0, this->jointTable,
                        this->morphTable, OBJECT_DAIKU_LIMB_MAX);
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     this->switchFlag = ENDAIKU2_GET_SWITCH_FLAG(&this->actor);
     this->pathIndex = ENDAIKU2_GET_PATH_INDEX(&this->actor);
@@ -113,7 +115,7 @@ void EnDaiku2_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnDaiku2_Destroy(Actor* thisx, PlayState* play) {
-    EnDaiku2* this = (EnDaiku2*)thisx;
+    EnDaiku2* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -247,7 +249,7 @@ void func_80BE66E4(EnDaiku2* this, PlayState* play) {
     s32 pad[2];
     s16 temp_v0;
 
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.home.rot.y, 1, 0xBB8, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.home.rot.y, 1, 0xBB8, 0x0);
     if (sp98 != 2) {
         if ((this->switchFlag > SWITCH_FLAG_NONE) && Flags_GetSwitch(play, this->switchFlag)) {
             this->unk_28A = 5;
@@ -259,7 +261,7 @@ void func_80BE66E4(EnDaiku2* this, PlayState* play) {
 
     this->actor.textId = sTextIds[this->unk_28A];
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80BE6B40(this, play);
         return;
     }
@@ -330,8 +332,8 @@ void func_80BE6B40(EnDaiku2* this, PlayState* play) {
 }
 
 void func_80BE6BC0(EnDaiku2* this, PlayState* play) {
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.yawTowardsPlayer, 1, 0xBB8, 0);
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.yawTowardsPlayer, 1, 0xBB8, 0x0);
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         s32 day = gSaveContext.save.day - 1;
 
         Message_CloseTextbox(play);
@@ -372,7 +374,7 @@ void func_80BE6D40(EnDaiku2* this, PlayState* play) {
     s32 pad[3];
     s16 sp3A = Math_Vec3f_Yaw(&this->actor.world.pos, &this->unk_268);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->actionFunc = func_80BE6BC0;
         return;
     }
@@ -406,12 +408,12 @@ void func_80BE6EF0(EnDaiku2* this, PlayState* play) {
     Vec3f sp40;
     s16 var;
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->actionFunc = func_80BE6BC0;
         return;
     }
 
-    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.home.rot.y, 1, 0xBB8, 0);
+    Math_SmoothStepToS(&this->actor.world.rot.y, this->actor.home.rot.y, 1, 0xBB8, 0x0);
     if (curFrame >= this->animEndFrame) {
         this->unk_274 = 1;
     }
@@ -484,7 +486,7 @@ void func_80BE71D8(EnDaiku2* this, PlayState* play) {
 }
 
 void EnDaiku2_Update(Actor* thisx, PlayState* play) {
-    EnDaiku2* this = (EnDaiku2*)thisx;
+    EnDaiku2* this = THIS;
     s32 pad;
 
     SkelAnime_Update(&this->skelAnime);
@@ -502,7 +504,7 @@ void EnDaiku2_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnDaiku2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnDaiku2* this = (EnDaiku2*)thisx;
+    EnDaiku2* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -510,7 +512,7 @@ void EnDaiku2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* r
 
     if (limbIndex == OBJECT_DAIKU_LIMB_0E) {
         Matrix_Scale(this->unk_260, this->unk_260, this->unk_260, MTXMODE_APPLY);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, object_daiku_DL_009638);
     }
 
@@ -522,7 +524,7 @@ void EnDaiku2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* r
 }
 
 void EnDaiku2_Draw(Actor* thisx, PlayState* play) {
-    EnDaiku2* this = (EnDaiku2*)thisx;
+    EnDaiku2* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -600,7 +602,7 @@ void func_80BE7718(EnDaiku2* this, PlayState* play) {
                 Matrix_RotateZS(effect->unk_28.z, MTXMODE_APPLY);
                 Matrix_Scale(effect->unk_30, effect->unk_30, effect->unk_30, MTXMODE_APPLY);
 
-                MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gfxCtx);
+                gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
                 gSPDisplayList(POLY_OPA_DISP++, object_bombiwa_DL_0009E0);
 
                 Matrix_Pop();

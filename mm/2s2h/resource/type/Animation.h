@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ship/resource/Resource.h>
+#include "Resource.h"
 #include <libultraship/libultra/types.h>
 
 namespace SOH {

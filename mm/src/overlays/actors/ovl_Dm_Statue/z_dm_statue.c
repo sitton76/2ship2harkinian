@@ -7,14 +7,16 @@
 #include "z_dm_statue.h"
 #include "objects/object_smtower/object_smtower.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_CAN_PRESS_SWITCHES)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CAN_PRESS_SWITCH)
+
+#define THIS ((DmStatue*)thisx)
 
 void DmStatue_Init(Actor* thisx, PlayState* play);
 void DmStatue_Destroy(Actor* thisx, PlayState* play);
 void DmStatue_Update(Actor* thisx, PlayState* play);
 void DmStatue_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Dm_Statue_Profile = {
+ActorInit Dm_Statue_InitVars = {
     /**/ ACTOR_DM_STATUE,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -27,7 +29,7 @@ ActorProfile Dm_Statue_Profile = {
 };
 
 void DmStatue_Init(Actor* thisx, PlayState* play) {
-    DmStatue* this = (DmStatue*)thisx;
+    DmStatue* this = THIS;
 
     Actor_SetScale(&this->actor, 10.0f);
 }

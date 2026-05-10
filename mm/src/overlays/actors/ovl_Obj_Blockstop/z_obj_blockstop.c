@@ -7,7 +7,9 @@
 #include "z_obj_blockstop.h"
 #include "overlays/actors/ovl_Obj_Oshihiki/z_obj_oshihiki.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjBlockstop*)thisx)
 
 void ObjBlockstop_Init(Actor* thisx, PlayState* play);
 void ObjBlockstop_Update(Actor* thisx, PlayState* play);
@@ -15,7 +17,7 @@ void ObjBlockstop_Update(Actor* thisx, PlayState* play);
 void ObjBlockstop_CheckForBlock(ObjBlockstop* this, PlayState* play);
 void ObjBlockstop_TryPlayCutscene(ObjBlockstop* this, PlayState* play);
 
-ActorProfile Obj_Blockstop_Profile = {
+ActorInit Obj_Blockstop_InitVars = {
     /**/ ACTOR_OBJ_BLOCKSTOP,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile Obj_Blockstop_Profile = {
 };
 
 void ObjBlockstop_Init(Actor* thisx, PlayState* play) {
-    ObjBlockstop* this = (ObjBlockstop*)thisx;
+    ObjBlockstop* this = THIS;
 
     if (Flags_GetSwitch(play, OBJBLOCKSTOP_GET_SWITCH_FLAG(&this->actor))) {
         Actor_Kill(&this->actor);
@@ -67,7 +69,7 @@ void ObjBlockstop_TryPlayCutscene(ObjBlockstop* this, PlayState* play) {
 }
 
 void ObjBlockstop_Update(Actor* thisx, PlayState* play) {
-    ObjBlockstop* this = (ObjBlockstop*)thisx;
+    ObjBlockstop* this = THIS;
 
     this->actionFunc(this, play);
 }

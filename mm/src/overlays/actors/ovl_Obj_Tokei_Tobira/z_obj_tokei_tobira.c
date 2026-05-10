@@ -9,13 +9,15 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjTokeiTobira*)thisx)
+
 void ObjTokeiTobira_Init(Actor* thisx, PlayState* play);
 void ObjTokeiTobira_Destroy(Actor* thisx, PlayState* play);
 void ObjTokeiTobira_Update(Actor* thisx, PlayState* play);
 void ObjTokeiTobira_Draw(Actor* thisx, PlayState* play);
 void ObjTokeiTobira_StartCutscene(ObjTokeiTobira* this);
 
-ActorProfile Obj_Tokei_Tobira_Profile = {
+ActorInit Obj_Tokei_Tobira_InitVars = {
     /**/ ACTOR_OBJ_TOKEI_TOBIRA,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -28,9 +30,9 @@ ActorProfile Obj_Tokei_Tobira_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 300, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 300, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 300, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
@@ -53,7 +55,7 @@ Gfx* D_80ABD780[] = {
 };
 
 void ObjTokeiTobira_Init(Actor* thisx, PlayState* play) {
-    ObjTokeiTobira* this = (ObjTokeiTobira*)thisx;
+    ObjTokeiTobira* this = THIS;
     s32 pad;
     s32 type = OBJTOKEITOBIRA_GET_TYPE(&this->dyna.actor);
     Vec3f posOffset;
@@ -77,13 +79,13 @@ void ObjTokeiTobira_Init(Actor* thisx, PlayState* play) {
 
     if ((type == OBJTOKEITOBIRA_TYPE_0) && !CHECK_WEEKEVENTREG(WEEKEVENTREG_59_04) &&
         (play->sceneId == SCENE_CLOCKTOWER) && (gSaveContext.sceneLayer == 0) && (this->dyna.actor.csId > CS_ID_NONE)) {
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
         this->actionFunc = ObjTokeiTobira_StartCutscene;
     }
 }
 
 void ObjTokeiTobira_Destroy(Actor* thisx, PlayState* play) {
-    ObjTokeiTobira* this = (ObjTokeiTobira*)thisx;
+    ObjTokeiTobira* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -93,7 +95,7 @@ void ObjTokeiTobira_StartCutscene(ObjTokeiTobira* this) {
         CutsceneManager_StartWithPlayerCs(this->dyna.actor.csId, &this->dyna.actor);
         SET_WEEKEVENTREG(WEEKEVENTREG_59_04);
         this->actionFunc = NULL;
-        this->dyna.actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags &= ~ACTOR_FLAG_10;
     } else {
         CutsceneManager_Queue(this->dyna.actor.csId);
     }
@@ -101,7 +103,7 @@ void ObjTokeiTobira_StartCutscene(ObjTokeiTobira* this) {
 
 void ObjTokeiTobira_Update(Actor* thisx, PlayState* play) {
     s32 pad1;
-    ObjTokeiTobira* this = (ObjTokeiTobira*)thisx;
+    ObjTokeiTobira* this = THIS;
     Player* player = GET_PLAYER(play);
     s32 pad2;
     s32 type = OBJTOKEITOBIRA_GET_TYPE(&this->dyna.actor);
@@ -113,7 +115,7 @@ void ObjTokeiTobira_Update(Actor* thisx, PlayState* play) {
             f32 sp40;
             Vec3f sp34;
 
-            Actor_WorldToActorCoords(&this->dyna.actor, &sp34, &player->actor.world.pos);
+            Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &sp34, &player->actor.world.pos);
             sp40 = sp34.x * sp48;
 
             if (sp40 > 20.0f) {
@@ -144,7 +146,7 @@ void ObjTokeiTobira_Update(Actor* thisx, PlayState* play) {
     } else if (this->unk168 == 1) {
         Vec3f sp24;
 
-        Actor_WorldToActorCoords(&this->dyna.actor, &sp24, &player->actor.world.pos);
+        Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &sp24, &player->actor.world.pos);
 
         if ((sp24.z > 0.0f) && (sp24.z < 30.0f)) {
             this->unk168 = 1;

@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Part/z_en_part.h"
 #include "overlays/effects/ovl_Effect_Ss_Hahen/z_eff_ss_hahen.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10)
+
+#define THIS ((EnHintSkb*)thisx)
 
 void EnHintSkb_Init(Actor* thisx, PlayState* play);
 void EnHintSkb_Destroy(Actor* thisx, PlayState* play);
@@ -37,7 +39,7 @@ s32 func_80C21414(EnHintSkb* this);
 void func_80C21468(EnHintSkb* this, PlayState* play);
 void func_80C215E4(PlayState* play, EnHintSkb* this, Vec3f* arg2);
 
-ActorProfile En_Hint_Skb_Profile = {
+ActorInit En_Hint_Skb_InitVars = {
     /**/ ACTOR_EN_HINT_SKB,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -52,22 +54,22 @@ ActorProfile En_Hint_Skb_Profile = {
 static ColliderJntSphElementInit sJntSphElementsInit[2] = {
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0xF7CFFFFF, 0x00, 0x04 },
             { 0x00000000, 0x00, 0x00 },
-            ATELEM_ON | ATELEM_SFX_NORMAL,
-            ACELEM_NONE,
+            TOUCH_ON | TOUCH_SFX_NORMAL,
+            BUMP_NONE,
             OCELEM_NONE,
         },
         { 15, { { 0, 0, 0 }, 10 }, 100 },
     },
     {
         {
-            ELEM_MATERIAL_UNK0,
+            ELEMTYPE_UNK0,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON | ACELEM_HOOKABLE,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON | BUMP_HOOKABLE,
             OCELEM_ON,
         },
         { 1, { { 0, 0, 0 }, 20 }, 100 },
@@ -76,7 +78,7 @@ static ColliderJntSphElementInit sJntSphElementsInit[2] = {
 
 static ColliderJntSphInit sJntSphInit = {
     {
-        COL_MATERIAL_HIT6,
+        COLTYPE_HIT6,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -158,13 +160,13 @@ static AnimationInfo sAnimationInfo[STALCHILD_HINT_ANIM_MAX] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(lockOnArrowOffset, 2000, ICHAIN_CONTINUE),
+    ICHAIN_F32(targetArrowOffset, 2000, ICHAIN_CONTINUE),
     ICHAIN_F32_DIV1000(gravity, -2000, ICHAIN_STOP),
 };
 
 void EnHintSkb_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 36.0f);
     SkelAnime_Init(play, &this->skelAnime, &gStalchildSkel, &gStalchildSitLaughAnim, this->jointTable, this->morphTable,
@@ -183,7 +185,7 @@ void EnHintSkb_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHintSkb_Destroy(Actor* thisx, PlayState* play) {
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
 
     Collider_DestroyJntSph(play, &this->collider);
 }
@@ -205,7 +207,7 @@ void func_80C1FE80(EnHintSkb* this, PlayState* play) {
     if (Animation_OnFrame(&this->skelAnime, 8.0f) || Animation_OnFrame(&this->skelAnime, 15.0f)) {
         Actor_PlaySfx(&this->actor, NA_SE_EN_STALKID_WALK);
     }
-    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x2EE, 0);
+    Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 750, 0);
     this->actor.world.rot.y = this->actor.shape.rot.y;
     if (Actor_IsFacingPlayer(&this->actor, 0x11C7) && (this->actor.xzDistToPlayer < 60.0f)) {
         func_80C1FF30(this);
@@ -319,10 +321,10 @@ void func_80C20334(EnHintSkb* this, PlayState* play) {
         } else if (this->actor.speed != 0.0f) {
             this->actor.speed -= 0.05f;
         }
-        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 0x9C4, 0);
+        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.yawTowardsPlayer, 1, 2500, 0);
     }
 
-    Math_SmoothStepToS(&this->actor.shape.rot.x, 0, 16, 0x7D0, 0x64);
+    Math_SmoothStepToS(&this->actor.shape.rot.x, 0, 16, 2000, 100);
 
     if (Animation_OnFrame(&this->skelAnime, this->skelAnime.endFrame) &&
         (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)) {
@@ -409,7 +411,7 @@ void func_80C2075C(EnHintSkb* this) {
 }
 
 void func_80C2077C(EnHintSkb* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_3E0 = 1;
         if (this->unk_3DC == 0) {
             this->unk_3DC = 1;
@@ -441,7 +443,7 @@ void func_80C208D0(EnHintSkb* this, PlayState* play) {
     this->unk_3DE = 0;
 
     switch (Message_GetState(&play->msgCtx)) {
-        case TEXT_STATE_FADING:
+        case TEXT_STATE_3:
             if ((play->gameplayFrames % 2) != 0) {
                 this->unk_3DE = 1;
             }
@@ -451,7 +453,7 @@ void func_80C208D0(EnHintSkb* this, PlayState* play) {
             func_80C20B88(this, play);
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             func_80C20C24(this, play);
             break;
 
@@ -462,7 +464,7 @@ void func_80C208D0(EnHintSkb* this, PlayState* play) {
             break;
 
         case TEXT_STATE_NONE:
-        case TEXT_STATE_NEXT:
+        case TEXT_STATE_1:
         case TEXT_STATE_CLOSING:
         default:
             break;
@@ -605,8 +607,8 @@ void func_80C20D64(EnHintSkb* this, PlayState* play) {
         (this->actionFunc == func_80C1FE80)) {
         if (this->actionFunc != func_80C2077C) {
             if (Player_GetMask(play) == PLAYER_MASK_CAPTAIN) {
-                this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE);
-                this->actor.flags |= (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
+                this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY);
+                this->actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
                 this->actor.hintId = TATL_HINT_ID_NONE;
                 this->actor.textId = 0;
                 if (this->actionFunc == func_80C1FE80) {
@@ -615,8 +617,8 @@ void func_80C20D64(EnHintSkb* this, PlayState* play) {
                 func_80C2075C(this);
             }
         } else if (Player_GetMask(play) != PLAYER_MASK_CAPTAIN) {
-            this->actor.flags &= ~(ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY);
-            this->actor.flags |= (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE);
+            this->actor.flags &= ~(ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY);
+            this->actor.flags |= (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY);
             this->actor.hintId = TATL_HINT_ID_STALCHILD;
             this->actor.textId = 0;
             if (this->skelAnime.animation == &gStalchildSitLaughAnim) {
@@ -850,7 +852,7 @@ void func_80C215E4(PlayState* play, EnHintSkb* this, Vec3f* arg2) {
 }
 
 void EnHintSkb_Update(Actor* thisx, PlayState* play) {
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
 
     this->actionFunc(this, play);
 
@@ -869,7 +871,7 @@ void EnHintSkb_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnHintSkb_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
     f32 temp_f10;
 
     if (limbIndex == STALCHILD_LIMB_HEAD) {
@@ -878,7 +880,7 @@ s32 EnHintSkb_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3
         temp_f10 = fabsf(Math_SinS(play->state.frames * 6000) * 95.0f) + 160.0f;
 
         gDPPipeSync(POLY_OPA_DISP++);
-        gDPSetEnvColor(POLY_OPA_DISP++, TRUNCF_BINANG(temp_f10), TRUNCF_BINANG(temp_f10), TRUNCF_BINANG(temp_f10), 255);
+        gDPSetEnvColor(POLY_OPA_DISP++, (s16)temp_f10, (s16)temp_f10, (s16)temp_f10, 255);
 
         CLOSE_DISPS(play->state.gfxCtx);
     } else if (limbIndex == STALCHILD_LIMB_RIBCAGE) {
@@ -896,7 +898,7 @@ s32 EnHintSkb_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3
 
 void EnHintSkb_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
     static Vec3f D_80C21E70 = { 800.0f, 1200.0f, 0.0f };
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
 
     if (!(this->unk_3E8 & 8)) {
         Collider_UpdateSpheres(limbIndex, &this->collider);
@@ -929,7 +931,7 @@ void EnHintSkb_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* 
 }
 
 void EnHintSkb_Draw(Actor* thisx, PlayState* play) {
-    EnHintSkb* this = (EnHintSkb*)thisx;
+    EnHintSkb* this = THIS;
 
     this->bodyPartsCount = 0;
     Gfx_SetupDL25_Opa(play->state.gfxCtx);

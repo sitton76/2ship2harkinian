@@ -10,7 +10,9 @@
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "stdlib.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_2000000)
+
+#define THIS ((DmChar08*)thisx)
 
 void DmChar08_Init(Actor* thisx, PlayState* play2);
 void DmChar08_Destroy(Actor* thisx, PlayState* play);
@@ -38,7 +40,7 @@ typedef enum {
     /* 5 */ TURTLE_EYEMODE_LOOK_RIGHT
 } TurtleEyeMode;
 
-ActorProfile Dm_Char08_Profile = {
+ActorInit Dm_Char08_InitVars = {
     ACTOR_DM_CHAR08,
     ACTORCAT_BG,
     FLAGS,
@@ -76,9 +78,9 @@ static AnimationInfo sAnimationInfo[TURTLE_ANIM_MAX] = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 4000, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 4000, ICHAIN_STOP),
 };
 
 static CollisionHeader* sTurtleGreatBayTempleColData;
@@ -154,7 +156,7 @@ void DmChar08_ChangeAnim(SkelAnime* skelAnime, AnimationInfo* animInfo, u16 anim
 
 void DmChar08_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
 
     // region 2S2H [Port] The turtle does some unique things with CPU modified collision poly
     // The effect is to have a the collision move with the turtle's fin. Depending on the player's
@@ -187,9 +189,9 @@ void DmChar08_Init(Actor* thisx, PlayState* play2) {
     }
     // #endregion
 
-    thisx->attentionRangeType = ATTENTION_RANGE_5;
+    thisx->targetMode = TARGET_MODE_5;
     this->eyeMode = TURTLE_EYEMODE_CLOSED;
-    thisx->lockOnArrowOffset = 120.0f;
+    thisx->targetArrowOffset = 120.0f;
     ActorShape_Init(&thisx->shape, 0.0f, ActorShadow_DrawCircle, 24.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gTurtleSkel, NULL, NULL, NULL, 0);
     Actor_ProcessInitChain(thisx, sInitChain);
@@ -242,7 +244,7 @@ void DmChar08_Init(Actor* thisx, PlayState* play2) {
                 this->eyeMode = TURTLE_EYEMODE_BLINK_STRAIGHT;
                 this->unk_207 = 0;
                 this->unk_208 = 0;
-                thisx->flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+                thisx->flags |= ACTOR_FLAG_TARGETABLE;
                 if (gSaveContext.save.entrance == ENTRANCE(ZORA_CAPE, 8)) {
                     this->eyeMode = TURTLE_EYEMODE_BLINK_LEFT;
                     this->actionFunc = func_80AAFAC4;
@@ -261,7 +263,7 @@ void DmChar08_Init(Actor* thisx, PlayState* play2) {
             this->eyeMode = TURTLE_EYEMODE_BLINK_LEFT;
             this->unk_207 = 0;
             this->unk_208 = 0;
-            thisx->flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+            thisx->flags |= ACTOR_FLAG_TARGETABLE;
             this->actionFunc = func_80AAFAE4;
             this->unk_1F0 = 1.0f;
             break;
@@ -284,7 +286,7 @@ void DmChar08_Init(Actor* thisx, PlayState* play2) {
 }
 
 void DmChar08_Destroy(Actor* thisx, PlayState* play) {
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
 
     if (this->dynapolyInitialized) {
         DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -297,7 +299,7 @@ void DmChar08_WaitForSong(DmChar08* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
     Player* player2 = GET_PLAYER(play);
 
-    if ((player2->stateFlags2 & PLAYER_STATE2_USING_OCARINA) &&
+    if ((player2->stateFlags2 & PLAYER_STATE2_8000000) &&
         ((player2->actor.world.pos.x > -5780.0f) && (player2->actor.world.pos.x < -5385.0f) &&
          (player2->actor.world.pos.z > 1120.0f) && (player2->actor.world.pos.z < 2100.0f))) {
         if (!sSuccessSoundAlreadyPlayed) {
@@ -344,7 +346,7 @@ void func_80AAF884(DmChar08* this, PlayState* play) {
     if (play->csCtx.state == CS_STATE_IDLE) {
         DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS | DYNA_TRANSFORM_ROT_Y);
         DynaPolyActor_LoadMesh(play, &this->dyna, &gTurtleZoraCapeAwakeCol);
-        this->dyna.actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_TARGETABLE;
         this->actionFunc = func_80AAF8F4;
     }
 }
@@ -1059,16 +1061,16 @@ void DmChar08_UpdateCollision(DmChar08* this, PlayState* play) {
 }
 
 void DmChar08_Update(Actor* thisx, PlayState* play) {
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
 
     this->dyna.actor.focus.pos.x = this->focusPos.x;
-    this->dyna.actor.focus.pos.y = this->focusPos.y + this->dyna.actor.lockOnArrowOffset;
+    this->dyna.actor.focus.pos.y = this->focusPos.y + this->dyna.actor.targetArrowOffset;
     this->dyna.actor.focus.pos.z = this->focusPos.z;
     this->dyna.actor.focus.rot.x = this->dyna.actor.world.rot.x;
     this->dyna.actor.focus.rot.y = this->dyna.actor.world.rot.y;
     this->dyna.actor.focus.rot.z = this->dyna.actor.world.rot.z;
 
-    if (Actor_TalkOfferAccepted(&this->dyna.actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->dyna.actor, &play->state)) {
         this->unk_206 = 1;
     }
 
@@ -1105,7 +1107,7 @@ s32 DmChar08_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f
 }
 
 void DmChar08_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
     Vec3f src;
 
     if (limbIndex == TURTLE_LIMB_SHELL) {
@@ -1131,7 +1133,7 @@ void DmChar08_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* r
 }
 
 void DmChar08_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
     f32 one;
 
     switch (limbIndex) {
@@ -1188,7 +1190,7 @@ TexturePtr sBigTurtleEyeTextures[] = {
 
 void DmChar08_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    DmChar08* this = (DmChar08*)thisx;
+    DmChar08* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -1209,13 +1211,13 @@ void DmChar08_Draw(Actor* thisx, PlayState* play) {
     }
     if (this->unk_1FF == 0) {
         Scene_SetRenderModeXlu(play, 0, 1);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gTurtleAsleepDL);
     } else if (this->unk_1FF == 1) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Scene_SetRenderModeXlu(play, 2, 2);
         gDPSetEnvColor(POLY_XLU_DISP++, 0, 0, 0, this->alpha);
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gTurtleAsleepDL);
     }
 

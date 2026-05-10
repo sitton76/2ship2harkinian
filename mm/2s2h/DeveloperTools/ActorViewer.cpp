@@ -2,12 +2,11 @@
 #include "2s2h/BenGui/UIWidgets.hpp"
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/NameTag/NameTag.h"
-#include "2s2h/ObjectExtension/ActorListIndex.h"
+#include "2s2h/ActorExtension/ActorListIndex.h"
 #include <spdlog/fmt/fmt.h>
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "2s2h/ShipUtils.h"
 
 extern "C" {
 #include "z64actor.h"
@@ -22,8 +21,43 @@ typedef struct ActorInfo {
     Vec3s rot;
 } ActorInfo;
 
+std::array<const char*, ACTORCAT_MAX> acMapping = { "Switch", "Background",  "Player", "Explosive", "NPC",  "Enemy",
+                                                    "Prop",   "Item/Action", "Misc.",  "Boss",      "Door", "Chest" };
+
+#define DEFINE_ACTOR(name, _enumValue, _allocType, _debugName, _humanName) { _enumValue, _humanName },
+#define DEFINE_ACTOR_INTERNAL(_name, _enumValue, _allocType, _debugName, _humanName) { _enumValue, _humanName },
+#define DEFINE_ACTOR_UNSET(_enumValue) { _enumValue, "Unset" },
+
+std::unordered_map<s16, const char*> actorDescriptions = {
+#include "tables/actor_table.h"
+};
+
+#undef DEFINE_ACTOR
+#undef DEFINE_ACTOR_INTERNAL
+#undef DEFINE_ACTOR_UNSET
+
+#define DEFINE_ACTOR(name, _enumValue, _allocType, _debugName, _humanName) { _enumValue, _debugName },
+#define DEFINE_ACTOR_INTERNAL(_name, _enumValue, _allocType, _debugName, _humanName) { _enumValue, _debugName },
+#define DEFINE_ACTOR_UNSET(_enumValue) { _enumValue, "Unset" },
+
+std::unordered_map<s16, const char*> actorDebugNames = {
+#include "tables/actor_table.h"
+};
+
+#undef DEFINE_ACTOR
+#undef DEFINE_ACTOR_INTERNAL
+#undef DEFINE_ACTOR_UNSET
+
 #define DEBUG_ACTOR_NAMETAG_TAG "debug_actor_viewer"
 #define CVAR_ACTOR_NAME_TAGS(val) "gDeveloperTools.ActorNameTags." val
+
+std::string GetActorDescription(u16 actorNum) {
+    return actorDescriptions.contains(actorNum) ? actorDescriptions[actorNum] : "???";
+}
+
+std::string GetActorDebugName(u16 actorNum) {
+    return actorDebugNames.contains(actorNum) ? actorDebugNames[actorNum] : "???";
+}
 
 std::vector<Actor*> GetCurrentSceneActors() {
     if (!gPlayState) {
@@ -85,7 +119,7 @@ void ActorViewer_AddTagForActor(Actor* actor) {
         parts.push_back(GetActorDescription(actor->id));
     }
     if (CVarGetInteger(CVAR_ACTOR_NAME_TAGS("DisplayCategory"), 0)) {
-        parts.push_back(GetActorCategoryName(actor->category));
+        parts.push_back(acMapping[actor->category]);
     }
     if (CVarGetInteger(CVAR_ACTOR_NAME_TAGS("DisplayParams"), 0)) {
         parts.push_back(fmt::format("0x{:04X} ({})", (u16)actor->params, actor->params));
@@ -217,7 +251,7 @@ void ActorViewerWindow::DrawElement() {
                     u8 count = 0;
                     u8 prev_category = 0xff;
                     for (size_t i = 0; i < list.size(); i++) {
-                        std::string label = GetActorCategoryName(list[i]->category);
+                        std::string label = acMapping[list[i]->category];
                         if (list[i]->category != prev_category) {
                             prev_category = list[i]->category;
                             count = 1;
@@ -240,7 +274,7 @@ void ActorViewerWindow::DrawElement() {
                 ImGui::BeginGroup();
                 ImGui::Text("ID: %hd", selectedActor->id);
                 ImGui::Text("Description: %s", GetActorDescription(selectedActor->id).c_str());
-                ImGui::Text("Category: %s", GetActorCategoryName(selectedActor->category).c_str());
+                ImGui::Text("Category: %s", acMapping[selectedActor->category]);
                 ImGui::Text("Params: %hd", selectedActor->params);
                 ImGui::EndGroup();
 
@@ -324,8 +358,8 @@ void ActorViewerWindow::DrawElement() {
 
             if (UIWidgets::Button("Fetch: Target", { { .tooltip = "Grabs actor with target arrow above it." } })) {
                 Player* player = GET_PLAYER(gPlayState);
-                if (player->focusActor != nullptr) {
-                    SetSelectedActor(player->focusActor);
+                if (player->lockOnActor != nullptr) {
+                    SetSelectedActor(player->lockOnActor);
                 }
             }
             if (UIWidgets::Button("Fetch: Held", { { .tooltip = "Grabs actor Link is currently holding." } })) {

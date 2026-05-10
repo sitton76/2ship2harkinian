@@ -177,9 +177,6 @@ static const ALIGN_ASSET(2) char gAnju1Steam1Tex[] = dgAnju1Steam1Tex;
 #define dgAnju1Steam2Tex "__OTR__objects/object_an1/gAnju1Steam2Tex"
 static const ALIGN_ASSET(2) char gAnju1Steam2Tex[] = dgAnju1Steam2Tex;
 
-#define dgAnju1UnusedTexAnim "__OTR__objects/object_an1/gAnju1UnusedTexAnim"
-static const ALIGN_ASSET(2) char gAnju1UnusedTexAnim[] = dgAnju1UnusedTexAnim;
-
 #define dgAnju1ChopsticksDL "__OTR__objects/object_an1/gAnju1ChopsticksDL"
 static const ALIGN_ASSET(2) char gAnju1ChopsticksDL[] = dgAnju1ChopsticksDL;
 

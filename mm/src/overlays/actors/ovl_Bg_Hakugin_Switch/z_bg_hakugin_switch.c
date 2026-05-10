@@ -9,7 +9,9 @@
 #include "z64rumble.h"
 #include "objects/object_goronswitch/object_goronswitch.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgHakuginSwitch*)thisx)
 
 void BgHakuginSwitch_Init(Actor* thisx, PlayState* play);
 void BgHakuginSwitch_Destroy(Actor* thisx, PlayState* play);
@@ -37,7 +39,7 @@ void func_80B165E0(BgHakuginSwitch* this, PlayState* play);
 
 u32 D_80B16AF0;
 
-ActorProfile Bg_Hakugin_Switch_Profile = {
+ActorInit Bg_Hakugin_Switch_InitVars = {
     /**/ ACTOR_BG_HAKUGIN_SWITCH,
     /**/ ACTORCAT_SWITCH,
     /**/ FLAGS,
@@ -51,7 +53,7 @@ ActorProfile Bg_Hakugin_Switch_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -59,11 +61,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000400, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 60, 10, 180, { 0, 0, 0 } },
@@ -87,16 +89,16 @@ BgHakuginSwitchStruct D_80B1688C[] = {
 };
 
 static InitChainEntry sInitChain1[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 150, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 130, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 150, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 130, ICHAIN_STOP),
 };
 
 static InitChainEntry sInitChain2[] = {
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 260, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 360, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 260, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 360, ICHAIN_STOP),
 };
 
 void func_80B15790(BgHakuginSwitch* this, u16 sfxId) {
@@ -113,7 +115,7 @@ void func_80B157C4(BgHakuginSwitch* this, u16 arg1) {
 
 void BgHakuginSwitch_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgHakuginSwitch* this = (BgHakuginSwitch*)thisx;
+    BgHakuginSwitch* this = THIS;
     s32 sp34 = BGHAKUGINSWITCH_GET_7(&this->dyna.actor);
     s32 sp30;
     s32 pad2;
@@ -179,7 +181,7 @@ void BgHakuginSwitch_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgHakuginSwitch_Destroy(Actor* thisx, PlayState* play) {
-    BgHakuginSwitch* this = (BgHakuginSwitch*)thisx;
+    BgHakuginSwitch* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     Collider_DestroyCylinder(play, &this->collider);
@@ -398,7 +400,7 @@ void func_80B16244(BgHakuginSwitch* this, PlayState* play) {
     this->dyna.actor.world.pos.y = this->dyna.actor.home.pos.y;
     if ((BGHAKUGINSWITCH_GET_7(&this->dyna.actor) == BGHAKUGINSWITCH_GET_7_1) &&
         (this->dyna.actor.category != ACTORCAT_SWITCH)) {
-        Actor_ChangeCategory(play, &play->actorCtx, &this->dyna.actor, ACTORCAT_SWITCH);
+        func_800BC154(play, &play->actorCtx, &this->dyna.actor, 0);
     }
     this->actionFunc = func_80B162AC;
 }
@@ -457,7 +459,7 @@ void func_80B16494(BgHakuginSwitch* this, PlayState* play) {
     this->dyna.actor.world.pos.y = (this->dyna.actor.home.pos.y - (1800.0f * this->dyna.actor.scale.y)) + 2.0f;
     if ((BGHAKUGINSWITCH_GET_7(&this->dyna.actor) == BGHAKUGINSWITCH_GET_7_1) &&
         (this->dyna.actor.category != ACTORCAT_PROP)) {
-        Actor_ChangeCategory(play, &play->actorCtx, &this->dyna.actor, ACTORCAT_PROP);
+        func_800BC154(play, &play->actorCtx, &this->dyna.actor, ACTORCAT_PROP);
     }
     this->actionFunc = func_80B16520;
 }
@@ -486,7 +488,7 @@ void func_80B165E0(BgHakuginSwitch* this, PlayState* play) {
 
 void BgHakuginSwitch_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgHakuginSwitch* this = (BgHakuginSwitch*)thisx;
+    BgHakuginSwitch* this = THIS;
     f32 sp24;
 
     if (this->unk_1B2 > 0) {
@@ -531,7 +533,7 @@ void BgHakuginSwitch_Update(Actor* thisx, PlayState* play) {
 }
 
 void BgHakuginSwitch_Draw(Actor* thisx, PlayState* play) {
-    BgHakuginSwitch* this = (BgHakuginSwitch*)thisx;
+    BgHakuginSwitch* this = THIS;
 
     Gfx_DrawDListOpa(play, this->unk_1A8);
 }

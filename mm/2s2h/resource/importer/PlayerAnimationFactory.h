@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ship/resource/Resource.h>
-#include <ship/resource/ResourceFactoryBinary.h>
+#include "Resource.h"
+#include "ResourceFactoryBinary.h"
 
 namespace SOH {
 class ResourceFactoryBinaryPlayerAnimationV0 : public Ship::ResourceFactoryBinary {

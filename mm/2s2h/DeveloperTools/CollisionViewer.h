@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
-#include <ship/window/gui/GuiWindow.h>
+#include <libultraship/classes.h>
 
 extern "C" {
 #endif

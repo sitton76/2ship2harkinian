@@ -8,7 +8,9 @@
 #include "z_en_ani.h"
 #include "z64quake.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnAni*)thisx)
 
 // clang-format off
 #define ANI_STATE_STANDING  (0)
@@ -38,7 +40,7 @@ void EnAni_IdleInPain(EnAni* this, PlayState* play);
 void EnAni_Talk(EnAni* this, PlayState* play);
 void EnAni_IdleStanding(EnAni* this, PlayState* play);
 
-ActorProfile En_Ani_Profile = {
+ActorInit En_Ani_InitVars = {
     /**/ ACTOR_EN_ANI,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -53,7 +55,7 @@ ActorProfile En_Ani_Profile = {
 // two different colliders, but only one init for both
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_ENEMY,
         OC1_ON | OC1_TYPE_ALL,
@@ -61,11 +63,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 30, 40, 0, { 0, 0, 0 } },
@@ -73,7 +75,7 @@ static ColliderCylinderInit sCylinderInit = {
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_VEC3F_DIV1000(scale, 10, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 850, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 850, ICHAIN_STOP),
 };
 
 void EnAni_DefaultBlink(EnAni* this) {
@@ -111,7 +113,7 @@ void EnAni_WaitForEyeOpen(EnAni* this) {
 
 void EnAni_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnAni* this = (EnAni*)thisx;
+    EnAni* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 24.0f);
@@ -134,7 +136,7 @@ void EnAni_Init(Actor* thisx, PlayState* play) {
         this->actor.velocity.y = 0.0f;
         this->actor.terminalVelocity = 0.0f;
         this->actor.gravity = 0.0f;
-        this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags |= ACTOR_FLAG_10;
         this->stateFlags |= ANI_STATE_CLIMBING;
         CLEAR_EVENTINF(EVENTINF_14);
     } else { // ANI_TYPE_STANDING
@@ -150,7 +152,7 @@ void EnAni_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnAni_Destroy(Actor* thisx, PlayState* play) {
-    EnAni* this = (EnAni*)thisx;
+    EnAni* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider1);
     Collider_DestroyCylinder(play, &this->collider2);
@@ -180,7 +182,7 @@ void EnAni_Talk(EnAni* this, PlayState* play) {
 
 void EnAni_IdleInPain(EnAni* this, PlayState* play) {
     SkelAnime_Update(&this->skelAnime);
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->actionFunc = EnAni_Talk;
     } else {
         // telling you not to take his rupees you knocked from the tree
@@ -210,7 +212,7 @@ void EnAni_FallToGround(EnAni* this, PlayState* play) {
     s16 quakeIndex;
 
     if (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) {
-        this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_10;
         this->actionFunc = EnAni_LandOnFoot;
         this->actor.velocity.x = 0.0f;
         this->actor.velocity.z = 0.0f;
@@ -272,7 +274,7 @@ void EnAni_HangInTree(EnAni* this, PlayState* play) {
 }
 
 void EnAni_Update(Actor* thisx, PlayState* play) {
-    EnAni* this = (EnAni*)thisx;
+    EnAni* this = THIS;
     f32 minVelocity;
 
     Collider_UpdateCylinder(&this->actor, &this->collider1);
@@ -291,14 +293,14 @@ void EnAni_Update(Actor* thisx, PlayState* play) {
     Actor_UpdatePos(&this->actor);
     Actor_UpdateBgCheckInfo(play, &this->actor, 0.0f, 0.0f, 0.0f, UPDBGCHECKINFO_FLAG_4);
     this->actionFunc(this, play);
-    if ((this->actor.xzDistToPlayer < 100.0f) && !(this->stateFlags & ANI_STATE_CLIMBING)) {
-        Actor_TrackPlayer(play, &this->actor, &this->headRot, &this->torsoRot, this->actor.focus.pos);
-        this->torsoRot.x = this->torsoRot.y = this->torsoRot.z = 0;
+    if (this->actor.xzDistToPlayer < 100.0f && !(this->stateFlags & ANI_STATE_CLIMBING)) {
+        Actor_TrackPlayer(play, &this->actor, &this->headRot, &this->chestRot, this->actor.focus.pos);
+        this->chestRot.x = this->chestRot.y = this->chestRot.z = 0;
     } else {
         Math_SmoothStepToS(&this->headRot.x, 0, 0x6, 0x1838, 0x64);
         Math_SmoothStepToS(&this->headRot.y, 0, 0x6, 0x1838, 0x64);
-        Math_SmoothStepToS(&this->torsoRot.x, 0, 0x6, 0x1838, 0x64);
-        Math_SmoothStepToS(&this->torsoRot.y, 0, 0x6, 0x1838, 0x64);
+        Math_SmoothStepToS(&this->chestRot.x, 0, 0x6, 0x1838, 0x64);
+        Math_SmoothStepToS(&this->chestRot.y, 0, 0x6, 0x1838, 0x64);
     }
 
     this->blinkFunc(this);
@@ -317,7 +319,7 @@ void EnAni_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnAni_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnAni* this = (EnAni*)thisx;
+    EnAni* this = THIS;
 
     if (limbIndex == ANI_LIMB_HEAD) {
         rot->x += this->headRot.y;
@@ -338,7 +340,7 @@ void EnAni_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot,
 void EnAni_Draw(Actor* thisx, PlayState* play) {
     static TexturePtr sEyeTextures[] = { gAniOpenEyeTex, gAniClosingEyeTex, gAniClosedEyeTex };
     s32 pad;
-    EnAni* this = (EnAni*)thisx;
+    EnAni* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

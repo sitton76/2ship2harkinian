@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_Obj_Aqua/z_obj_aqua.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjIcePoly*)thisx)
 
 void ObjIcePoly_Init(Actor* thisx, PlayState* play);
 void ObjIcePoly_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +22,7 @@ void func_80931A38(ObjIcePoly* this, PlayState* play);
 void func_80931E58(ObjIcePoly* this, PlayState* play);
 void func_80931EEC(ObjIcePoly* this, PlayState* play);
 
-ActorProfile Obj_Ice_Poly_Profile = {
+ActorInit Obj_Ice_Poly_InitVars = {
     /**/ ACTOR_OBJ_ICE_POLY,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -34,7 +36,7 @@ ActorProfile Obj_Ice_Poly_Profile = {
 
 static ColliderCylinderInit sCylinderInit1 = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -42,11 +44,11 @@ static ColliderCylinderInit sCylinderInit1 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x02, 0x00 },
         { 0xF7CFF7FF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NONE,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NONE,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 50, 105, 0, { 0, 0, 0 } },
@@ -54,7 +56,7 @@ static ColliderCylinderInit sCylinderInit1 = {
 
 static ColliderCylinderInit sCylinderInit2 = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER | AC_TYPE_OTHER,
         OC1_NONE,
@@ -62,11 +64,11 @@ static ColliderCylinderInit sCylinderInit2 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK5,
+        ELEMTYPE_UNK5,
         { 0xF7CFFFFF, 0x00, 0x00 },
         { 0x00000800, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 65, 105, 0, { 0, 0, 0 } },
@@ -76,12 +78,12 @@ static Color_RGBA8 D_80932378 = { 250, 250, 250, 255 };
 static Color_RGBA8 D_8093237C = { 180, 180, 180, 255 };
 
 void ObjIcePoly_Init(Actor* thisx, PlayState* play) {
-    ObjIcePoly* this = (ObjIcePoly*)thisx;
+    ObjIcePoly* this = THIS;
     s32 i;
 
     this->switchFlag = OBJICEPOLY_GET_SWITCH_FLAG(thisx);
-    thisx->params = OBJICEPOLY_GET_SCALE(thisx);
-    thisx->cullingVolumeDistance = 5600.0f;
+    thisx->params &= 0xFF;
+    thisx->uncullZoneForward = 5600.0f;
 
     Actor_SetScale(thisx, thisx->params * 0.01f);
 
@@ -123,7 +125,7 @@ void ObjIcePoly_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjIcePoly_Destroy(Actor* thisx, PlayState* play) {
-    ObjIcePoly* this = (ObjIcePoly*)thisx;
+    ObjIcePoly* this = THIS;
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(this->colliders1); i++) {
@@ -189,13 +191,13 @@ void func_80931A38(ObjIcePoly* this, PlayState* play) {
     if (((this->colliders2[0].base.acFlags & AC_HIT) &&
          ((this->colliders2[0].base.ac == NULL) ||
           ((this->colliders2[0].base.ac->id != ACTOR_OBJ_AQUA) &&
-           (this->colliders2[0].elem.acHitElem->atDmgInfo.dmgFlags == 0x800)) ||
+           (this->colliders2[0].info.acHitInfo->toucher.dmgFlags == 0x800)) ||
           ((this->colliders2[0].base.ac->id == ACTOR_OBJ_AQUA) &&
            (this->colliders2[0].base.ac->params == AQUA_TYPE_HOT)))) ||
         ((this->colliders2[1].base.acFlags & AC_HIT) &&
          ((this->colliders2[1].base.ac == NULL) ||
           ((this->colliders2[1].base.ac->id != ACTOR_OBJ_AQUA) &&
-           (this->colliders2[1].elem.acHitElem->atDmgInfo.dmgFlags == 0x800)) ||
+           (this->colliders2[1].info.acHitInfo->toucher.dmgFlags == 0x800)) ||
           ((this->colliders2[1].base.ac->id == ACTOR_OBJ_AQUA) &&
            (this->colliders2[1].base.ac->params == AQUA_TYPE_HOT))))) {
         CutsceneManager_Queue(this->actor.csId);
@@ -334,24 +336,24 @@ void func_80931EEC(ObjIcePoly* this, PlayState* play) {
 }
 
 void ObjIcePoly_Update(Actor* thisx, PlayState* play) {
-    ObjIcePoly* this = (ObjIcePoly*)thisx;
+    ObjIcePoly* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void ObjIcePoly_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjIcePoly* this = (ObjIcePoly*)thisx;
+    ObjIcePoly* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
     func_800B8118(&this->actor, play, 0);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPSegment(POLY_XLU_DISP++, 0x08,
-               Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, 0, play->gameplayFrames % 256, 0x20, 0x10, 1, 0,
-                                  (play->gameplayFrames * 2) % 256, 0x40, 0x20, 0, 1, 0, 2));
+               Gfx_TwoTexScroll(play->state.gfxCtx, 0, 0, play->gameplayFrames % 256, 0x20, 0x10, 1, 0,
+                                (play->gameplayFrames * 2) % 256, 0x40, 0x20));
     gDPSetEnvColor(POLY_XLU_DISP++, 0, 50, 100, this->unk_148);
     gSPDisplayList(POLY_XLU_DISP++, gEffIceFragment3DL);
 

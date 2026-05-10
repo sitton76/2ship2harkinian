@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Box/z_en_box.h"
 #include "objects/object_box/object_box.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((DemoTreLgt*)thisx)
 
 void DemoTreLgt_Init(Actor* thisx, PlayState* play);
 void DemoTreLgt_Destroy(Actor* thisx, PlayState* play);
@@ -33,7 +35,7 @@ static DemoTreLgtInfo D_808E1490[2] = {
     { 1.0f, 136.0f, 220.0f, 50.0f },
 };
 
-ActorProfile Demo_Tre_Lgt_Profile = {
+ActorInit Demo_Tre_Lgt_InitVars = {
     /**/ ACTOR_DEMO_TRE_LGT,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -61,7 +63,7 @@ static DemoTreLgtActionFunc sActionFuncs[] = {
 };
 
 void DemoTreLgt_Init(Actor* thisx, PlayState* play) {
-    DemoTreLgt* this = (DemoTreLgt*)thisx;
+    DemoTreLgt* this = THIS;
 
     SkelCurve_Init(play, &this->skelCurve, &gBoxLightCurveSkel, sBoxLightAnimations[0]);
     this->colorAlpha1 = 255;
@@ -77,7 +79,7 @@ void DemoTreLgt_Init(Actor* thisx, PlayState* play) {
 }
 
 void DemoTreLgt_Destroy(Actor* thisx, PlayState* play) {
-    DemoTreLgt* this = (DemoTreLgt*)thisx;
+    DemoTreLgt* this = THIS;
 
     SkelCurve_Destroy(play, &this->skelCurve);
 }
@@ -134,20 +136,20 @@ void DemoTreLgt_Animate(DemoTreLgt* this, PlayState* play) {
 }
 
 void DemoTreLgt_Update(Actor* thisx, PlayState* play) {
-    DemoTreLgt* this = (DemoTreLgt*)thisx;
+    DemoTreLgt* this = THIS;
 
     sActionFuncs[this->action](this, play);
 }
 
 s32 DemoTreLgt_OverrideLimbDraw(PlayState* play, SkelCurve* skelCuve, s32 limbIndex, Actor* thisx) {
     s32 pad;
-    DemoTreLgt* this = (DemoTreLgt*)thisx;
+    DemoTreLgt* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     gSPSegment(POLY_XLU_DISP++, 0x08,
-               Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, (play->state.frames * 2) % 256, 0, 64, 32, 1,
-                                  (play->state.frames * -2) % 256, 0, 64, 32, 2, 0, -2, 0));
+               Gfx_TwoTexScroll(play->state.gfxCtx, 0, (play->state.frames * 2) % 256, 0, 64, 32, 1,
+                                (play->state.frames * -2) % 256, 0, 64, 32));
 
     if (limbIndex == OBJECT_BOX_LIGHT_LIMB_01) {
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, 255, 255, 180, this->colorAlpha1);
@@ -163,7 +165,7 @@ s32 DemoTreLgt_OverrideLimbDraw(PlayState* play, SkelCurve* skelCuve, s32 limbIn
 
 void DemoTreLgt_Draw(Actor* thisx, PlayState* play) {
     GraphicsContext* gfxCtx = play->state.gfxCtx;
-    DemoTreLgt* this = (DemoTreLgt*)thisx;
+    DemoTreLgt* this = THIS;
 
     OPEN_DISPS(gfxCtx);
 

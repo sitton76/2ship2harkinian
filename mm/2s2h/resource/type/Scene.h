@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
-#include <ship/resource/Resource.h>
+#include "Resource.h"
 #include "scenecommand/SceneCommand.h"
+#include <libultraship/libultra/types.h>
 
 namespace SOH {
 

@@ -8,9 +8,9 @@
 
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnTanron1*)thisx)
 
 void EnTanron1_Init(Actor* thisx, PlayState* play);
 void EnTanron1_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +20,7 @@ void EnTanron1_Draw(Actor* thisx, PlayState* play);
 void func_80BB5318(EnTanron1* this, PlayState* play);
 void func_80BB5AAC(EnTanron1* this, PlayState* play);
 
-ActorProfile En_Tanron1_Profile = {
+ActorInit En_Tanron1_InitVars = {
     /**/ ACTOR_EN_TANRON1,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -37,9 +37,9 @@ static s32 sPad = 0;
 #include "overlays/ovl_En_Tanron1/ovl_En_Tanron1.h"
 
 void EnTanron1_Init(Actor* thisx, PlayState* play) {
-    EnTanron1* this = (EnTanron1*)thisx;
+    EnTanron1* this = THIS;
 
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     if (!ENTANRON1_GET_100(&this->actor)) {
         this->unk_144 = 0;
     } else {
@@ -74,7 +74,7 @@ void func_80BB4E50(EnTanron1Struct* arg0, Vec3f* arg1, s16 arg2) {
 }
 
 void EnTanron1_Update(Actor* thisx, PlayState* play) {
-    EnTanron1* this = (EnTanron1*)thisx;
+    EnTanron1* this = THIS;
     Actor* temp_a0;
     Player* player = GET_PLAYER(play);
     s16 i;
@@ -118,7 +118,7 @@ void EnTanron1_Update(Actor* thisx, PlayState* play) {
                     }
 
                     temp.x = this->unk_14C.x - temp_a0->world.pos.x;
-                    temp.y = this->unk_14C.y - temp_a0->world.pos.y + 70.0f;
+                    temp.y = (this->unk_14C.y - temp_a0->world.pos.y) + 70.0f;
                     temp.z = this->unk_14C.z - temp_a0->world.pos.z;
 
                     if (sqrtf(SQXYZ(temp)) < phi_f18) {
@@ -148,9 +148,6 @@ void EnTanron1_Update(Actor* thisx, PlayState* play) {
                 }
             }
             this->unk_144 = 1;
-            break;
-
-        default:
             break;
     }
 
@@ -188,7 +185,7 @@ void EnTanron1_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnTanron1_Draw(Actor* thisx, PlayState* play) {
-    EnTanron1* this = (EnTanron1*)thisx;
+    EnTanron1* this = THIS;
 
     func_80BB5AAC(this, play);
 }
@@ -204,7 +201,7 @@ void func_80BB5318(EnTanron1* this, PlayState* play) {
     Vec3f* spB4 = NULL;
     f32 spB0;
     Vec3f spA4;
-    WaterBox* waterBox;
+    WaterBox* spA0;
     f32 sp9C;
     CollisionPoly* sp98;
     Actor* temp_v0;
@@ -345,7 +342,7 @@ void func_80BB5318(EnTanron1* this, PlayState* play) {
                             }
                             ptr->unk_3C = BgCheck_EntityRaycastFloor1(&play->colCtx, &sp98, &ptr->unk_00);
                             sp9C = ptr->unk_00.y;
-                            WaterBox_GetSurface1(play, &play->colCtx, ptr->unk_00.x, ptr->unk_00.z, &sp9C, &waterBox);
+                            WaterBox_GetSurface1(play, &play->colCtx, ptr->unk_00.x, ptr->unk_00.z, &sp9C, &spA0);
                             if ((sp9C < ptr->unk_00.y) && (ptr->unk_3C < sp9C)) {
                                 ptr->unk_3C = sp9C;
                             }
@@ -388,7 +385,7 @@ void func_80BB5AAC(EnTanron1* this, PlayState* play) {
             Matrix_RotateXS(ptr->unk_18 * -1, MTXMODE_APPLY);
             Matrix_Scale(1.2f, ptr->unk_2C, 1.2f, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_OPA_DISP++, ovl_En_Tanron1_DL_001900);
             FrameInterpolation_RecordCloseChild();
         }
@@ -412,7 +409,7 @@ void func_80BB5AAC(EnTanron1* this, PlayState* play) {
             Matrix_RotateXS(ptr->unk_18 * -1, MTXMODE_APPLY);
             Matrix_Scale(1.0f, ptr->unk_2C, 1.0f, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_OPA_DISP++, ovl_En_Tanron1_DL_001900);
             FrameInterpolation_RecordCloseChild();
         }

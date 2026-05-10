@@ -9,7 +9,9 @@
 #include "objects/object_horse_game_check/object_horse_game_check.h"
 #include "debug.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnHorseGameCheck*)thisx)
 
 void EnHorseGameCheck_Init(Actor* thisx, PlayState* play);
 void EnHorseGameCheck_Destroy(Actor* thisx, PlayState* play);
@@ -35,7 +37,7 @@ s32 func_808F99B0(EnHorseGameCheck* this, PlayState* play);
 s32 func_808F99C4(EnHorseGameCheck* this, PlayState* play);
 s32 func_808F99D8(EnHorseGameCheck* this, PlayState* play);
 
-ActorProfile En_Horse_Game_Check_Profile = {
+ActorInit En_Horse_Game_Check_InitVars = {
     /**/ ACTOR_EN_HORSE_GAME_CHECK,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -55,7 +57,7 @@ s32 func_808F8AA0(EnHorseGameCheck* this, PlayState* play) {
     MtxF sp38;
 
     this->dyna.actor.scale.x = this->dyna.actor.scale.y = this->dyna.actor.scale.z = this->unk_160 * 0.001f;
-    this->dyna.actor.flags |= ACTOR_FLAG_IGNORE_LEGACY_POINT_LIGHTS;
+    this->dyna.actor.flags |= ACTOR_FLAG_400000;
 
     DynaPolyActor_Init(&this->dyna, 0);
 
@@ -97,7 +99,7 @@ s32 func_808F8C5C(EnHorseGameCheck* this, PlayState* play) {
 }
 
 s32 func_808F8C70(EnHorseGameCheck* this, PlayState* play) {
-    if (Matrix_Finalize(play->state.gfxCtx) == NULL) {
+    if (Matrix_NewMtx(play->state.gfxCtx) == NULL) {
         return true;
     } else {
         Gfx_DrawDListXlu(play, object_horse_game_check_DL_003030);
@@ -393,8 +395,8 @@ s32 func_808F9868(EnHorseGameCheck* this, PlayState* play) {
 }
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 2400, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 300, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneScale, 2400, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 300, ICHAIN_STOP),
 };
 
 s32 func_808F987C(EnHorseGameCheck* this, PlayState* play) {
@@ -461,7 +463,7 @@ EnHorseGameCheckUnkFunc D_808F9C5C[] = {
 };
 
 void EnHorseGameCheck_Init(Actor* thisx, PlayState* play) {
-    EnHorseGameCheck* this = (EnHorseGameCheck*)thisx;
+    EnHorseGameCheck* this = THIS;
 
     this->unk_15C = ENHORSEGAMECHECK_GET_FF(&this->dyna.actor);
     this->unk_160 = ENHORSEGAMECHECK_GET_FF00(&this->dyna.actor);
@@ -476,7 +478,7 @@ void EnHorseGameCheck_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHorseGameCheck_Destroy(Actor* thisx, PlayState* play) {
-    EnHorseGameCheck* this = (EnHorseGameCheck*)thisx;
+    EnHorseGameCheck* this = THIS;
 
     if (D_808F9C0C[this->unk_15C] != NULL) {
         D_808F9C0C[this->unk_15C](this, play);
@@ -484,7 +486,7 @@ void EnHorseGameCheck_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void EnHorseGameCheck_Update(Actor* thisx, PlayState* play) {
-    EnHorseGameCheck* this = (EnHorseGameCheck*)thisx;
+    EnHorseGameCheck* this = THIS;
 
     if (D_808F9C34[this->unk_15C] != NULL) {
         D_808F9C34[this->unk_15C](this, play);
@@ -492,7 +494,7 @@ void EnHorseGameCheck_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnHorseGameCheck_Draw(Actor* thisx, PlayState* play) {
-    EnHorseGameCheck* this = (EnHorseGameCheck*)thisx;
+    EnHorseGameCheck* this = THIS;
 
     if (D_808F9C5C[this->unk_15C] != NULL) {
         D_808F9C5C[this->unk_15C](this, play);

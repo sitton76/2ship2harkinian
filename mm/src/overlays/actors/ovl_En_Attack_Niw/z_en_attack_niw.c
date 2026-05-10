@@ -7,7 +7,9 @@
 #include "z_en_attack_niw.h"
 #include "overlays/actors/ovl_En_Niw/z_en_niw.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnAttackNiw*)thisx)
 
 void EnAttackNiw_Init(Actor* thisx, PlayState* play);
 void EnAttackNiw_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void EnAttackNiw_EnterViewFromOffscreen(EnAttackNiw* this, PlayState* play);
 void EnAttackNiw_AimAtPlayer(EnAttackNiw* this, PlayState* play);
 void EnAttackNiw_FlyAway(EnAttackNiw* this, PlayState* play);
 
-ActorProfile En_Attack_Niw_Profile = {
+ActorInit En_Attack_Niw_InitVars = {
     /**/ ACTOR_EN_ATTACK_NIW,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -31,13 +33,13 @@ ActorProfile En_Attack_Niw_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_1, ICHAIN_CONTINUE),
+    ICHAIN_U8(targetMode, TARGET_MODE_1, ICHAIN_CONTINUE),
     ICHAIN_F32_DIV1000(gravity, -2000, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 0, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 0, ICHAIN_STOP),
 };
 
 void EnAttackNiw_Init(Actor* thisx, PlayState* play) {
-    EnAttackNiw* this = (EnAttackNiw*)thisx;
+    EnAttackNiw* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 25.0f);
@@ -57,13 +59,13 @@ void EnAttackNiw_Init(Actor* thisx, PlayState* play) {
     this->randomTargetCenterOffset.z = Rand_CenteredFloat(100.0f);
 
     Actor_SetScale(&this->actor, 0.01f);
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED; // Unnecessary: this actor does not start with this flag
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE; // Unnecessary: this actor does not start with this flag
     this->actor.shape.rot.y = this->actor.world.rot.y = (Rand_ZeroOne() - 0.5f) * 60000.0f;
     this->actionFunc = EnAttackNiw_EnterViewFromOffscreen;
 }
 
 void EnAttackNiw_Destroy(Actor* thisx, PlayState* play) {
-    EnAttackNiw* this = (EnAttackNiw*)thisx;
+    EnAttackNiw* this = THIS;
     EnNiw* parent = (EnNiw*)this->actor.parent;
 
     if ((this->actor.parent != NULL) && (this->actor.parent->update != NULL)) {
@@ -194,22 +196,22 @@ void EnAttackNiw_AnimateWingHead(EnAttackNiw* this, PlayState* play, s16 animInd
 }
 
 s32 EnAttackNiw_IsOnScreen(EnAttackNiw* this, PlayState* play) {
-    s16 screenPosX;
-    s16 screenPosY;
+    s16 posX;
+    s16 posY;
 
     Actor_SetFocus(&this->actor, this->targetHeight);
-    Actor_GetScreenPos(play, &this->actor, &screenPosX, &screenPosY);
+    Actor_GetScreenPos(play, &this->actor, &posX, &posY);
 
-    if ((this->actor.projectedPos.z < -20.0f) || (screenPosX < 0) || (screenPosX > SCREEN_WIDTH) || (screenPosY < 0) ||
-        (screenPosY > SCREEN_HEIGHT)) {
+    if ((this->actor.projectedPos.z < -20.0f) || (posX < 0) || (posX > SCREEN_WIDTH) || (posY < 0) ||
+        (posY > SCREEN_HEIGHT)) {
         return false;
     }
     return true;
 }
 
 void EnAttackNiw_EnterViewFromOffscreen(EnAttackNiw* this, PlayState* play) {
-    s16 screenPosX;
-    s16 screenPosY;
+    s16 posX;
+    s16 posY;
     Vec3f viewOffset;
     Vec3f flightTarget;
     s32 pad;
@@ -235,7 +237,7 @@ void EnAttackNiw_EnterViewFromOffscreen(EnAttackNiw* this, PlayState* play) {
     Math_ApproachF(&this->rotStep, 5000.0f, 1.0f, 100.0f);
 
     Actor_SetFocus(&this->actor, this->targetHeight);
-    Actor_GetScreenPos(play, &this->actor, &screenPosX, &screenPosY);
+    Actor_GetScreenPos(play, &this->actor, &posX, &posY);
 
     if (this->actor.bgCheckFlags & BGCHECKFLAG_WALL) {
         this->targetRotY = this->actor.yawTowardsPlayer;
@@ -345,7 +347,7 @@ void EnAttackNiw_FlyAway(EnAttackNiw* this, PlayState* play) {
 }
 
 void EnAttackNiw_Update(Actor* thisx, PlayState* play) {
-    EnAttackNiw* this = (EnAttackNiw*)thisx;
+    EnAttackNiw* this = THIS;
     s32 pad;
     EnNiw* parent;
     Player* player = GET_PLAYER(play);
@@ -418,32 +420,32 @@ void EnAttackNiw_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnAttackNiw_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnAttackNiw* this = (EnAttackNiw*)thisx;
+    EnAttackNiw* this = THIS;
 
     if (limbIndex == NIW_LIMB_UPPER_BODY) {
-        rot->y += TRUNCF_BINANG(this->upperBodyRotY);
+        rot->y += (s16)this->upperBodyRotY;
     }
 
     if (limbIndex == NIW_LIMB_HEAD) {
-        rot->z += TRUNCF_BINANG(this->headRotZ);
+        rot->z += (s16)this->headRotZ;
     }
 
     if (limbIndex == NIW_LIMB_RIGHT_WING_ROOT) {
-        rot->x += TRUNCF_BINANG(this->rightWingRotX);
-        rot->y += TRUNCF_BINANG(this->rightWingRotY);
-        rot->z += TRUNCF_BINANG(this->rightWingRotZ);
+        rot->x += (s16)this->rightWingRotX;
+        rot->y += (s16)this->rightWingRotY;
+        rot->z += (s16)this->rightWingRotZ;
     }
 
     if (limbIndex == NIW_LIMB_LEFT_WING_ROOT) {
-        rot->x += TRUNCF_BINANG(this->leftWingRotX);
-        rot->y += TRUNCF_BINANG(this->leftWingRotY);
-        rot->z += TRUNCF_BINANG(this->leftWingRotZ);
+        rot->x += (s16)this->leftWingRotX;
+        rot->y += (s16)this->leftWingRotY;
+        rot->z += (s16)this->leftWingRotZ;
     }
     return false;
 }
 
 void EnAttackNiw_Draw(Actor* thisx, PlayState* play) {
-    EnAttackNiw* this = (EnAttackNiw*)thisx;
+    EnAttackNiw* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,

@@ -7,7 +7,9 @@
 #include "z_bg_ctower_rot.h"
 #include "objects/object_ctower_rot/object_ctower_rot.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((BgCtowerRot*)thisx)
 
 void BgCtowerRot_Init(Actor* thisx, PlayState* play);
 void BgCtowerRot_Destroy(Actor* thisx, PlayState* play);
@@ -19,7 +21,7 @@ void BgCtowerRot_DoorDoNothing(BgCtowerRot* this, PlayState* play);
 void BgCtowerRot_DoorIdle(BgCtowerRot* this, PlayState* play);
 void BgCtowerRot_SetupDoorClose(BgCtowerRot* this, PlayState* play);
 
-ActorProfile Bg_Ctower_Rot_Profile = {
+ActorInit Bg_Ctower_Rot_InitVars = {
     /**/ ACTOR_BG_CTOWER_ROT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -39,7 +41,7 @@ static Gfx* sDLists[] = { gClockTowerCorridorDL, gClockTowerStoneDoorMainDL, gCl
 
 void BgCtowerRot_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    BgCtowerRot* this = (BgCtowerRot*)thisx;
+    BgCtowerRot* this = THIS;
     Player* player;
     Vec3f offset;
 
@@ -59,7 +61,7 @@ void BgCtowerRot_Init(Actor* thisx, PlayState* play) {
         DynaPolyActor_LoadMesh(play, &this->dyna, &gClockTowerStoneDoorCol);
         this->dyna.actor.world.rot.y = this->dyna.actor.shape.rot.y - 0x4000;
     }
-    Actor_WorldToActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
+    Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
     if (offset.z < 0.0f) {
         this->dyna.actor.world.pos.x = this->dyna.actor.home.pos.x + (Math_SinS(this->dyna.actor.world.rot.y) * 80.0f);
         this->dyna.actor.world.pos.z = this->dyna.actor.home.pos.z + (Math_CosS(this->dyna.actor.world.rot.y) * 80.0f);
@@ -71,7 +73,7 @@ void BgCtowerRot_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgCtowerRot_Destroy(Actor* thisx, PlayState* play) {
-    BgCtowerRot* this = (BgCtowerRot*)thisx;
+    BgCtowerRot* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -81,7 +83,7 @@ void BgCtowerRot_CorridorRotate(BgCtowerRot* this, PlayState* play) {
     Vec3f offset;
     f32 rotZ;
 
-    Actor_WorldToActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
+    Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
     rotZ = CLAMP(1100.0f - offset.z, 0.0f, 1000.0f);
     Camera_ChangeSetting(play->cameraPtrs[CAM_ID_MAIN], CAM_SET_DUNGEON0);
     this->dyna.actor.shape.rot.z = rotZ * 16.384f;
@@ -114,7 +116,7 @@ void BgCtowerRot_DoorIdle(BgCtowerRot* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
     Vec3f offset;
 
-    Actor_WorldToActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
+    Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
     if (offset.z > 30.0f) {
         this->unk160 = 0.0f;
         CutsceneManager_Queue(this->dyna.actor.csId);
@@ -134,13 +136,13 @@ void BgCtowerRot_SetupDoorClose(BgCtowerRot* this, PlayState* play) {
 }
 
 void BgCtowerRot_Update(Actor* thisx, PlayState* play) {
-    BgCtowerRot* this = (BgCtowerRot*)thisx;
+    BgCtowerRot* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void BgCtowerRot_Draw(Actor* thisx, PlayState* play) {
-    BgCtowerRot* this = (BgCtowerRot*)thisx;
+    BgCtowerRot* this = THIS;
 
     Gfx_DrawDListOpa(play, sDLists[this->dyna.actor.params]);
     if (this->dyna.actor.params == BGCTOWERROT_CORRIDOR) {

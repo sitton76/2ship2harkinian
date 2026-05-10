@@ -1,4 +1,4 @@
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/bridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 
@@ -23,13 +23,7 @@ void RegisterSkipToFileSelect() {
             // Normally called on console logo screen
             gSaveContext.seqId = NA_BGM_DISABLED;
             gSaveContext.ambienceId = AMBIENCE_ID_DISABLED;
-
-            // Normally the following is called by the opening cutscene
-            Sram_InitNewSave();
-            gSaveContext.save.time = CLOCK_TIME(8, 0);
-            gSaveContext.save.day = 1;
-            gSaveContext.save.playerForm = PLAYER_FORM_HUMAN;
-            gSaveContext.gameMode = GAMEMODE_FILE_SELECT;
+            gSaveContext.gameMode = GAMEMODE_TITLE_SCREEN;
 
             STOP_GAMESTATE(gGameState);
             SET_NEXT_GAMESTATE(gGameState, FileSelect_Init, sizeof(FileSelectState));
@@ -43,7 +37,7 @@ void RegisterSkipToFileSelect() {
         if (CHECK_BTN_ANY(consoleLogoState->state.input->press.button, BTN_A | BTN_B | BTN_START)) {
             // Force the title state to start fading to black and to last roughly 5 frames based on current fade in/out
             consoleLogoState->visibleDuration = 0;
-            consoleLogoState->addAlpha = std::max<int16_t>((255 - consoleLogoState->coverAlpha) / 5, 1);
+            consoleLogoState->addAlpha = (255 - consoleLogoState->coverAlpha) / 5;
         }
     });
 }

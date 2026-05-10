@@ -5,9 +5,10 @@
  */
 
 #include "z_obj_mure3.h"
-#include "GameInteractor/GameInteractor.h"
 
 #define FLAGS 0x00000000
+
+#define THIS ((ObjMure3*)thisx)
 
 void ObjMure3_Init(Actor* thisx, PlayState* play);
 void ObjMure3_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +21,7 @@ void func_8098F5E4(ObjMure3* this, PlayState* play);
 void func_8098F66C(ObjMure3* this);
 void func_8098F680(ObjMure3* this, PlayState* play);
 
-ActorProfile Obj_Mure3_Profile = {
+ActorInit Obj_Mure3_InitVars = {
     /**/ ACTOR_OBJ_MURE3,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -35,9 +36,9 @@ ActorProfile Obj_Mure3_Profile = {
 static s16 sRupeeCounts[] = { 5, 5, 7, 0 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 100, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 1800, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 100, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 100, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 1800, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 100, ICHAIN_STOP),
 };
 
 void func_8098F040(ObjMure3* this, PlayState* play) {
@@ -85,7 +86,7 @@ void func_8098F220(ObjMure3* this, PlayState* play) {
     yRot = this->actor.world.rot.y;
 
     for (i = 0; i < 6; i++) {
-        if (GameInteractor_Should(VB_OBJ_MURE3_DROP_COLLECTIBLE, !((this->unk164 >> i) & 1), this, i)) {
+        if (!((this->unk164 >> i) & 1)) {
             spawnPos.x = (Math_SinS(yRot) * 40.0f) + this->actor.world.pos.x;
             spawnPos.z = (Math_CosS(yRot) * 40.0f) + this->actor.world.pos.z;
             this->unk148[i] = (EnItem00*)Item_DropCollectible2(play, &spawnPos, 0x4000);
@@ -96,7 +97,7 @@ void func_8098F220(ObjMure3* this, PlayState* play) {
         yRot += 0x2AAA;
     }
 
-    if (GameInteractor_Should(VB_OBJ_MURE3_DROP_COLLECTIBLE, !((this->unk164 >> 6) & 1), this, 6)) {
+    if (!((this->unk164 >> 6) & 1)) {
         spawnPos.x = this->actor.world.pos.x;
         spawnPos.z = this->actor.world.pos.z;
         this->unk160 = Item_DropCollectible2(play, &spawnPos, 0x4002);
@@ -144,7 +145,7 @@ void func_8098F438(ObjMure3* this, PlayState* play) {
 }
 
 void ObjMure3_Init(Actor* thisx, PlayState* play) {
-    ObjMure3* this = (ObjMure3*)thisx;
+    ObjMure3* this = THIS;
 
     if (Flags_GetSwitch(play, OBJMURE3_GET_SWITCH_FLAG(&this->actor))) {
         Actor_Kill(&this->actor);
@@ -173,7 +174,7 @@ void func_8098F5E4(ObjMure3* this, PlayState* play) {
     static ObjMure3SpawnFunc sSpawnFuncs[] = { func_8098F040, func_8098F110, func_8098F220 };
 
     if (Math3D_Dist1DSq(this->actor.projectedPos.x, this->actor.projectedPos.z) < SQ(1150.0f)) {
-        this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags |= ACTOR_FLAG_10;
         sSpawnFuncs[OBJMURE3_PARAM_RUPEEINDEX(&this->actor)](this, play);
         func_8098F66C(this);
     }
@@ -186,14 +187,14 @@ void func_8098F66C(ObjMure3* this) {
 void func_8098F680(ObjMure3* this, PlayState* play) {
     func_8098F438(this, play);
     if (Math3D_Dist1DSq(this->actor.projectedPos.x, this->actor.projectedPos.z) >= SQ(1450.0f)) {
-        this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_10;
         func_8098F364(this, play);
         func_8098F5D0(this);
     }
 }
 
 void ObjMure3_Update(Actor* thisx, PlayState* play) {
-    ObjMure3* this = (ObjMure3*)thisx;
+    ObjMure3* this = THIS;
 
     this->actionFunc(this, play);
 }

@@ -1,5 +1,3 @@
-#include "z64pause_menu.h"
-
 #include "global.h"
 #include "fault.h"
 #include "loadfragment.h"
@@ -14,20 +12,19 @@
 #define KALEIDO_OVERLAY(name) \
     { NULL, 0, 0, 0, 0, 0, #name, }
 
-KaleidoMgrOverlay gKaleidoMgrOverlayTable[KALEIDO_OVL_MAX] = {
+KaleidoMgrOverlay gKaleidoMgrOverlayTable[] = {
     KALEIDO_OVERLAY(kaleido_scope),
     KALEIDO_OVERLAY(player_actor),
 };
 
 void* sKaleidoAreaPtr = NULL;
 KaleidoMgrOverlay* gKaleidoMgrCurOvl = NULL;
-
 FaultAddrConvClient sKaleidoMgrFaultAddrConvClient;
 
 uintptr_t KaleidoManager_FaultAddrConv(uintptr_t address, void* param) {
     uintptr_t addr = address;
     KaleidoMgrOverlay* kaleidoMgrOvl = gKaleidoMgrCurOvl;
-    uintptr_t ramConv;
+    size_t ramConv;
     void* ramStart;
     size_t diff;
 
@@ -78,7 +75,7 @@ void KaleidoManager_Init(PlayState* play) {
     Fault_AddAddrConvClient(&sKaleidoMgrFaultAddrConvClient, KaleidoManager_FaultAddrConv, NULL);
 }
 
-void KaleidoManager_Destroy(void) {
+void KaleidoManager_Destroy() {
     Fault_RemoveAddrConvClient(&sKaleidoMgrFaultAddrConvClient);
 
     if (gKaleidoMgrCurOvl != NULL) {

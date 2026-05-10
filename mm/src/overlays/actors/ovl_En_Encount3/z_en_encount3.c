@@ -7,7 +7,9 @@
 #include "z_en_encount3.h"
 #include "objects/object_big_fwall/object_big_fwall.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnEncount3*)thisx)
 
 void EnEncount3_Init(Actor* thisx, PlayState* play);
 void EnEncount3_Destroy(Actor* thisx, PlayState* play);
@@ -20,7 +22,7 @@ void func_809AD084(EnEncount3* this, PlayState* play);
 void func_809AD194(EnEncount3* this, PlayState* play);
 void func_809AD1EC(EnEncount3* this, PlayState* play);
 
-ActorProfile En_Encount3_Profile = {
+ActorInit En_Encount3_InitVars = {
     /**/ ACTOR_EN_ENCOUNT3,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -35,7 +37,7 @@ ActorProfile En_Encount3_Profile = {
 s32 D_809AD810 = false;
 
 void EnEncount3_Init(Actor* thisx, PlayState* play) {
-    EnEncount3* this = (EnEncount3*)thisx;
+    EnEncount3* this = THIS;
 
     this->unk14A = ENCOUNT3_GET_SPAWN_INDEX(thisx);
     this->childParams = ENCOUNT3_GET_PARAM_F80(thisx);
@@ -53,8 +55,8 @@ void EnEncount3_Init(Actor* thisx, PlayState* play) {
     if ((this->switchFlag > SWITCH_FLAG_NONE) && Flags_GetSwitch(play, this->switchFlag)) {
         Actor_Kill(&this->actor);
     }
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     func_809AD058(this);
 }
 
@@ -107,7 +109,7 @@ void func_809AD1EC(EnEncount3* this, PlayState* play) {
 }
 
 void EnEncount3_Update(Actor* thisx, PlayState* play2) {
-    EnEncount3* this = (EnEncount3*)thisx;
+    EnEncount3* this = THIS;
     f32 new_var;
     PlayState* play = play2;
     Player* player = GET_PLAYER(play);
@@ -138,9 +140,9 @@ void EnEncount3_Update(Actor* thisx, PlayState* play2) {
             s16 i;
 
             for (i = 0; i < PLAYER_BODYPART_MAX; i++) {
-                player->bodyFlameTimers[i] = Rand_S16Offset(0, 200);
+                player->flameTimers[i] = Rand_S16Offset(0, 200);
             }
-            player->bodyIsBurning = true;
+            player->isBurning = true;
 
             sp3C = this->actor.world.pos.x - player->actor.world.pos.x;
             sp38 = this->actor.world.pos.z - player->actor.world.pos.z;
@@ -148,7 +150,7 @@ void EnEncount3_Update(Actor* thisx, PlayState* play2) {
                 func_800B8D50(play, &this->actor, 10.0f, Math_Atan2S_XY(sp38, sp3C), 0.0f, 1);
             }
         }
-        this->child->colChkInfo = this->child->colChkInfo; // Set to itself
+        this->child->colChkInfo = this->child->colChkInfo;
     }
 
     this->unk168 = this->unk16C;
@@ -175,7 +177,7 @@ void EnEncount3_Update(Actor* thisx, PlayState* play2) {
 }
 
 void EnEncount3_Draw(Actor* thisx, PlayState* play) {
-    EnEncount3* this = (EnEncount3*)thisx;
+    EnEncount3* this = THIS;
     s32 pad;
 
     if (this->unk170 > 0.0f) {
@@ -186,9 +188,8 @@ void EnEncount3_Draw(Actor* thisx, PlayState* play) {
 
         gDPPipeSync(POLY_XLU_DISP++);
         gSPSegment(POLY_XLU_DISP++, 0x08,
-                   Gfx_TwoTexScrollEx(play->state.gfxCtx, 0, (s32)play->gameplayFrames, 0, 0x20, 0x40, 1,
-                                      (s32)play->gameplayFrames * -2, (s32)play->gameplayFrames * -8, 0x20, 0x20, 1, 0,
-                                      -2, -8));
+                   Gfx_TwoTexScroll(play->state.gfxCtx, 0, (s32)play->gameplayFrames, 0, 0x20, 0x40, 1,
+                                    (s32)play->gameplayFrames * -2, (s32)play->gameplayFrames * -8, 0x20, 0x20));
 
         gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, 255, 200, 0, (s8)this->unk170);
         gDPSetEnvColor(POLY_XLU_DISP++, 255, 0, 0, 128);
@@ -197,7 +198,7 @@ void EnEncount3_Draw(Actor* thisx, PlayState* play) {
                          MTXMODE_NEW);
         Matrix_Scale(this->unk168, this->unk174, this->unk168, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_XLU_DISP++, gRingOfFireDL);
 
         Matrix_Pop();

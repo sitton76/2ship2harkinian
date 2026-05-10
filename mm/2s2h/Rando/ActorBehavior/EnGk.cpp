@@ -1,11 +1,11 @@
 #include "ActorBehavior.h"
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/libultraship.h>
 
 extern "C" {
 #include "variables.h"
 #include "overlays/actors/ovl_En_Gk/z_en_gk.h"
 
-void Player_StartTalking(PlayState* play, Actor* actor);
+void Player_TalkWithPlayer(PlayState* play, Actor* actor);
 }
 
 void Rando::ActorBehavior::InitEnGKBehavior() {
@@ -16,22 +16,16 @@ void Rando::ActorBehavior::InitEnGKBehavior() {
 
         switch (actor->id) {
             case ACTOR_EN_GK:
-                // In either case here, WEEKEVENTREG_RECEIVED_GORON_RACE_BOTTLE will be set and trigger the rando
-                // check to be queued.
-
-                // If they have an empty bottle, force item to gold dust refill and let vanilla item get continue
-                if (Inventory_HasEmptyBottle()) {
-                    *item = GI_GOLD_DUST_2;
+                if (RANDO_SAVE_CHECKS[RC_GORON_RACETRACK_GOLD_DUST].obtained) {
                     return;
                 }
 
-                // Otherwise bypass item get entirely
                 *should = false;
                 actor->parent = &player->actor;
                 player->talkActor = actor;
                 player->talkActorDistance = actor->xzDistToPlayer;
                 player->exchangeItemAction = PLAYER_IA_MINUS1;
-                Player_StartTalking(gPlayState, actor);
+                Player_TalkWithPlayer(gPlayState, actor);
                 break;
         }
     });
@@ -52,7 +46,7 @@ void Rando::ActorBehavior::InitEnGKBehavior() {
         *should = false;
 
         SET_WEEKEVENTREG(WEEKEVENTREG_24_80); // Ensure Goron Elder check is available
-        if (!RANDO_SAVE_CHECKS[RC_GORON_SHRINE_FULL_LULLABY].cycleObtained) {
+        if (!RANDO_SAVE_CHECKS[RC_GORON_SHRINE_FULL_LULLABY].obtained) {
             RANDO_SAVE_CHECKS[RC_GORON_SHRINE_FULL_LULLABY].eligible = true;
         }
     });

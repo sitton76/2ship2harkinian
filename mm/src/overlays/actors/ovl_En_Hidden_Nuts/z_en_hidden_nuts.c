@@ -8,7 +8,9 @@
 #include "z64voice.h"
 #include "overlays/effects/ovl_Effect_Ss_Hahen/z_eff_ss_hahen.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_2000000)
+
+#define THIS ((EnHiddenNuts*)thisx)
 
 void EnHiddenNuts_Init(Actor* thisx, PlayState* play);
 void EnHiddenNuts_Destroy(Actor* thisx, PlayState* play);
@@ -29,7 +31,7 @@ void func_80BDBB48(EnHiddenNuts* this, PlayState* play);
 void func_80BDBE70(EnHiddenNuts* this, PlayState* play);
 void func_80BDBED4(EnHiddenNuts* this, PlayState* play);
 
-ActorProfile En_Hidden_Nuts_Profile = {
+ActorInit En_Hidden_Nuts_InitVars = {
     /**/ ACTOR_EN_HIDDEN_NUTS,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -43,7 +45,7 @@ ActorProfile En_Hidden_Nuts_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -51,11 +53,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 30, 20, 0, { 0, 0, 0 } },
@@ -99,7 +101,7 @@ static u8 sAnimationModes[ENHIDDENNUTS_ANIM_MAX] = {
 };
 
 void EnHiddenNuts_Init(Actor* thisx, PlayState* play) {
-    EnHiddenNuts* this = (EnHiddenNuts*)thisx;
+    EnHiddenNuts* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 20.0f);
     SkelAnime_Init(play, &this->skelAnime, &object_hintnuts_Skel_0023B8, &object_hintnuts_Anim_0024CC, this->jointTable,
@@ -107,7 +109,7 @@ void EnHiddenNuts_Init(Actor* thisx, PlayState* play) {
     Actor_SetScale(&this->actor, 0.01f);
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
 
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
 
@@ -130,12 +132,12 @@ void EnHiddenNuts_Init(Actor* thisx, PlayState* play) {
 
     this->path = SubS_GetPathByIndex(play, this->pathIndex, ENHIDDENNUTS_PATH_INDEX_NONE_ALT);
     this->csId = this->actor.csId;
-    AudioVoice_InitWord(VOICE_WORD_ID_WAKE_UP);
+    func_801A5080(VOICE_WORD_ID_WAKE_UP);
     func_80BDB268(this);
 }
 
 void EnHiddenNuts_Destroy(Actor* thisx, PlayState* play) {
-    EnHiddenNuts* this = (EnHiddenNuts*)thisx;
+    EnHiddenNuts* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -173,7 +175,7 @@ void func_80BDB2B8(EnHiddenNuts* this, PlayState* play) {
 
     Actor_PlaySfx(&this->actor, NA_SE_EN_NEMURI_SLEEP - SFX_FLAG);
 
-    if (player->stateFlags2 & PLAYER_STATE2_USING_OCARINA) {
+    if (player->stateFlags2 & PLAYER_STATE2_8000000) {
         if (!this->unk_20A) {
             Audio_PlaySfx(NA_SE_SY_TRE_BOX_APPEAR);
             this->unk_20A = true;
@@ -182,7 +184,7 @@ void func_80BDB2B8(EnHiddenNuts* this, PlayState* play) {
         this->unk_20A = false;
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80BDB580(this);
         return;
     }
@@ -251,15 +253,15 @@ void func_80BDB59C(EnHiddenNuts* this, PlayState* play) {
         this->unk_218 = 30;
     }
 
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         func_80BDB268(this);
     }
 }
 
 void func_80BDB788(EnHiddenNuts* this) {
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
-    this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
+    this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
     Actor_PlaySfx(&this->actor, NA_SE_EN_NUTS_UP);
     Actor_PlaySfx(&this->actor, NA_SE_EN_NUTS_DEAD);
     this->unk_21A = 2;
@@ -353,12 +355,12 @@ void func_80BDBA28(EnHiddenNuts* this, PlayState* play) {
 void func_80BDBB48(EnHiddenNuts* this, PlayState* play) {
     s32 pad[3];
     f32 curFrame = this->skelAnime.curFrame;
-    WaterBox* waterBox;
+    WaterBox* sp54;
     f32 sp50;
     s16 sp4E = false;
     Vec3f sp40;
 
-    if (WaterBox_GetSurface1(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp50, &waterBox) &&
+    if (WaterBox_GetSurface1(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &sp50, &sp54) &&
         (this->actor.world.pos.y < sp50)) {
         this->actor.velocity.y = 0.0f;
         Math_Vec3f_Copy(&sp40, &this->actor.world.pos);
@@ -434,7 +436,7 @@ void func_80BDBED4(EnHiddenNuts* this, PlayState* play) {
 
 void EnHiddenNuts_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnHiddenNuts* this = (EnHiddenNuts*)thisx;
+    EnHiddenNuts* this = THIS;
 
     if (this->unk_218 != 0) {
         this->unk_218--;
@@ -459,7 +461,7 @@ void EnHiddenNuts_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnHiddenNuts_Draw(Actor* thisx, PlayState* play) {
-    EnHiddenNuts* this = (EnHiddenNuts*)thisx;
+    EnHiddenNuts* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     SkelAnime_DrawOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, NULL, NULL, &this->actor);

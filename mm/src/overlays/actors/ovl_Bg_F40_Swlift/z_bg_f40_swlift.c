@@ -7,7 +7,9 @@
 #include "z_bg_f40_swlift.h"
 #include "objects/object_f40_obj/object_f40_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgF40Swlift*)thisx)
 
 void BgF40Swlift_Init(Actor* thisx, PlayState* play);
 void BgF40Swlift_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void BgF40Swlift_Draw(Actor* thisx, PlayState* play);
 static s32 sSwitchFlags[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 static s32 sHeights[4];
 
-ActorProfile Bg_F40_Swlift_Profile = {
+ActorInit Bg_F40_Swlift_InitVars = {
     /**/ ACTOR_BG_F40_SWLIFT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -30,13 +32,13 @@ ActorProfile Bg_F40_Swlift_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeScale, 550, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 5000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 550, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 5000, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 100, ICHAIN_STOP),
 };
 
 void BgF40Swlift_Init(Actor* thisx, PlayState* play) {
-    BgF40Swlift* this = (BgF40Swlift*)thisx;
+    BgF40Swlift* this = THIS;
     s32 index;
     s32 pad;
 
@@ -61,14 +63,14 @@ void BgF40Swlift_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgF40Swlift_Destroy(Actor* thisx, PlayState* play) {
-    BgF40Swlift* this = (BgF40Swlift*)thisx;
+    BgF40Swlift* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
 
 void BgF40Swlift_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    BgF40Swlift* this = (BgF40Swlift*)thisx;
+    BgF40Swlift* this = THIS;
     s32 i;
 
     for (i = 1; i < ARRAY_COUNT(sSwitchFlags); i++) {
@@ -109,7 +111,7 @@ void BgF40Swlift_Update(Actor* thisx, PlayState* play2) {
 }
 
 void BgF40Swlift_Draw(Actor* thisx, PlayState* play) {
-    BgF40Swlift* this = (BgF40Swlift*)thisx;
+    BgF40Swlift* this = THIS;
 
     Gfx_DrawDListOpa(play, gStoneTowerVerticallyOscillatingPlatformDL);
 }

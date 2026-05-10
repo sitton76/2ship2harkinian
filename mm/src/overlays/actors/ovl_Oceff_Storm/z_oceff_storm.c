@@ -7,7 +7,9 @@
 #include "z_oceff_storm.h"
 #include "BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_2000000)
+
+#define THIS ((OceffStorm*)thisx)
 
 void OceffStorm_Init(Actor* thisx, PlayState* play);
 void OceffStorm_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void OceffStorm_DefaultAction(OceffStorm* this, PlayState* play);
 void func_80981B48(OceffStorm* this, PlayState* play);
 void OceffStorm_Draw2(Actor* thisx, PlayState* play);
 
-ActorProfile Oceff_Storm_Profile = {
+ActorInit Oceff_Storm_InitVars = {
     /**/ ACTOR_OCEFF_STORM,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -62,7 +64,7 @@ s32 func_8098176C(PlayState* play) {
 void OceffStorm_Init(Actor* thisx, PlayState* play) {
     s32 pad[2];
     Player* player = GET_PLAYER(play);
-    OceffStorm* this = (OceffStorm*)thisx;
+    OceffStorm* this = THIS;
 
     OceffStorm_SetupAction(this, OceffStorm_DefaultAction);
 
@@ -91,7 +93,7 @@ void OceffStorm_Init(Actor* thisx, PlayState* play) {
 }
 
 void OceffStorm_Destroy(Actor* thisx, PlayState* play) {
-    OceffStorm* this = (OceffStorm*)thisx;
+    OceffStorm* this = THIS;
 
     Magic_Reset(play);
 }
@@ -161,7 +163,7 @@ void func_80981B48(OceffStorm* this, PlayState* play) {
 }
 
 void OceffStorm_Update(Actor* thisx, PlayState* play) {
-    OceffStorm* this = (OceffStorm*)thisx;
+    OceffStorm* this = THIS;
 
     this->actor.shape.rot.y = Camera_GetCamDirYaw(GET_ACTIVE_CAM(play));
     this->actionFunc(this, play);
@@ -171,7 +173,7 @@ void OceffStorm_Update(Actor* thisx, PlayState* play) {
 
 void OceffStorm_Draw2(Actor* thisx, PlayState* play) {
     s32 scroll = play->state.frames & 0xFFF;
-    OceffStorm* this = (OceffStorm*)thisx;
+    OceffStorm* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -185,12 +187,12 @@ void OceffStorm_Draw2(Actor* thisx, PlayState* play) {
     gDPSetPrimColor(POLY_XLU_DISP++, 0x80, 0x80, 200, 200, 150, this->primColorAlpha);
 
     gSPDisplayList(POLY_XLU_DISP++, &sSongOfStormsMaterialDL);
-    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 8, scroll * 4, 64,
-                                                       64, 1, scroll * 4, scroll * 4, 64, 64, 8, 4, 4, 4));
+    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 8, scroll * 4, 64,
+                                                     64, 1, scroll * 4, scroll * 4, 64, 64));
     // 2S2H [Cosmetic] Changed to Wide variant to support widescreen
     gSPWideTextureRectangle(POLY_XLU_DISP++, OTRGetRectDimensionFromLeftEdge(0) << 2, 0,
                             OTRGetRectDimensionFromRightEdge(SCREEN_WIDTH) << 2, SCREEN_HEIGHT << 2, G_TX_RENDERTILE, 0,
-                            0, (s32)(0.13671875f * (1 << 10)), (s32)(-0.13671875f * (1 << 10)));
+                            0, (s32)(0.13671875 * (1 << 10)), (s32)(-0.13671875 * (1 << 10)));
 
     CLOSE_DISPS(play->state.gfxCtx);
 }
@@ -215,12 +217,11 @@ void OceffStorm_Draw(Actor* thisx, PlayState* play) {
     vtxPtr[0].v.cn[3] = vtxPtr[6].v.cn[3] = vtxPtr[16].v.cn[3] = vtxPtr[25].v.cn[3] = this->vtxAlpha >> 1;
     vtxPtr[10].v.cn[3] = vtxPtr[22].v.cn[3] = this->vtxAlpha;
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     gSPDisplayList(POLY_XLU_DISP++, &sSongOfStormsCylinderMaterialDL);
-    gSPDisplayList(POLY_XLU_DISP++,
-                   Gfx_TwoTexScrollEx(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 4, (0 - scroll) * 8, 32, 32, 1,
-                                      scroll * 8, (0 - scroll) * 12, 32, 32, 4, -8, 8, -12));
+    gSPDisplayList(POLY_XLU_DISP++, Gfx_TwoTexScroll(play->state.gfxCtx, G_TX_RENDERTILE, scroll * 4, (0 - scroll) * 8,
+                                                     32, 32, 1, scroll * 8, (0 - scroll) * 12, 32, 32));
     gSPDisplayList(POLY_XLU_DISP++, &sSongOfStormsCylinderModelDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

@@ -1,9 +1,8 @@
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/bridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 
 extern "C" {
-#include "variables.h"
 #include "assets/objects/gameplay_keep/gameplay_keep.h"
 void func_80834DB8(Player* player, PlayerAnimationHeader* anim, f32 speed, PlayState* play);
 void func_80834D50(PlayState* play, Player* player, PlayerAnimationHeader* anim, f32 speed, u16 sfxId);
@@ -17,7 +16,7 @@ void func_808395F0(PlayState* play, Player* player, PlayerMeleeWeaponAnimation m
 void RegisterManualJump() {
     COND_VB_SHOULD(VB_START_JUMPSLASH, CVAR, {
         Player* player = GET_PLAYER(gPlayState);
-        s32 temp_a2 = player->controlStickDirections[player->controlStickDataIndex];
+        s32 temp_a2 = player->unk_AE3[player->unk_ADE];
 
         *should = false;
 

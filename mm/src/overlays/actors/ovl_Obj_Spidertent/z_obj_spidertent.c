@@ -7,7 +7,9 @@
 #include "z_obj_spidertent.h"
 #include "objects/object_spidertent/object_spidertent.h"
 
-#define FLAGS (ACTOR_FLAG_UCODE_POINT_LIGHT_ENABLED)
+#define FLAGS (ACTOR_FLAG_10000000)
+
+#define THIS ((ObjSpidertent*)thisx)
 
 void ObjSpidertent_Init(Actor* thisx, PlayState* play);
 void ObjSpidertent_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ void func_80B30A4C(ObjSpidertent* this, PlayState* play);
 void func_80B30AD4(ObjSpidertent* this);
 void func_80B30AF8(ObjSpidertent* this, PlayState* play);
 
-ActorProfile Obj_Spidertent_Profile = {
+ActorInit Obj_Spidertent_InitVars = {
     /**/ ACTOR_OBJ_SPIDERTENT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -36,11 +38,11 @@ ActorProfile Obj_Spidertent_Profile = {
 static ColliderTrisElementInit sTrisElementsInit1[] = {
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 68.80000305175781f, 0.0f, 18.799999237060547f },
@@ -49,11 +51,11 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 76.30000305175781f, 0.0f, -63.79999923706055f },
@@ -62,11 +64,11 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 23.799999237060547f, 0.0f, -116.30000305175781f },
@@ -75,11 +77,11 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -111.30000305175781f, 0.0f, -26.299999237060547f },
@@ -88,11 +90,11 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -81.30000305175781f, 0.0f, 78.80000305175781f },
@@ -101,11 +103,11 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 23.799999237060547f, 0.0f, 108.80000305175781f },
@@ -116,7 +118,7 @@ static ColliderTrisElementInit sTrisElementsInit1[] = {
 
 static ColliderTrisInit sTrisInit1 = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -130,11 +132,11 @@ static ColliderTrisInit sTrisInit1 = {
 static ColliderTrisElementInit sTrisElementsInit2[] = {
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 17.799999237060547f, 0.0f, 81.5999984741211f },
@@ -143,11 +145,11 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -60.900001525878906f, 0.0f, 59.099998474121094f },
@@ -156,11 +158,11 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -83.4000015258789f, 0.0f, -19.700000762939453f },
@@ -169,11 +171,11 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 17.799999237060547f, 0.0f, -87.19999694824219f },
@@ -182,11 +184,11 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 57.20000076293945f, 0.0f, -47.79999923706055f },
@@ -195,11 +197,11 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
     },
     {
         {
-            ELEM_MATERIAL_UNK4,
+            ELEMTYPE_UNK4,
             { 0x00000000, 0x00, 0x00 },
             { 0x00000800, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 51.599998474121094f, 0.0f, 14.100000381469727f },
@@ -210,7 +212,7 @@ static ColliderTrisElementInit sTrisElementsInit2[] = {
 
 static ColliderTrisInit sTrisInit2 = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -319,9 +321,9 @@ Vec3f D_80B31400 = { 1.0f, 0.0f, 0.0f };
 Vec3f D_80B3140C = { 0.0f, 1.0f, 0.0f };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 200, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 200, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 200, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 1000, ICHAIN_STOP),
 };
 
@@ -373,7 +375,7 @@ s32 func_80B2FB94(Vec3f* arg0, f32 arg1, TriNorm* triNorm, Vec3f* arg3, f32* arg
     return false;
 }
 
-bool func_80B2FC98(TriNorm* triNorm, Vec3f* arg1) {
+s32 func_80B2FC98(TriNorm* triNorm, Vec3f* arg1) {
     Vec3f sp84;
     Vec3f sp78;
     Vec3f* vtx;
@@ -445,7 +447,7 @@ bool func_80B2FC98(TriNorm* triNorm, Vec3f* arg1) {
 }
 
 void func_80B300F4(ObjSpidertent* thisx, PlayState* play, TriNorm* triNorm, Vec3f* arg3, f32 arg4, s32 arg5) {
-    ObjSpidertent* this = (ObjSpidertent*)thisx;
+    ObjSpidertent* this = THIS;
     ObjSpidertentStruct* spE0 = &D_80B31350[OBJSPIDERTENT_GET_1(&this->dyna.actor)];
     f32 temp_f24;
     f32 phi_f22;
@@ -549,7 +551,7 @@ s32 func_80B30480(ObjSpidertent* this, PlayState* play, Vec3f* arg2) {
 
 void ObjSpidertent_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjSpidertent* this = (ObjSpidertent*)thisx;
+    ObjSpidertent* this = THIS;
     s32 temp_s1 = OBJSPIDERTENT_GET_1(&this->dyna.actor);
     ObjSpidertentStruct* ptr = &D_80B31350[temp_s1];
     ColliderTrisElementInit* element;
@@ -595,7 +597,7 @@ void ObjSpidertent_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjSpidertent_Destroy(Actor* thisx, PlayState* play) {
-    ObjSpidertent* this = (ObjSpidertent*)thisx;
+    ObjSpidertent* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
     Collider_DestroyTris(play, &this->collider);
@@ -615,7 +617,7 @@ void func_80B30808(ObjSpidertent* this, PlayState* play) {
     ObjSpidertentStruct* ptr2 = &D_80B31350[OBJSPIDERTENT_GET_1(&this->dyna.actor)];
     Vec3f sp70;
     Vec3s* hitPos;
-    ColliderTrisElement* trisElem;
+    ColliderTrisElement* ptr;
     f32 temp_f0;
     s32 phi_s1;
     Vec3f sp54;
@@ -631,12 +633,12 @@ void func_80B30808(ObjSpidertent* this, PlayState* play) {
         phi_f20 = FLT_MAX;
 
         for (i = 0; i < ARRAY_COUNT(this->colliderElements); i++) {
-            trisElem = &this->collider.elements[i];
+            ptr = &this->collider.elements[i];
 
-            if (trisElem->base.acElemFlags & ACELEM_HIT) {
-                sp54.x = trisElem->base.acDmgInfo.hitPos.x;
-                sp54.y = trisElem->base.acDmgInfo.hitPos.y;
-                sp54.z = trisElem->base.acDmgInfo.hitPos.z;
+            if (ptr->info.bumperFlags & BUMP_HIT) {
+                sp54.x = ptr->info.bumper.hitPos.x;
+                sp54.y = ptr->info.bumper.hitPos.y;
+                sp54.z = ptr->info.bumper.hitPos.z;
 
                 temp_f0 = Math3D_Vec3fDistSq(&sp54, &player->actor.world.pos);
                 if (temp_f0 < phi_f20) {
@@ -647,7 +649,7 @@ void func_80B30808(ObjSpidertent* this, PlayState* play) {
         }
 
         if (phi_s4 >= 0) {
-            hitPos = &this->collider.elements[phi_s4].base.acDmgInfo.hitPos;
+            hitPos = &this->collider.elements[phi_s4].info.bumper.hitPos;
 
             sp70.x = hitPos->x;
             sp70.y = hitPos->y;
@@ -669,14 +671,14 @@ void func_80B30808(ObjSpidertent* this, PlayState* play) {
 }
 
 void func_80B30A2C(ObjSpidertent* this) {
-    this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->dyna.actor.flags |= ACTOR_FLAG_10;
     this->actionFunc = func_80B30A4C;
 }
 
 void func_80B30A4C(ObjSpidertent* this, PlayState* play) {
     if (CutsceneManager_IsNext(this->dyna.actor.csId)) {
         CutsceneManager_StartWithPlayerCs(this->dyna.actor.csId, &this->dyna.actor);
-        if (this->dyna.actor.csId > CS_ID_NONE) {
+        if (this->dyna.actor.csId >= 0) {
             Player_SetCsActionWithHaltedActors(play, &this->dyna.actor, PLAYER_CSACTION_1);
         }
         Flags_SetSwitch(play, OBJSPIDERTENT_GET_SWITCH_FLAG(&this->dyna.actor));
@@ -795,13 +797,13 @@ void func_80B30AF8(ObjSpidertent* this, PlayState* play) {
 }
 
 void ObjSpidertent_Update(Actor* thisx, PlayState* play) {
-    ObjSpidertent* this = (ObjSpidertent*)thisx;
+    ObjSpidertent* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void ObjSpidertent_Draw(Actor* thisx, PlayState* play) {
-    ObjSpidertent* this = (ObjSpidertent*)thisx;
+    ObjSpidertent* this = THIS;
     s32 params = OBJSPIDERTENT_GET_1(&this->dyna.actor);
     s32 temp_f18 = this->unk_3C5 * (29.0f / 51);
     Gfx* gfx;
@@ -811,7 +813,7 @@ void ObjSpidertent_Draw(Actor* thisx, PlayState* play) {
     gfx = POLY_XLU_DISP;
 
     gSPDisplayList(gfx++, gSetupDLs[SETUPDL_25]);
-    MATRIX_FINALIZE_AND_LOAD(gfx++, play->state.gfxCtx);
+    gSPMatrix(gfx++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gDPSetPrimColor(gfx++, 0, 0xFF, this->unk_3C2, this->unk_3C3, this->unk_3C4, temp_f18);
     gSPDisplayList(gfx++, D_80B31350[params].unk_00);
 

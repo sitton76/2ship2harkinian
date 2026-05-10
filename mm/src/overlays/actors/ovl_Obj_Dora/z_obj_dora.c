@@ -7,7 +7,9 @@
 #include "z_obj_dora.h"
 #include "assets/objects/object_dora/object_dora.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjDora*)thisx)
 
 void ObjDora_Init(Actor* thisx, PlayState* play);
 void ObjDora_Destroy(Actor* thisx, PlayState* play);
@@ -33,7 +35,7 @@ typedef enum {
     /* 0xF */ DORA_DMGEFF_LIGHT
 } ObjDoraDamageEffect;
 
-ActorProfile Obj_Dora_Profile = {
+ActorInit Obj_Dora_InitVars = {
     /**/ ACTOR_OBJ_DORA,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -48,66 +50,66 @@ ActorProfile Obj_Dora_Profile = {
 static ColliderTrisElementInit sTrisElementsInit[6] = {
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0x00100000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, -35.0f, 0.0f }, { 260.0f, -185.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0x00100000, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 260.0f, -185.0f, 0.0f }, { 260.0f, -485.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 260.0f, -485.0f, 0.0f }, { 0.0f, -635.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 0.0f, -635.0f, 0.0f }, { -260.0f, -485.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -260.0f, -485.0f, 0.0f }, { -260.0f, -185.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0xF7CFFFFF, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -260.0f, -185.0f, 0.0f }, { 0.0f, -35.0f, 0.0f }, { 0.0f, -335.0f, 0.0f } } },
@@ -116,7 +118,7 @@ static ColliderTrisElementInit sTrisElementsInit[6] = {
 
 static ColliderTrisInit sTrisInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -165,7 +167,7 @@ static DamageTable sDamageTable = {
 static CollisionCheckInfoInit2 sColChkInfoInit = { 8, 0, 0, 0, MASS_HEAVY };
 
 void ObjDora_Init(Actor* thisx, PlayState* play) {
-    ObjDora* this = (ObjDora*)thisx;
+    ObjDora* this = THIS;
     s32 i;
     s32 j;
     Vec3f vtx[3];
@@ -205,7 +207,7 @@ void ObjDora_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjDora_Destroy(Actor* thisx, PlayState* play) {
-    ObjDora* this = (ObjDora*)thisx;
+    ObjDora* this = THIS;
 
     Collider_DestroyTris(play, &this->colliderTris);
 }
@@ -264,7 +266,7 @@ void ObjDora_UpdateCollision(ObjDora* this, PlayState* play) {
     u16 time;
 
     if (this->colliderTris.base.acFlags & AC_HIT) {
-        time = CURRENT_TIME;
+        time = gSaveContext.save.time;
         this->colliderTris.base.acFlags &= ~AC_HIT;
         this->collisionCooldownTimer = 5;
 
@@ -307,15 +309,15 @@ void ObjDora_UpdateCollision(ObjDora* this, PlayState* play) {
 }
 
 void ObjDora_Update(Actor* thisx, PlayState* play) {
-    ObjDora* this = (ObjDora*)thisx;
+    ObjDora* this = THIS;
 
     this->actionFunc(this, play);
     ObjDora_UpdateCollision(this, play);
 }
 
 void ObjDora_Draw(Actor* thisx, PlayState* play) {
-    static Vec3f sPos = { 0.0f, -61.5f, 0.0f };
-    ObjDora* this = (ObjDora*)thisx;
+    static Vec3f position = { 0.0f, -61.5f, 0.0f };
+    ObjDora* this = THIS;
     f32 gongForceX;
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -330,19 +332,19 @@ void ObjDora_Draw(Actor* thisx, PlayState* play) {
 
         Matrix_Push();
         Matrix_RotateXS(this->gongRotation.x, MTXMODE_APPLY);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, &gDoraChainDL);
 
-        Matrix_Translate(sPos.x, sPos.y + gongForceX, sPos.z + gongForceX, MTXMODE_APPLY);
+        Matrix_Translate(position.x, position.y + gongForceX, position.z + gongForceX, MTXMODE_APPLY);
         Matrix_RotateXS(this->gongRotation.z - this->gongRotation.x, MTXMODE_APPLY);
-        Matrix_Translate(-sPos.x, -sPos.y, -sPos.z, MTXMODE_APPLY);
+        Matrix_Translate(-position.x, -position.y, -position.z, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, &gDoraGongDL);
 
         Matrix_Pop();
     } else {
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, &gDoraGongDL);
         gSPDisplayList(POLY_OPA_DISP++, &gDoraChainDL);
     }

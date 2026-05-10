@@ -4,17 +4,20 @@
  * Description: Stockpot Inn - 2nd Floor Window
  */
 
+#include "prevent_bss_reordering.h"
 #include "z_obj_yado.h"
 #include "objects/object_yado_obj/object_yado_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((ObjYado*)thisx)
 
 void ObjYado_Init(Actor* thisx, PlayState* play);
 void ObjYado_Destroy(Actor* thisx, PlayState* play);
 void ObjYado_Update(Actor* thisx, PlayState* play);
 void ObjYado_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Yado_Profile = {
+ActorInit Obj_Yado_InitVars = {
     /**/ ACTOR_OBJ_YADO,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -33,7 +36,7 @@ static InitChainEntry sInitChain[] = {
 AnimatedMaterial* D_80C16470;
 
 void ObjYado_Init(Actor* thisx, PlayState* play) {
-    ObjYado* this = (ObjYado*)thisx;
+    ObjYado* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     D_80C16470 = Lib_SegmentedToVirtual(object_yado_obj_Matanimheader_0012E8);
@@ -44,14 +47,14 @@ void ObjYado_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void ObjYado_Update(Actor* thisx, PlayState* play) {
-    ObjYado* this = (ObjYado*)thisx;
+    ObjYado* this = THIS;
 
     this->isNight = gSaveContext.save.isNight;
 }
 
 void ObjYado_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjYado* this = (ObjYado*)thisx;
+    ObjYado* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

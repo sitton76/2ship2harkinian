@@ -1,5 +1,3 @@
-#include "z64eff_tire_mark.h"
-
 #include "global.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
@@ -61,8 +59,8 @@ void func_800AE930(CollisionContext* colCtx, EffectTireMark* this, Vec3f* pos, f
 
         if (Math3D_LineSegMakePerpLineSeg(&sp84, &sp90, &sp54, &sp60, &sp6C, &sp30) &&
             Math3D_LineSegMakePerpLineSeg(&sp84, &sp90, &sp3C, &sp48, &sp78, &sp30)) {
-            if (!(spAC->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_2)) {
-                spAC->flags |= EFFECT_TIRE_MARK_ELEMENT_FLAG_1;
+            if (!(spAC->flags & 2)) {
+                spAC->flags |= 1;
             }
 
             spA8 = &this->elements[this->numElements];
@@ -74,17 +72,16 @@ void func_800AE930(CollisionContext* colCtx, EffectTireMark* this, Vec3f* pos, f
             spA8->p2.y = sp78.y;
             spA8->p2.z = sp78.z;
             spA8->life = this->elemDuration;
-
-            //! FAKE:
-            if (1) {}
-
             spA8->colPoly = NULL;
             this->numElements++;
 
             spAC = &this->elements[this->numElements - 1];
-            if (!(spAC->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_2)) {
-                spAC->flags |= EFFECT_TIRE_MARK_ELEMENT_FLAG_1;
+            if (!(spAC->flags & 2)) {
+                spAC->flags |= 1;
             }
+
+            //! FAKE:
+            if (spA8) {}
 
             spA8 = &this->elements[this->numElements];
             spA8->flags = 0;
@@ -96,8 +93,8 @@ void func_800AE930(CollisionContext* colCtx, EffectTireMark* this, Vec3f* pos, f
             return;
         }
 
-        if (!(spAC->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_2)) {
-            spAC->flags |= EFFECT_TIRE_MARK_ELEMENT_FLAG_1;
+        if (!(spAC->flags & 2)) {
+            spAC->flags |= 1;
         }
 
         spA8 = &this->elements[this->numElements];
@@ -111,8 +108,8 @@ void func_800AE930(CollisionContext* colCtx, EffectTireMark* this, Vec3f* pos, f
         return;
     }
 
-    if (!(spAC->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_2)) {
-        spAC->flags |= EFFECT_TIRE_MARK_ELEMENT_FLAG_1;
+    if (!(spAC->flags & 2)) {
+        spAC->flags |= 1;
     }
 
     spA8 = &this->elements[this->numElements];
@@ -128,7 +125,7 @@ void func_800AE930(CollisionContext* colCtx, EffectTireMark* this, Vec3f* pos, f
 void func_800AEF44(EffectTireMark* this) {
     EffectTireMarkElement* elem = &this->elements[this->numElements - 1];
 
-    elem->flags |= EFFECT_TIRE_MARK_ELEMENT_FLAG_2;
+    elem->flags |= 2;
 }
 
 void EffectTireMark_InitElement(EffectTireMarkElement* elem) {
@@ -258,15 +255,15 @@ void EffectTireMark_Draw(void* thisx, GraphicsContext* gfxCtx) {
 
                 EffectTireMark_SetVertices(vtx, elem, i, 255);
 
-                if ((elem - 1)->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_1) {
-                    if (!(elem->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_1)) {
+                if ((elem - 1)->flags & 1) {
+                    if (!(elem->flags & 1)) {
                         s32 requiredScopeTemp;
 
                         vtx[i * 2 + 0].v.tc[0] = 0;
                         vtx[i * 2 + 0].v.tc[1] = 0;
                         vtx[i * 2 + 1].v.tc[0] = 0;
                         vtx[i * 2 + 1].v.tc[1] = 1024;
-                    } else if ((i >= 2) && !((elem - 2)->flags & EFFECT_TIRE_MARK_ELEMENT_FLAG_1)) {
+                    } else if ((i >= 2) && !((elem - 2)->flags & 1)) {
                         vtx[i * 2 - 2].v.tc[0] = 0;
                         vtx[i * 2 - 2].v.tc[1] = 0;
                         vtx[i * 2 - 1].v.tc[0] = 0;

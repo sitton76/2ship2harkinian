@@ -1,7 +1,8 @@
 #include "BenPort.h"
-#include <ship/resource/ResourceManager.h>
+#include <libultraship/libultraship.h>
 #include "2s2h/resource/type/Scene.h"
-#include <ship/utils/StringHelper.h>
+#include <utils/StringHelper.h>
+#include "global.h"
 #include "2s2h/resource/type/TextMM.h"
 #include <message_data_static.h>
 

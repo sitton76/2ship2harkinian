@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ship/resource/Resource.h>
+#include "resource/Resource.h"
 
 namespace SOH {
 class Background : public Ship::Resource<uint8_t> {

@@ -1,4 +1,4 @@
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/bridge.h>
 #include "2s2h/BenGui/UIWidgets.hpp"
 
 extern "C" {

@@ -6,13 +6,15 @@
 
 #include "z_en_river_sound.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnRiverSound*)thisx)
 
 void EnRiverSound_Init(Actor* thisx, PlayState* play);
 void EnRiverSound_Update(Actor* thisx, PlayState* play);
 void EnRiverSound_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_River_Sound_Profile = {
+ActorInit En_River_Sound_InitVars = {
     /**/ ACTOR_EN_RIVER_SOUND,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -26,7 +28,7 @@ ActorProfile En_River_Sound_Profile = {
 
 void EnRiverSound_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnRiverSound* this = (EnRiverSound*)thisx;
+    EnRiverSound* this = THIS;
     Path* path;
     s32 pathIndex;
 
@@ -44,7 +46,7 @@ void EnRiverSound_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnRiverSound_Update(Actor* thisx, PlayState* play) {
-    EnRiverSound* this = (EnRiverSound*)thisx;
+    EnRiverSound* this = THIS;
     Vec3f* worldPos = &this->actor.world.pos;
     Vec3f eye;
     s32 bgId;
@@ -80,7 +82,7 @@ void EnRiverSound_Draw(Actor* thisx, PlayState* play) {
         1.0f, // 1
         1.4f, // sqrt(2)
     };
-    EnRiverSound* this = (EnRiverSound*)thisx;
+    EnRiverSound* this = THIS;
     s16 params = this->actor.params;
 
     if (params < RS_RIVER_DEFAULT_LOW_FREQ) {

@@ -23,6 +23,8 @@
 // Number of bounces the board takes before settling.
 #define MAX_BOUNCE_COUNT (7)
 
+#define THIS ((ObjKendoKanban*)thisx)
+
 typedef enum {
     /* -1 */ OBJKENDOKANBAN_DIR_DOWN = -1,
     /*  0 */ OBJKENDOKANBAN_DIR_UNDETERMINED,
@@ -42,7 +44,7 @@ void ObjKendoKanban_Settled(ObjKendoKanban* this, PlayState* play);
 void ObjKendoKanban_HandlePhysics(ObjKendoKanban* this, PlayState* play);
 s32 ObjKendoKanban_IsPlayerOnTop(ObjKendoKanban* this, PlayState* play);
 
-ActorProfile Obj_Kendo_Kanban_Profile = {
+ActorInit Obj_Kendo_Kanban_InitVars = {
     /**/ ACTOR_OBJ_KENDO_KANBAN,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -88,22 +90,22 @@ static Vec3f sPointBR = { 300.0f, 10.0f, 40.0f };
 static ColliderTrisElementInit sTrisElementsInit[] = {
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0x01000202, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { -300.0f, 850.0f, 40.0f }, { -300.0f, 10.0f, 40.0f }, { 300.0f, 850.0f, 40.0f } } },
     },
     {
         {
-            ELEM_MATERIAL_UNK5,
+            ELEMTYPE_UNK5,
             { 0x00000000, 0x00, 0x00 },
             { 0x01000202, 0x00, 0x00 },
-            ATELEM_NONE | ATELEM_SFX_NORMAL,
-            ACELEM_ON,
+            TOUCH_NONE | TOUCH_SFX_NORMAL,
+            BUMP_ON,
             OCELEM_NONE,
         },
         { { { 300.0f, 850.0f, 40.0f }, { 300.0f, 10.0f, 40.0f }, { -300.0f, 10.0f, 40.0f } } },
@@ -112,7 +114,7 @@ static ColliderTrisElementInit sTrisElementsInit[] = {
 
 static ColliderTrisInit sTrisInit = {
     {
-        COL_MATERIAL_TREE,
+        COLTYPE_TREE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -125,7 +127,7 @@ static ColliderTrisInit sTrisInit = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_TREE,
+        COLTYPE_TREE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -133,11 +135,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 33, 80, 0, { 0, 0, 0 } },
@@ -185,7 +187,7 @@ static Vec3f sUnitVecX = { 1.0f, 0.0f, 0.0f };
 
 void ObjKendoKanban_Init(Actor* thisx, PlayState* play) {
     s32 pad[2];
-    ObjKendoKanban* this = (ObjKendoKanban*)thisx;
+    ObjKendoKanban* this = THIS;
     Vec3f vertices[3];
     s32 i;
     s32 j;
@@ -218,7 +220,7 @@ void ObjKendoKanban_Init(Actor* thisx, PlayState* play) {
     this->rootCornerPos = sZeroVec;
     this->rotAxis = sUnitVecX;
     this->rotAngle = 0;
-    this->angularVelocity = 0;
+    this->rotVelocity = 0;
     this->indexLastRootCornerPos = -1;
     this->hasNewRootCornerPos = false;
     this->numBounces = 0;
@@ -236,7 +238,7 @@ void ObjKendoKanban_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjKendoKanban_Destroy(Actor* thisx, PlayState* play) {
-    ObjKendoKanban* this = (ObjKendoKanban*)thisx;
+    ObjKendoKanban* this = THIS;
 
     Collider_DestroyCylinder(play, &this->colliderCylinder);
     Collider_DestroyTris(play, &this->colliderTris);
@@ -259,7 +261,7 @@ void ObjKendoKanban_SetupTumble(ObjKendoKanban* this, PlayState* play) {
 
             // Vertical cuts initialize the right half, spawn the left half.
             this->boardFragments = OBJKENDOKANBAN_RIGHT_HALF;
-            this->angularVelocity = 0x71C; // 10 degrees
+            this->rotVelocity = 0x71C; // 10 degrees
             this->actor.velocity = sVelocityRightHalf;
             this->centerPoint = sCenterPointRightHalf;
 
@@ -274,7 +276,7 @@ void ObjKendoKanban_SetupTumble(ObjKendoKanban* this, PlayState* play) {
         } else {
             // Horizontal cuts initialize the bottom half, spawn the top half.
             this->boardFragments = OBJKENDOKANBAN_BOTTOM_HALF;
-            this->angularVelocity = -0x71C; // -10 degrees
+            this->rotVelocity = -0x71C; // -10 degrees
             this->actor.velocity = sVelocityBottomHalf;
             this->centerPoint = sCenterPointBottomHalf;
 
@@ -288,7 +290,7 @@ void ObjKendoKanban_SetupTumble(ObjKendoKanban* this, PlayState* play) {
         }
     } else if (this->boardFragments == OBJKENDOKANBAN_LEFT_HALF) {
         // Initialize the newly spawned left half
-        this->angularVelocity = 0x71C; // 10 degrees
+        this->rotVelocity = 0x71C; // 10 degrees
         this->actor.velocity = sVelocityLeftHalf;
         this->centerPoint = sCenterPointLeftHalf;
 
@@ -298,7 +300,7 @@ void ObjKendoKanban_SetupTumble(ObjKendoKanban* this, PlayState* play) {
         this->cornerPoints[3] = sPointBL;
     } else if (this->boardFragments == OBJKENDOKANBAN_TOP_HALF) {
         // Initialize the newly spawned top half
-        this->angularVelocity = 0x71C; // 10 degrees
+        this->rotVelocity = 0x71C; // 10 degrees
         this->actor.velocity = sVelocityTopHalf;
         this->centerPoint = sCenterPointTopHalf;
 
@@ -315,7 +317,7 @@ void ObjKendoKanban_SetupTumble(ObjKendoKanban* this, PlayState* play) {
 void ObjKendoKanban_Tumble(ObjKendoKanban* this, PlayState* play) {
     this->actor.velocity.y += this->actor.gravity;
     Actor_UpdatePos(&this->actor);
-    this->rotAngle += this->angularVelocity;
+    this->rotAngle += this->rotVelocity;
     ObjKendoKanban_HandlePhysics(this, play);
     if (this->actor.world.pos.y < -200.0f) {
         this->actor.world.pos.y = -200.0f;
@@ -349,9 +351,9 @@ void ObjKendoKanban_HandlePhysics(ObjKendoKanban* this, PlayState* play) {
     vecCenterOut.z -= this->centerPos.z;
     verticalScalar = (this->rotAxis.x * vecCenterOut.z) + (this->rotAxis.z * -vecCenterOut.x);
     if (verticalScalar < 0.0f) {
-        this->angularVelocity += 0x64;
+        this->rotVelocity += 0x64;
     } else {
-        this->angularVelocity -= 0x64;
+        this->rotVelocity -= 0x64;
     }
 
     // Find the lowest point
@@ -394,7 +396,7 @@ void ObjKendoKanban_HandlePhysics(ObjKendoKanban* this, PlayState* play) {
                 deltaRotAngle -= 0x4000;   // 90 degrees
             }
             this->rotAngle -= deltaRotAngle;
-            this->angularVelocity = 0;
+            this->rotVelocity = 0;
             ObjKendoKanban_SetupSettled(this);
             return;
         }
@@ -415,16 +417,16 @@ void ObjKendoKanban_HandlePhysics(ObjKendoKanban* this, PlayState* play) {
             // Adjust and (potentially) reverse rotation depending on the current
             // facing of the board and the direction in which it is rotating.
             if (verticalScalar > 0.0f) {
-                if (this->angularVelocity > 0) {
-                    this->angularVelocity *= 1.2f;
+                if (this->rotVelocity > 0) {
+                    this->rotVelocity *= 1.2f;
                 } else {
-                    this->angularVelocity *= -0.6f;
+                    this->rotVelocity *= -0.6f;
                 }
             } else {
-                if (this->angularVelocity < 0) {
-                    this->angularVelocity *= 1.2f;
+                if (this->rotVelocity < 0) {
+                    this->rotVelocity *= 1.2f;
                 } else {
-                    this->angularVelocity *= -0.6f;
+                    this->rotVelocity *= -0.6f;
                 }
             }
         }
@@ -474,8 +476,8 @@ void ObjKendoKanban_UpdateCollision(ObjKendoKanban* this, PlayState* play) {
         }
 
         Collider_UpdateCylinder(&this->actor, &this->colliderCylinder);
-        this->colliderCylinder.dim.pos.z -= TRUNCF_BINANG(20.0f * Math_CosS(this->actor.shape.rot.y));
-        this->colliderCylinder.dim.pos.x -= TRUNCF_BINANG(20.0f * Math_SinS(this->actor.shape.rot.y));
+        this->colliderCylinder.dim.pos.z -= (s16)(20.0f * Math_CosS(this->actor.shape.rot.y));
+        this->colliderCylinder.dim.pos.x -= (s16)(20.0f * Math_SinS(this->actor.shape.rot.y));
 
         if (this->actionFunc == ObjKendoKanban_DoNothing) {
             CollisionCheck_SetAC(play, &play->colChkCtx, &this->colliderTris.base);
@@ -485,14 +487,14 @@ void ObjKendoKanban_UpdateCollision(ObjKendoKanban* this, PlayState* play) {
 }
 
 void ObjKendoKanban_Update(Actor* thisx, PlayState* play) {
-    ObjKendoKanban* this = (ObjKendoKanban*)thisx;
+    ObjKendoKanban* this = THIS;
 
     this->actionFunc(this, play);
     ObjKendoKanban_UpdateCollision(this, play);
 }
 
 void ObjKendoKanban_Draw(Actor* thisx, PlayState* play) {
-    ObjKendoKanban* this = (ObjKendoKanban*)thisx;
+    ObjKendoKanban* this = THIS;
     s32 i;
 
     OPEN_DISPS(play->state.gfxCtx);
@@ -500,12 +502,12 @@ void ObjKendoKanban_Draw(Actor* thisx, PlayState* play) {
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
 
     if (this->boardFragments == OBJKENDOKANBAN_PART_FULL) {
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gKendoKanbanDL);
     } else {
         Matrix_RotateAxisS(this->rotAngle, &this->rotAxis, MTXMODE_APPLY);
         Matrix_Translate(-this->rootCornerPos.x, -this->rootCornerPos.y, -this->rootCornerPos.z, MTXMODE_APPLY);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
         // Display only the fragments of the board which are present
         for (i = 0; i < ARRAY_COUNT(sDisplayLists); i++) {

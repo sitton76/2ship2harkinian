@@ -104,12 +104,11 @@ void EffFootmark_Update(PlayState* play) {
 void EffFootmark_Draw(PlayState* play) {
     EffFootmark* footmark;
     s32 i;
-
-    OPEN_DISPS(play->state.gfxCtx);
+    GraphicsContext* gfxCtx = play->state.gfxCtx;
 
     Gfx_SetupDL44_Xlu(play->state.gfxCtx);
 
-    gSPDisplayList(POLY_XLU_DISP++, gEffFootprintMaterialDL);
+    gSPDisplayList(gfxCtx->polyXlu.p++, gEffFootprintMaterialDL);
 
     for (footmark = play->footprintInfo, i = 0; i < ARRAY_COUNT(play->footprintInfo); i++, footmark++) {
         if (footmark->actor != NULL) {
@@ -118,16 +117,14 @@ void EffFootmark_Draw(PlayState* play) {
             Matrix_Put(&footmark->mf);
             Matrix_Scale(footmark->size * (1.0f / 0x100) * 0.7f, 1, footmark->size * (1.0f / 0x100), MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(gfxCtx->polyXlu.p++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD);
 
-            gDPSetPrimColor(POLY_XLU_DISP++, 0, 0, footmark->red, footmark->green, footmark->blue,
+            gDPSetPrimColor(gfxCtx->polyXlu.p++, 0, 0, footmark->red, footmark->green, footmark->blue,
                             footmark->alpha >> 8);
 
-            gSPDisplayList(POLY_XLU_DISP++, gEffFootprintModelDL);
+            gSPDisplayList(gfxCtx->polyXlu.p++, gEffFootprintModelDL);
 
             FrameInterpolation_RecordCloseChild();
         }
     }
-
-    CLOSE_DISPS(play->state.gfxCtx);
 }

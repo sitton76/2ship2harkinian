@@ -1,9 +1,7 @@
 #include "Spoiler.h"
-#include <libultraship/bridge/consolevariablebridge.h>
+#include <libultraship/libultraship.h>
 #include <filesystem>
 #include "BenPort.h"
-
-#include <libultraship/libultra/types.h>
 
 std::vector<std::string> Rando::Spoiler::spoilerOptions;
 const std::filesystem::path randomizerFolderPath(Ship::Context::GetPathRelativeToAppDirectory("randomizer",

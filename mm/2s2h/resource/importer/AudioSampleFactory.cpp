@@ -2,11 +2,8 @@
 #include "2s2h/resource/type/AudioSample.h"
 #include "2s2h/resource/importer/AudioSoundFontFactory.h"
 #include "audio/soundfont.h"
-#include <ship/Context.h>
-#include <ship/resource/archive/Archive.h>
-#include <tinyxml2.h>
-#include <thread>
-
+#include "Context.h"
+#include "resource/archive/Archive.h"
 #define DR_WAV_IMPLEMENTATION
 #include <dr_wav.h>
 
@@ -14,13 +11,12 @@
 #include <dr_mp3.h>
 
 #define DR_FLAC_IMPLEMENTATION
-#include <ship/resource/ResourceManager.h>
-
 #include <dr_flac.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/codec.h>
 #include "vorbis/vorbisfile.h"
+#include <opus.h>
 
 struct OggFileData {
     void* data;
@@ -139,8 +135,7 @@ static void FlacDecoderWorker(std::shared_ptr<SOH::AudioSample> audioSample, std
     drflac_close(flac);
 }
 
-static void OggDecoderWorker(std::shared_ptr<SOH::AudioSample> audioSample, std::shared_ptr<Ship::File> sampleFile,
-                             std::shared_ptr<Ship::ResourceInitData> initData) {
+static void OggDecoderWorker(std::shared_ptr<SOH::AudioSample> audioSample, std::shared_ptr<Ship::File> sampleFile) {
     OggVorbis_File vf;
     char dataBuff[4096];
     long read = 0;
@@ -183,7 +178,7 @@ static void OggDecoderWorker(std::shared_ptr<SOH::AudioSample> audioSample, std:
         }
         case OggType::None: {
             char buff[2048];
-            snprintf(buff, 2048, "Ogg file %s is not Vorbis or OPUS", initData->Path.c_str());
+            snprintf(buff, 2048, "Ogg file %s is not Vorbis or OPUS", sampleFile->InitData->Path.c_str());
             throw std::runtime_error(buff);
             break;
         }
@@ -315,7 +310,7 @@ ResourceFactoryXMLAudioSampleV0::ReadResource(std::shared_ptr<Ship::File> file,
             fileDecoderThread.detach();
             return audioSample;
         } else if (strcmp(customFormatStr, "ogg") == 0) {
-            std::thread fileDecoderThread = std::thread(OggDecoderWorker, audioSample, sampleFile, initData);
+            std::thread fileDecoderThread = std::thread(OggDecoderWorker, audioSample, sampleFile);
             fileDecoderThread.detach();
             return audioSample;
         } else if (strcmp(customFormatStr, "flac") == 0) {

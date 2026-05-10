@@ -9,7 +9,9 @@
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnEstone*)thisx)
 
 void EnEstone_Init(Actor* thisx, PlayState* play);
 void EnEstone_Destroy(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ void EnEstone_SpawnEffect(EnEstone* this, Vec3f* pos, Vec3f* velocity, Vec3f* ac
 void EnEstone_UpdateEffects(EnEstone* this, PlayState* play);
 void EnEstone_DrawEffects(EnEstone* this, PlayState* play);
 
-ActorProfile En_Estone_Profile = {
+ActorInit En_Estone_InitVars = {
     /**/ ACTOR_EN_ESTONE,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ ActorProfile En_Estone_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_NONE,
@@ -44,18 +46,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 30, 30, -10, { 0, 0, 0 } },
 };
 
 void EnEstone_Init(Actor* thisx, PlayState* play) {
-    EnEstone* this = (EnEstone*)thisx;
+    EnEstone* this = THIS;
     Vec3f accel;
     Vec3f velocity;
     f32 scale;
@@ -66,7 +68,7 @@ void EnEstone_Init(Actor* thisx, PlayState* play) {
     this->rotVel.x = this->rotVel.y = this->rotVel.z = Rand_CenteredFloat(1.0f) * 20.0f;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
-    this->actor.world.rot.y += TRUNCF_BINANG(Rand_CenteredFloat(0x2710));
+    this->actor.world.rot.y += (s16)(s32)Rand_CenteredFloat(0x2710);
     this->actor.shape.rot.y = this->actor.world.rot.y;
 
     if (this->actor.params == ENESTONE_TYPE_LARGE) {
@@ -105,7 +107,7 @@ void EnEstone_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnEstone_Destroy(Actor* thisx, PlayState* play) {
-    EnEstone* this = (EnEstone*)thisx;
+    EnEstone* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -159,7 +161,7 @@ void EnEstone_Inactive(EnEstone* this, PlayState* play) {
 
 void EnEstone_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnEstone* this = (EnEstone*)thisx;
+    EnEstone* this = THIS;
 
     DECR(this->timer);
 
@@ -184,7 +186,7 @@ void EnEstone_Update(Actor* thisx, PlayState* play2) {
 
 void EnEstone_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnEstone* this = (EnEstone*)thisx;
+    EnEstone* this = THIS;
 
     if (this->inactive != true) {
         Matrix_Push();
@@ -199,7 +201,7 @@ void EnEstone_Draw(Actor* thisx, PlayState* play2) {
         Matrix_Translate(0.0f, 0.0f, 0.0f, MTXMODE_APPLY);
         gDPSetPrimColor(POLY_OPA_DISP++, 0, 0x80, 255, 255, 255, 255);
         gDPSetEnvColor(POLY_OPA_DISP++, 255, 255, 255, 255);
-        MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(POLY_OPA_DISP++, gEyegoreStoneDL);
 
         CLOSE_DISPS(play->state.gfxCtx);
@@ -273,7 +275,7 @@ void EnEstone_DrawEffects(EnEstone* this, PlayState* play) {
             Matrix_RotateZS(effect->rot.z, MTXMODE_APPLY);
             Matrix_Scale(effect->scale, effect->scale, effect->scale, MTXMODE_APPLY);
             Matrix_Translate(0.0f, 0.0f, 0.0f, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, gfxCtx);
+            gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gDPSetPrimColor(POLY_OPA_DISP++, 0x00, 0x80, 255, 255, 255, 255);
             gDPSetEnvColor(POLY_OPA_DISP++, 255, 255, 255, 255);
             gSPDisplayList(POLY_OPA_DISP++, gameplay_keep_DL_06AB30);

@@ -6,14 +6,16 @@
 
 #include "z_en_ge1.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnGe1*)thisx)
 
 void EnGe1_Init(Actor* thisx, PlayState* play);
 void EnGe1_Destroy(Actor* thisx, PlayState* play);
 void EnGe1_Update(Actor* thisx, PlayState* play);
 void EnGe1_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_Ge1_Profile = {
+ActorInit En_Ge1_InitVars = {
     /**/ ACTOR_EN_GE1,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -27,7 +29,7 @@ ActorProfile En_Ge1_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_ENEMY,
         OC1_ON | OC1_TYPE_ALL,
@@ -35,11 +37,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x01000202, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 20, 40, 0, { 0, 0, 0 } },
@@ -78,14 +80,14 @@ void EnGe1_PerformCutsceneActions(EnGe1* this, PlayState* play);
 s32 EnGe1_ValidatePictograph(PlayState* play, Actor* thisx);
 
 void EnGe1_Init(Actor* thisx, PlayState* play) {
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     ActorShape_Init(&this->picto.actor.shape, 0.0f, EnGe1_ShadowDraw, 30.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gGerudoWhiteSkel, &gGerudoWhiteArmsFoldedAnim, this->jointTable,
                        this->morphTable, GERUDO_WHITE_LIMB_MAX);
     Collider_InitAndSetCylinder(play, &this->collider, &this->picto.actor, &sCylinderInit);
     this->picto.actor.colChkInfo.mass = MASS_IMMOVABLE;
-    this->picto.actor.attentionRangeType = ATTENTION_RANGE_6;
+    this->picto.actor.targetMode = TARGET_MODE_6;
     Actor_SetScale(&this->picto.actor, 0.01f);
     this->animIndex = this->cueId = -1; // GERUDO_WHITE_ANIM_NONE
     this->stateFlags = 0;
@@ -110,8 +112,8 @@ void EnGe1_Init(Actor* thisx, PlayState* play) {
             this->hairstyle = GERUDO_WHITE_HAIR_BOB;
             this->actionFunc = EnGe1_PerformCutsceneActions;
             this->picto.actor.draw = NULL;
-            this->picto.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED;
-            this->picto.actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+            this->picto.actor.flags |= ACTOR_FLAG_20 | ACTOR_FLAG_10;
+            this->picto.actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             break;
     }
 
@@ -121,7 +123,7 @@ void EnGe1_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnGe1_Destroy(Actor* thisx, PlayState* play) {
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -173,7 +175,7 @@ void EnGe1_LookAtPlayer(EnGe1* this, PlayState* play) {
 
 void EnGe1_ShadowDraw(Actor* thisx, Lights* lights, PlayState* play) {
     Vec3f pos;
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     Math_Vec3f_Copy(&pos, &this->picto.actor.world.pos);
     Math_Vec3f_Copy(&this->picto.actor.world.pos, &this->waistPos);
@@ -366,7 +368,7 @@ void EnGe1_PerformCutsceneActions(EnGe1* this, PlayState* play) {
 
 void EnGe1_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     if (this->picto.actor.draw != NULL) {
         Collider_UpdateCylinder(&this->picto.actor, &this->collider);
@@ -402,7 +404,7 @@ s32 EnGe1_ValidatePictograph(PlayState* play, Actor* thisx) {
 
 s32 EnGe1_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
     s32 pad;
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     if (limbIndex == GERUDO_WHITE_LIMB_HEAD) {
         rot->x += this->headRot.y;
@@ -412,8 +414,8 @@ s32 EnGe1_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
         // Make small fidgeting movements if in standing animation.
         if ((limbIndex == GERUDO_WHITE_LIMB_TORSO) || (limbIndex == GERUDO_WHITE_LIMB_LEFT_FOREARM) ||
             (limbIndex == GERUDO_WHITE_LIMB_RIGHT_FOREARM)) {
-            rot->y += TRUNCF_BINANG(Math_SinS(play->state.frames * (limbIndex * 50 + 0x814)) * 200.0f);
-            rot->z += TRUNCF_BINANG(Math_CosS(play->state.frames * (limbIndex * 50 + 0x940)) * 200.0f);
+            rot->y += (s16)(Math_SinS(play->state.frames * (limbIndex * 50 + 0x814)) * 200.0f);
+            rot->z += (s16)(Math_CosS(play->state.frames * (limbIndex * 50 + 0x940)) * 200.0f);
         }
     }
     return false;
@@ -427,7 +429,7 @@ void EnGe1_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot,
     };
     static Vec3f sInitialFocusPos = { 600.0f, 700.0f, 0.0f };
     static Vec3f sZeroVec = { 0.0f, 0.0f, 0.0f };
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -455,7 +457,7 @@ void EnGe1_Draw(Actor* thisx, PlayState* play) {
         gGerudoWhiteEyeClosedTex,
     };
     s32 pad;
-    EnGe1* this = (EnGe1*)thisx;
+    EnGe1* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

@@ -7,9 +7,9 @@
 #include "z_en_hg.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS                                                                                  \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_FREEZE_EXCEPTION | ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_100000 | ACTOR_FLAG_2000000)
+
+#define THIS ((EnHg*)thisx)
 
 void EnHg_Init(Actor* thisx, PlayState* play);
 void EnHg_Destroy(Actor* thisx, PlayState* play);
@@ -25,8 +25,10 @@ void EnHg_ChasePlayerWait(EnHg* this, PlayState* play);
 void EnHg_SetupReactToHit(EnHg* this);
 void EnHg_ReactToHit(EnHg* this, PlayState* play);
 void EnHg_PlayCutscene(EnHg* this, PlayState* play);
-void EnHg_SetupHandleCutscene(EnHg* this);
-void EnHg_HandleCutscene(EnHg* this, PlayState* play);
+void EnHg_SetupCsAction(EnHg* this);
+void EnHg_HandleCsAction(EnHg* this, PlayState* play);
+s32 EnHg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx);
+void EnHg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx);
 
 typedef enum {
     /* 0 */ HG_CS_FIRST_ENCOUNTER,
@@ -35,7 +37,7 @@ typedef enum {
     /* 3 */ HG_CS_SONG_OF_HEALING
 } HgCsIndex;
 
-ActorProfile En_Hg_Profile = {
+ActorInit En_Hg_InitVars = {
     /**/ ACTOR_EN_HG,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -49,7 +51,7 @@ ActorProfile En_Hg_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HIT0,
+        COLTYPE_HIT0,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -57,11 +59,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 18, 46, 0, { 0, 0, 0 } },
@@ -132,7 +134,7 @@ static AnimationInfo sAnimationInfo[HG_ANIM_MAX] = {
 static u32 sHasSoundPlayed = false;
 
 void EnHg_Init(Actor* thisx, PlayState* play) {
-    EnHg* this = (EnHg*)thisx;
+    EnHg* this = THIS;
     s16 csId = this->actor.csId;
     s32 i;
 
@@ -145,7 +147,7 @@ void EnHg_Init(Actor* thisx, PlayState* play) {
     if (CHECK_WEEKEVENTREG(WEEKEVENTREG_75_20) || CHECK_WEEKEVENTREG(WEEKEVENTREG_CLEARED_STONE_TOWER_TEMPLE)) {
         Actor_Kill(&this->actor);
     }
-    this->actor.attentionRangeType = ATTENTION_RANGE_1;
+    this->actor.targetMode = TARGET_MODE_1;
     this->actor.colChkInfo.health = 0;
     this->actor.gravity = -1.0f;
     for (i = 0; i < ARRAY_COUNT(this->csIdList); i++) {
@@ -159,7 +161,7 @@ void EnHg_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHg_Destroy(Actor* thisx, PlayState* play) {
-    EnHg* this = (EnHg*)thisx;
+    EnHg* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -192,7 +194,7 @@ void EnHg_ChasePlayer(EnHg* this, PlayState* play) {
     s32 pad;
 
     this->actor.speed = 1.6f;
-    if (!(player->stateFlags2 & PLAYER_STATE2_USING_OCARINA) && (Message_GetState(&play->msgCtx) == TEXT_STATE_NONE)) {
+    if (!(player->stateFlags2 & PLAYER_STATE2_8000000) && (Message_GetState(&play->msgCtx) == TEXT_STATE_NONE)) {
         if (((this->skelAnime.curFrame > 9.0f) && (this->skelAnime.curFrame < 16.0f)) ||
             ((this->skelAnime.curFrame > 44.0f) && (this->skelAnime.curFrame < 51.0f))) {
             Actor_MoveWithGravity(&this->actor);
@@ -232,7 +234,7 @@ void EnHg_ReactToHit(EnHg* this, PlayState* play) {
 
 void EnHg_HandleTatlDialog(EnHg* this, PlayState* play) {
     if (Message_GetState(&play->msgCtx) == TEXT_STATE_NONE) {
-        if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+        if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
             Message_StartTextbox(play, 0x24F, &this->actor);
         } else {
             Actor_OfferTalk(&this->actor, play, 80.0f);
@@ -258,7 +260,7 @@ void EnHg_UpdateCollision(EnHg* this, PlayState* play) {
         Collider_UpdateCylinder(&this->actor, &this->collider);
         CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
         if ((this->actionFunc != EnHg_ReactToHit) && (this->actionFunc != EnHg_PlayCutscene) &&
-            (this->actionFunc != EnHg_HandleCutscene)) {
+            (this->actionFunc != EnHg_HandleCsAction)) {
             CollisionCheck_SetAC(play, &play->colChkCtx, &this->collider.base);
         }
     }
@@ -271,7 +273,7 @@ void EnHg_SetupCutscene(EnHg* this) {
 void EnHg_PlayCutscene(EnHg* this, PlayState* play) {
     if (CutsceneManager_IsNext(this->csIdList[this->csIdIndex])) {
         CutsceneManager_Start(this->csIdList[this->csIdIndex], &this->actor);
-        EnHg_SetupHandleCutscene(this);
+        EnHg_SetupCsAction(this);
     } else {
         if (CutsceneManager_GetCurrentCsId() == CS_ID_GLOBAL_TALK) {
             CutsceneManager_Stop(CS_ID_GLOBAL_TALK);
@@ -280,13 +282,13 @@ void EnHg_PlayCutscene(EnHg* this, PlayState* play) {
     }
 }
 
-void EnHg_SetupHandleCutscene(EnHg* this) {
+void EnHg_SetupCsAction(EnHg* this) {
     this->csIdList[3] = 99;
     this->csIdList[2] = 0;
-    this->actionFunc = EnHg_HandleCutscene;
+    this->actionFunc = EnHg_HandleCsAction;
 }
 
-void EnHg_HandleCutscene(EnHg* this, PlayState* play) {
+void EnHg_HandleCsAction(EnHg* this, PlayState* play) {
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_484)) {
         s32 cueChannel = Cutscene_GetCueChannel(play, CS_CMD_ACTOR_CUE_484);
 
@@ -388,7 +390,7 @@ void EnHg_WaitForPlayerAction(EnHg* this, PlayState* play) {
         return;
     }
 
-    if (player->stateFlags2 & PLAYER_STATE2_USING_OCARINA) {
+    if (player->stateFlags2 & PLAYER_STATE2_8000000) {
         if (!sHasSoundPlayed) {
             Audio_PlaySfx(NA_SE_SY_TRE_BOX_APPEAR);
         }
@@ -410,7 +412,7 @@ void EnHg_WaitForPlayerAction(EnHg* this, PlayState* play) {
 
     } else {
         if ((this->actor.xzDistToPlayer < 60.0f) && (fabsf(this->actor.playerHeightRel) < 40.0f)) {
-            if ((this->actionFunc != EnHg_PlayCutscene) && (this->actionFunc != EnHg_HandleCutscene)) {
+            if ((this->actionFunc != EnHg_PlayCutscene) && (this->actionFunc != EnHg_HandleCsAction)) {
                 if (!CHECK_WEEKEVENTREG(WEEKEVENTREG_61_02)) {
                     SET_WEEKEVENTREG(WEEKEVENTREG_61_02);
                     this->csIdIndex = HG_CS_FIRST_ENCOUNTER;
@@ -428,7 +430,7 @@ void EnHg_WaitForPlayerAction(EnHg* this, PlayState* play) {
 }
 
 void EnHg_Update(Actor* thisx, PlayState* play) {
-    EnHg* this = (EnHg*)thisx;
+    EnHg* this = THIS;
 
     this->actionFunc(this, play);
     SkelAnime_Update(&this->skelAnime);
@@ -443,7 +445,7 @@ s32 EnHg_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* po
 }
 
 void EnHg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnHg* this = (EnHg*)thisx;
+    EnHg* this = THIS;
     if (limbIndex == PAMELAS_FATHER_GIBDO_LIMB_EYEBROWS) {
         Matrix_Get(&this->mf);
     } else if (limbIndex == PAMELAS_FATHER_GIBDO_LIMB_HEAD) {
@@ -452,7 +454,7 @@ void EnHg_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, 
 }
 
 void EnHg_Draw(Actor* thisx, PlayState* play) {
-    EnHg* this = (EnHg*)thisx;
+    EnHg* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -460,7 +462,7 @@ void EnHg_Draw(Actor* thisx, PlayState* play) {
     SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
                           EnHg_OverrideLimbDraw, EnHg_PostLimbDraw, &this->actor);
     Matrix_Put(&this->mf);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gPamelasFatherGibdoEyebrowsDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

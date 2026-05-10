@@ -7,7 +7,9 @@
 #include "z_obj_toge.h"
 #include "objects/object_trap/object_trap.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjToge*)thisx)
 
 void ObjToge_Init(Actor* thisx, PlayState* play);
 void ObjToge_Destroy(Actor* thisx, PlayState* play2);
@@ -21,7 +23,7 @@ void func_809A481C(ObjToge* this, PlayState* play);
 void func_809A488C(ObjToge* this);
 void func_809A48AC(ObjToge* this, PlayState* play);
 
-ActorProfile Obj_Toge_Profile = {
+ActorInit Obj_Toge_InitVars = {
     /**/ ACTOR_OBJ_TOGE,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -35,7 +37,7 @@ ActorProfile Obj_Toge_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_METAL,
+        COLTYPE_METAL,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -43,11 +45,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x01C37BB6, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 30, 20, 0, { 0, 0, 0 } },
@@ -61,9 +63,9 @@ f32 D_809A4D0C[] = { 1.0f, 2.0f };
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_F32_DIV1000(terminalVelocity, 0, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 4000, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeScale, 150, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDownward, 150, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 4000, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneScale, 150, ICHAIN_CONTINUE),
+    ICHAIN_F32(uncullZoneDownward, 150, ICHAIN_STOP),
 };
 
 void func_809A41C0(ObjToge* this, PlayState* play) {
@@ -103,7 +105,7 @@ void func_809A43A8(ObjToge* this, PlayState* play) {
     }
 }
 
-bool func_809A43EC(ObjToge* this, PlayState* play) {
+s32 func_809A43EC(ObjToge* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
     f32 temp_fv1 = player->actor.world.pos.x - this->unk_1B8;
     f32 temp_fa0 = player->actor.world.pos.z - this->unk_1BC;
@@ -115,9 +117,9 @@ bool func_809A43EC(ObjToge* this, PlayState* play) {
 
 void ObjToge_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjToge* this = (ObjToge*)thisx;
+    ObjToge* this = THIS;
     Path* path;
-    Vec3s* points;
+    Vec3s* sp40;
     s16 sp3E;
     s32 sp38 = OBJTOGE_GET_4000(thisx);
 
@@ -140,9 +142,9 @@ void ObjToge_Init(Actor* thisx, PlayState* play) {
         return;
     }
 
-    points = Lib_SegmentedToVirtual(path->points);
-    Math_Vec3s_ToVec3f(&this->unk_198[0], &points[0]);
-    Math_Vec3s_ToVec3f(&this->unk_198[1], &points[1]);
+    sp40 = Lib_SegmentedToVirtual(path->points);
+    Math_Vec3s_ToVec3f(&this->unk_198[0], &sp40[0]);
+    Math_Vec3s_ToVec3f(&this->unk_198[1], &sp40[1]);
     Math_Vec3f_Copy(&thisx->world.pos, &this->unk_198[0]);
     thisx->world.rot.y = Math_Vec3f_Yaw(&this->unk_198[0], &this->unk_198[1]);
     this->unk_194 = 0;
@@ -182,7 +184,7 @@ void ObjToge_Init(Actor* thisx, PlayState* play) {
 
 void ObjToge_Destroy(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjToge* this = (ObjToge*)thisx;
+    ObjToge* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -272,11 +274,11 @@ void func_809A48AC(ObjToge* this, PlayState* play) {
 }
 
 void ObjToge_Update(Actor* thisx, PlayState* play) {
-    ObjToge* this = (ObjToge*)thisx;
+    ObjToge* this = THIS;
     ColliderCylinder* collider = &this->collider;
 
     if (this->collider.base.acFlags & AC_HIT) {
-        if (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x1000) {
+        if (this->collider.info.acHitInfo->toucher.dmgFlags & 0x1000) {
             func_809A43A8(this, play);
             Actor_SetColorFilter(&this->actor, COLORFILTER_COLORFLAG_BLUE, 250, COLORFILTER_BUFFLAG_OPA, 250);
         }
@@ -296,7 +298,7 @@ void ObjToge_Update(Actor* thisx, PlayState* play) {
         }
     }
 
-    if ((this->actor.flags & ACTOR_FLAG_INSIDE_CULLING_VOLUME) || (this->actor.xzDistToPlayer < 300.0f)) {
+    if ((this->actor.flags & ACTOR_FLAG_40) || (this->actor.xzDistToPlayer < 300.0f)) {
         CollisionCheck_SetOC(play, &play->colChkCtx, &collider->base);
     } else {
         this->collider.base.ocFlags1 &= ~OC1_HIT;
@@ -305,7 +307,7 @@ void ObjToge_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjToge_Draw(Actor* thisx, PlayState* play) {
-    ObjToge* this = (ObjToge*)thisx;
+    ObjToge* this = THIS;
 
     func_800B8050(&this->actor, play, 1);
     Gfx_DrawDListOpa(play, object_trap_DL_001400);

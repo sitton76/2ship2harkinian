@@ -6,14 +6,16 @@
 
 #include "z_dm_nb.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((DmNb*)thisx)
 
 void DmNb_Init(Actor* thisx, PlayState* play);
 void DmNb_Destroy(Actor* thisx, PlayState* play);
 void DmNb_Update(Actor* thisx, PlayState* play);
 void DmNb_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Dm_Nb_Profile = {
+ActorInit Dm_Nb_InitVars = {
     /**/ ACTOR_DM_NB,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -75,13 +77,13 @@ void DmNb_HandleCutscene(DmNb* this, PlayState* play) {
 }
 
 void DmNb_Init(Actor* thisx, PlayState* play) {
-    DmNb* this = (DmNb*)thisx;
+    DmNb* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, NULL, 0.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gNbSkel, NULL, this->jointTable, this->morphTable, NB_LIMB_MAX);
     this->animIndex = DMNB_ANIM_NONE;
     DmNb_ChangeAnim(this, DMNB_ANIM_0);
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     Actor_SetScale(&this->actor, 0.01f);
     this->actionFunc = DmNb_HandleCutscene;
 }
@@ -90,7 +92,7 @@ void DmNb_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void DmNb_Update(Actor* thisx, PlayState* play) {
-    DmNb* this = (DmNb*)thisx;
+    DmNb* this = THIS;
 
     this->actionFunc(this, play);
     SkelAnime_Update(&this->skelAnime);
@@ -101,7 +103,7 @@ void DmNb_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
 }
 
 void DmNb_Draw(Actor* thisx, PlayState* play) {
-    DmNb* this = (DmNb*)thisx;
+    DmNb* this = THIS;
 
     Gfx_SetupDL37_Opa(play->state.gfxCtx);
     SkelAnime_DrawTransformFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable,

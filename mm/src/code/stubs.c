@@ -83,8 +83,8 @@ u16 D_0F000000[SCREEN_WIDTH * SCREEN_HEIGHT];
 // u64 gspF3DZEX2_NoN_PosLight_fifoDataStart[1];
 // u64 gspF3DZEX2_NoN_PosLight_fifoDataEnd[1];
 
-Vec3f gZeroVec3f = { 0.0f, 0.0f, 0.0f };
-Vec3s gZeroVec3s = { 0, 0, 0 };
+Vec3f gZeroVec3f;
+Vec3s gZeroVec3s;
 
 u64 rspbootTextStart[1];
 u64 rspbootTextEnd[1];
@@ -200,20 +200,6 @@ void gSPDisplayList(Gfx* pkt, Gfx* dl) {
     __gSPDisplayList(pkt, dl);
 }
 
-void gDPSetTileSizeInterp(Gfx* pkt, int t, float uls, float ult, float lrs, float lrt) {
-    __gDPSetTileSizeInterp(pkt, t, 0, 0, 0, 0);
-    pkt->words.w0 = _SHIFTL(G_SETTILESIZE_INTERP, 24, 8);
-    pkt++;
-
-    pkt->words.w0 = *(u32*)&uls;
-    pkt->words.w1 = *(u32*)&ult;
-    pkt++;
-
-    pkt->words.w0 = *(u32*)&lrs;
-    pkt->words.w1 = *(u32*)&lrt;
-    pkt++;
-}
-
 void gSPDisplayListOffset(Gfx* pkt, Gfx* dl, int offset) {
     char* imgData = (char*)dl;
 
@@ -278,42 +264,7 @@ void osMapTLBRdb(void) {
 u32 __osProbeTLB(void* param_1) {
 }
 s32 osAiSetFrequency(u32 frequency) {
-    // this is based off the math from the original method
-    /*
-    s32 osAiSetFrequency(u32 frequency) {
-        u8 bitrate;
-        f32 dacRateF = ((f32)osViClock / frequency) + 0.5f;
-        u32 dacRate = dacRateF;
-        if (dacRate < 132) {
-            return -1;
-        }
-        bitrate = (dacRate / 66);
-        if (bitrate > 16) {
-            bitrate = 16;
-        }
-        HW_REG(AI_DACRATE_REG, u32) = dacRate - 1;
-        HW_REG(AI_BITRATE_REG, u32) = bitrate - 1;
-        return osViClock / (s32)dacRate;
-    }
-    */
-
-    // bitrate is unused
-
-    // osViClock comes from
-    // #define VI_NTSC_CLOCK 48681812 /* Hz = 48.681812 MHz */
-    // s32 osViClock = VI_NTSC_CLOCK;
-
-    // frequency was originally 32000
-
-    // given all of that, dacRate is
-    // (u32)(((f32)48681812 / 32000) + 0.5f)
-    // which evaluates to 1521 (which is > 132)
-
-    // this leaves us with a final calculation of
-    // 48681812 / 1521
-    // which evaluates to 32006
-
-    return 32006;
+    return 1;
 }
 s32 osContStartQuery(OSMesgQueue* mq) {
 }

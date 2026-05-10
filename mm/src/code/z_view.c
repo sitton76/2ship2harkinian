@@ -3,7 +3,6 @@
 #include "z64view.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
-#include <libultraship/bridge/consolevariablebridge.h>
 
 s32 View_ApplyPerspective(View* view);
 s32 View_ApplyOrtho(View* view);
@@ -132,24 +131,24 @@ void View_GetViewport(View* view, Viewport* viewport) {
 }
 
 void View_SetScissor(Gfx** gfx, s32 ulx, s32 uly, s32 lrx, s32 lry) {
-    Gfx* gfxP = *gfx;
+    Gfx* gfxp = *gfx;
 
-    gDPSetScissor(gfxP++, G_SC_NON_INTERLACE, ulx, uly, lrx, lry);
+    gDPSetScissor(gfxp++, G_SC_NON_INTERLACE, ulx, uly, lrx, lry);
 
-    *gfx = gfxP;
+    *gfx = gfxp;
 }
 
 void View_ClearScissor(View* view, Gfx** gfx) {
-    Gfx* gfxP = *gfx;
+    Gfx* gfxp = *gfx;
     s32 ulx = view->viewport.leftX;
     s32 uly = view->viewport.topY;
     s32 lrx = view->viewport.rightX;
     s32 lry = view->viewport.bottomY;
 
-    gDPPipeSync(gfxP++);
-    View_SetScissor(&gfxP, ulx, uly, lrx, lry);
+    gDPPipeSync(gfxp++);
+    View_SetScissor(&gfxp, ulx, uly, lrx, lry);
 
-    *gfx = gfxP;
+    *gfx = gfxp;
 }
 
 void View_ApplyLetterbox(View* view) {
@@ -306,13 +305,13 @@ s32 View_StepDistortion(View* view, Mtx* projectionMtx) {
 /**
  * Apply view to POLY_OPA_DISP, POLY_XLU_DISP (and OVERLAY_DISP if ortho)
  */
-s32 View_Apply(View* view, s32 mask) {
+void View_Apply(View* view, s32 mask) {
     mask = (view->flags & mask) | (mask >> 4);
 
     if (mask & VIEW_PROJECTION_ORTHO) {
-        return View_ApplyOrtho(view);
+        View_ApplyOrtho(view);
     } else {
-        return View_ApplyPerspective(view);
+        View_ApplyPerspective(view);
     }
 }
 
@@ -644,8 +643,8 @@ s32 View_UpdateViewingMatrix(View* view) {
     return 1;
 }
 
-s32 View_ApplyTo(View* view, Gfx** gfxP) {
-    Gfx* gfx = *gfxP;
+s32 View_ApplyTo(View* view, Gfx** gfxp) {
+    Gfx* gfx = *gfxp;
     GraphicsContext* gfxCtx = view->gfxCtx;
     Viewport* viewport = &view->viewport;
     Mtx* projection;
@@ -668,7 +667,7 @@ s32 View_ApplyTo(View* view, Gfx** gfxP) {
     view->projection = *projection;
 
     gSPMatrix(gfx++, projection, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
-    *gfxP = gfx;
+    *gfxp = gfx;
 
     return 1;
 }

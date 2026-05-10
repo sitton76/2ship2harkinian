@@ -7,7 +7,9 @@
 #include "z_eff_zoraband.h"
 #include "objects/object_zoraband/object_zoraband.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EffZoraband*)thisx)
 
 void EffZoraband_Init(Actor* thisx, PlayState* play);
 void EffZoraband_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void EffZoraband_Draw(Actor* thisx, PlayState* play2);
 
 void EffZoraband_MikauFadeOut(EffZoraband* this, PlayState* play);
 
-ActorProfile Eff_Zoraband_Profile = {
+ActorInit Eff_Zoraband_InitVars = {
     /**/ ACTOR_EFF_ZORABAND,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -29,7 +31,7 @@ ActorProfile Eff_Zoraband_Profile = {
 };
 
 void EffZoraband_Init(Actor* thisx, PlayState* play) {
-    EffZoraband* this = (EffZoraband*)thisx;
+    EffZoraband* this = THIS;
 
     Actor_SetScale(&this->actor, 1.0f);
     this->actionFunc = EffZoraband_MikauFadeOut;
@@ -65,14 +67,14 @@ void EffZoraband_MikauFadeOut(EffZoraband* this, PlayState* play) {
 }
 
 void EffZoraband_Update(Actor* thisx, PlayState* play) {
-    EffZoraband* this = (EffZoraband*)thisx;
+    EffZoraband* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void EffZoraband_Draw(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EffZoraband* this = (EffZoraband*)thisx;
+    EffZoraband* this = THIS;
 
     if (this->alpha != 0) {
         OPEN_DISPS(play->state.gfxCtx);
@@ -80,7 +82,7 @@ void EffZoraband_Draw(Actor* thisx, PlayState* play2) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         Matrix_RotateYS((Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) + 0x8000), MTXMODE_APPLY);
         AnimatedMat_DrawXlu(play, Lib_SegmentedToVirtual(object_zoraband_Matanimheader_000F38));
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         if (this->actor.home.rot.z != 0) {
             gDPSetPrimColor(POLY_XLU_DISP++, 0, 0x80, 255, 255, 100, this->alpha);
             gDPSetEnvColor(POLY_XLU_DISP++, 255, 200, 0, 255);

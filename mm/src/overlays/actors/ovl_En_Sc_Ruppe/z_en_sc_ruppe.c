@@ -7,7 +7,9 @@
 #include "z_en_sc_ruppe.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnScRuppe*)thisx)
 
 void EnScRuppe_Init(Actor* thisx, PlayState* play);
 void EnScRuppe_Destroy(Actor* thisx, PlayState* play);
@@ -21,7 +23,7 @@ typedef struct {
     /* 0x4 */ s16 amount;
 } RuppeInfo; // size = 0x8
 
-ActorProfile En_Sc_Ruppe_Profile = {
+ActorInit En_Sc_Ruppe_InitVars = {
     /**/ ACTOR_EN_SC_RUPPE,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -44,7 +46,7 @@ RuppeInfo sRupeeInfo[] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_NO_PUSH | OC1_TYPE_PLAYER,
@@ -52,11 +54,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK4,
+        ELEMTYPE_UNK4,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 10, 30, 0, { 0, 0, 0 } },
@@ -143,7 +145,7 @@ void func_80BD6B18(EnScRuppe* this, PlayState* play) {
 }
 
 void EnScRuppe_Init(Actor* thisx, PlayState* play) {
-    EnScRuppe* this = (EnScRuppe*)thisx;
+    EnScRuppe* this = THIS;
     ColliderCylinder* collider = &this->collider;
 
     Collider_InitCylinder(play, collider);
@@ -161,13 +163,13 @@ void EnScRuppe_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnScRuppe_Destroy(Actor* thisx, PlayState* play) {
-    EnScRuppe* this = (EnScRuppe*)thisx;
+    EnScRuppe* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnScRuppe_Update(Actor* thisx, PlayState* play) {
-    EnScRuppe* this = (EnScRuppe*)thisx;
+    EnScRuppe* this = THIS;
 
     this->actionFunc(this, play);
     EnScRuppe_UpdateCollision(this, play);
@@ -175,13 +177,13 @@ void EnScRuppe_Update(Actor* thisx, PlayState* play) {
 
 void EnScRuppe_Draw(Actor* thisx, PlayState* play) {
     s32* pad;
-    EnScRuppe* this = (EnScRuppe*)thisx;
+    EnScRuppe* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     func_800B8050(&this->actor, play, 0);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(sRupeeInfo[this->ruppeIndex].tex));
     gSPDisplayList(POLY_OPA_DISP++, gRupeeDL);
 

@@ -7,7 +7,9 @@
 #include "z_dm_char04.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DmChar04*)thisx)
 
 void DmChar04_Init(Actor* thisx, PlayState* play);
 void DmChar04_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void DmChar04_Draw(Actor* thisx, PlayState* play);
 
 void DmChar04_HandleCutscene(DmChar04* this, PlayState* play);
 
-ActorProfile Dm_Char04_Profile = {
+ActorInit Dm_Char04_InitVars = {
     /**/ ACTOR_DM_CHAR04,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile Dm_Char04_Profile = {
     /**/ DmChar04_Draw,
 };
 
-typedef enum DmChar04Animation {
+typedef enum {
     /* 0 */ DMCHAR04_ANIM_0,
     /* 1 */ DMCHAR04_ANIM_1,
     /* 2 */ DMCHAR04_ANIM_MAX
@@ -66,11 +68,11 @@ static Color_RGBAf sEnvColors[] = {
 };
 
 void DmChar04_Init(Actor* thisx, PlayState* play) {
-    DmChar04* this = (DmChar04*)thisx;
+    DmChar04* this = THIS;
 
     this->primColors = sPrimColors[this->actor.params];
     this->envColors = sEnvColors[this->actor.params];
-    this->actor.lockOnArrowOffset = 3000.0f;
+    this->actor.targetArrowOffset = 3000.0f;
     this->cueId = 99;
     this->timer = this->actor.params << 0xB;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 24.0f);
@@ -109,7 +111,7 @@ void DmChar04_HandleCutscene(DmChar04* this, PlayState* play) {
 }
 
 void DmChar04_Update(Actor* thisx, PlayState* play) {
-    DmChar04* this = (DmChar04*)thisx;
+    DmChar04* this = THIS;
 
     SkelAnime_Update(&this->skelAnime);
     this->actionFunc(this, play);
@@ -122,7 +124,7 @@ s32 DmChar04_OverrideLimbDraw(PlayState* play2, s32 limbIndex, Gfx** dList, Vec3
     PlayState* play = play2;
     f32 sp28;
     Vec3f sp1C;
-    DmChar04* this = (DmChar04*)thisx;
+    DmChar04* this = THIS;
 
     if (limbIndex == FAIRY_LIMB_6) {
         sp28 = ((Math_SinS(this->timer * 0x1000) * 0.1f) + 1.0f) * 0.012f * (this->actor.scale.x * (1.0f / 0.008f));
@@ -137,7 +139,7 @@ void DmChar04_Draw(Actor* thisx, PlayState* play) {
     Gfx* gfx = GRAPH_ALLOC(play->state.gfxCtx, 4 * sizeof(Gfx));
     s32 alpha;
     s32 pad;
-    DmChar04* this = (DmChar04*)thisx;
+    DmChar04* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

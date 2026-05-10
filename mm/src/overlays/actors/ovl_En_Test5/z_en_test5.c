@@ -6,7 +6,9 @@
 
 #include "z_en_test5.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnTest5*)thisx)
 
 void EnTest5_Init(Actor* thisx, PlayState* play2);
 void EnTest5_Destroy(Actor* thisx, PlayState* play);
@@ -14,7 +16,7 @@ void EnTest5_Update(Actor* thisx, PlayState* play2);
 void EnTest5_HandleBottleAction(EnTest5* this, PlayState* play);
 void EnTest5_SetupAction(EnTest5* this, EnTest5ActionFunc actionFunc);
 
-ActorProfile En_Test5_Profile = {
+ActorInit En_Test5_InitVars = {
     /**/ ACTOR_EN_TEST5,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -32,20 +34,20 @@ void EnTest5_SetupAction(EnTest5* this, EnTest5ActionFunc actionFunc) {
 
 void EnTest5_Init(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnTest5* this = (EnTest5*)thisx;
-    WaterBox* waterBox;
+    EnTest5* this = THIS;
+    WaterBox* water;
     f32 ySurface;
 
     // If not spawned above a water source, immediately despawn
     if (!WaterBox_GetSurface1(play, &play->colCtx, this->actor.world.pos.x, this->actor.world.pos.z, &ySurface,
-                              &waterBox)) {
+                              &water)) {
         Actor_Kill(&this->actor);
         return;
     }
 
-    Math_Vec3s_ToVec3f(&this->minPos, &waterBox->minPos);
-    this->xLength = (f32)waterBox->xLength;
-    this->zLength = (f32)waterBox->zLength;
+    Math_Vec3s_ToVec3f(&this->minPos, &water->minPos);
+    this->xLength = (f32)water->xLength;
+    this->zLength = (f32)water->zLength;
 
     EnTest5_SetupAction(this, EnTest5_HandleBottleAction);
 }
@@ -79,7 +81,7 @@ void EnTest5_HandleBottleAction(EnTest5* this, PlayState* play) {
 
 void EnTest5_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnTest5* this = (EnTest5*)thisx;
+    EnTest5* this = THIS;
     Vec3f steamPos;
     CollisionPoly* poly;
     s32 pad;

@@ -8,7 +8,9 @@
 #include "overlays/actors/ovl_En_Bom/z_en_bom.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnBomChu*)thisx)
 
 #define BOMBCHU_SCALE 0.01f
 
@@ -23,7 +25,7 @@ void EnBomChu_Move(EnBomChu* this, PlayState* play);
 void EnBomChu_Explode(EnBomChu* this, PlayState* play);
 void EnBomChu_WaitForDeath(EnBomChu* this, PlayState* play);
 
-ActorProfile En_Bom_Chu_Profile = {
+ActorInit En_Bom_Chu_InitVars = {
     /**/ ACTOR_EN_BOM_CHU,
     /**/ ACTORCAT_EXPLOSIVES,
     /**/ FLAGS,
@@ -37,7 +39,7 @@ ActorProfile En_Bom_Chu_Profile = {
 
 static ColliderSphereInit sSphereInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_1 | OC1_TYPE_2,
@@ -45,39 +47,28 @@ static ColliderSphereInit sSphereInit = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 1, { { 0, 0, 0 }, 13 }, 100 },
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_2, ICHAIN_CONTINUE),
+    ICHAIN_U8(targetMode, TARGET_MODE_2, ICHAIN_CONTINUE),
     ICHAIN_VEC3F_DIV1000(scale, 1000 * BOMBCHU_SCALE, ICHAIN_STOP),
 };
 
 static EffectBlureInit2 sBlureInit = {
-    0,
-    0,
-    0,
-    { 250, 0, 0, 250 },
-    { 200, 0, 0, 130 },
-    { 150, 0, 0, 100 },
-    { 100, 0, 0, 50 },
-    16,
-    0,
-    EFF_BLURE_DRAW_MODE_SIMPLE,
-    0,
-    { 0, 0, 0, 0 },
-    { 0, 0, 0, 0 },
+    0, 0, 0, { 250, 0, 0, 250 }, { 200, 0, 0, 130 }, { 150, 0, 0, 100 }, { 100, 0, 0, 50 }, 16,
+    0, 0, 0, { 0, 0, 0, 0 },     { 0, 0, 0, 0 },
 };
 
 void EnBomChu_Init(Actor* thisx, PlayState* play) {
-    EnBomChu* this = (EnBomChu*)thisx;
+    EnBomChu* this = THIS;
 
     Actor_ProcessInitChain(&this->actor, sInitChain);
     Collider_InitAndSetSphere(play, &this->collider, &this->actor, &sSphereInit);
@@ -94,7 +85,7 @@ void EnBomChu_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBomChu_Destroy(Actor* thisx, PlayState* play) {
-    EnBomChu* this = (EnBomChu*)thisx;
+    EnBomChu* this = THIS;
 
     Effect_Destroy(play, this->blure1Index);
     Effect_Destroy(play, this->blure2Index);
@@ -189,7 +180,7 @@ void EnBomChu_WaitForRelease(EnBomChu* this, PlayState* play) {
         Actor_UpdateBgCheckInfo(play, &this->actor, 0.0f, 0.0f, 0.0f, UPDBGCHECKINFO_FLAG_4);
 
         this->actor.shape.rot.y = player->actor.shape.rot.y;
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
         Actor_PlaySfx_SurfaceBomb(play, &this->actor);
 
         this->isMoving = true;
@@ -201,7 +192,7 @@ void EnBomChu_WaitForRelease(EnBomChu* this, PlayState* play) {
 
 s32 EnBomChu_IsOnCollisionPoly(PlayState* play, Vec3f* posA, Vec3f* posB, Vec3f* posResult, CollisionPoly** poly,
                                s32* bgId) {
-    if (BgCheck_EntityLineTest1(&play->colCtx, posA, posB, posResult, poly, true, true, true, true, bgId) &&
+    if ((BgCheck_EntityLineTest1(&play->colCtx, posA, posB, posResult, poly, true, true, true, true, bgId)) &&
         !(SurfaceType_GetWallFlags(&play->colCtx, *poly, *bgId) & (WALL_FLAG_4 | WALL_FLAG_5))) {
         return true;
     }
@@ -322,7 +313,7 @@ void EnBomChu_Move(EnBomChu* this, PlayState* play) {
     }
 
     if (this->isMoving) {
-        Actor_PlaySfx_Flagged2(&this->actor, NA_SE_IT_BOMBCHU_MOVE - SFX_FLAG);
+        Actor_PlaySfx_FlaggedCentered1(&this->actor, NA_SE_IT_BOMBCHU_MOVE - SFX_FLAG);
     }
 
     if (this->actor.speed != 0.0f) {
@@ -466,7 +457,7 @@ void EnBomChu_Update(Actor* thisx, PlayState* play) {
     static Vec3f sBlureP2LeftOffset = { 12.0f, 0.0f, -5.0f };
     static Vec3f sBlureP2RightOffset = { -12.0f, 0.0f, -5.0f };
     s32 pad;
-    EnBomChu* this = (EnBomChu*)thisx;
+    EnBomChu* this = THIS;
     Vec3f blureP1;
     Vec3f blureP2;
     WaterBox* waterBox;
@@ -505,7 +496,7 @@ void EnBomChu_Update(Actor* thisx, PlayState* play) {
 
     if (this->isMoving) {
         this->visualJitter =
-            (5.0f + (Rand_ZeroOne() * 3.0f)) * Math_SinS(((s32)(Rand_ZeroOne() * 0x200) + 0x3000) * this->timer);
+            (5.0f + (Rand_ZeroOne() * 3.0f)) * Math_SinS((((s32)(Rand_ZeroOne() * 0x200) + 0x3000) * this->timer));
         EnBomChu_ActorCoordsToWorld(this, &sBlureP1Offset, &blureP1);
 
         EnBomChu_ActorCoordsToWorld(this, &sBlureP2LeftOffset, &blureP2);
@@ -544,7 +535,7 @@ void EnBomChu_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnBomChu_Draw(Actor* thisx, PlayState* play) {
-    EnBomChu* this = (EnBomChu*)thisx;
+    EnBomChu* this = THIS;
     f32 colorIntensity;
     s32 blinkHalfPeriod;
     s32 blinkTime;
@@ -573,7 +564,7 @@ void EnBomChu_Draw(Actor* thisx, PlayState* play) {
     gDPSetEnvColor(POLY_OPA_DISP++, (s32)(colorIntensity * 209.0f) + 9, (s32)(colorIntensity * 34.0f) + 9,
                    (s32)(colorIntensity * -35.0f) + 35, 255);
     Matrix_Translate(this->visualJitter * (1.0f / BOMBCHU_SCALE), 0.0f, 0.0f, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gBombchuDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

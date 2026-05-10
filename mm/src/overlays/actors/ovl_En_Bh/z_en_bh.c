@@ -8,6 +8,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((EnBh*)thisx)
+
 void EnBh_Init(Actor* thisx, PlayState* play);
 void EnBh_Destroy(Actor* thisx, PlayState* play);
 void EnBh_Update(Actor* thisx, PlayState* play);
@@ -15,7 +17,7 @@ void EnBh_Draw(Actor* thisx, PlayState* play);
 
 void func_80C22DEC(EnBh* this, PlayState* play);
 
-ActorProfile En_Bh_Profile = {
+ActorInit En_Bh_InitVars = {
     /**/ ACTOR_EN_BH,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -28,9 +30,9 @@ ActorProfile En_Bh_Profile = {
 };
 
 void EnBh_Init(Actor* thisx, PlayState* play) {
-    EnBh* this = (EnBh*)thisx;
+    EnBh* this = THIS;
 
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     Actor_SetScale(&this->actor, 0.01f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gBhSkel, &gBhFlyingAnim, this->jointTable, this->morphTable,
                        OBJECT_BH_LIMB_MAX);
@@ -100,7 +102,7 @@ void func_80C22DEC(EnBh* this, PlayState* play) {
 }
 
 void EnBh_Update(Actor* thisx, PlayState* play) {
-    EnBh* this = (EnBh*)thisx;
+    EnBh* this = THIS;
 
     Actor_MoveWithoutGravity(&this->actor);
     DECR(this->timer2);
@@ -110,7 +112,7 @@ void EnBh_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnBh_Draw(Actor* thisx, PlayState* play) {
-    EnBh* this = (EnBh*)thisx;
+    EnBh* this = THIS;
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     Matrix_RotateZS(this->unk1E2, MTXMODE_APPLY);

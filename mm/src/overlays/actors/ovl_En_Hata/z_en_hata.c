@@ -9,12 +9,14 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((EnHata*)thisx)
+
 void EnHata_Init(Actor* thisx, PlayState* play);
 void EnHata_Destroy(Actor* thisx, PlayState* play);
 void EnHata_Update(Actor* thisx, PlayState* play2);
 void EnHata_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_Hata_Profile = {
+ActorInit En_Hata_InitVars = {
     /**/ ACTOR_EN_HATA,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -27,7 +29,7 @@ ActorProfile En_Hata_Profile = {
 };
 
 void EnHata_Init(Actor* thisx, PlayState* play) {
-    EnHata* this = (EnHata*)thisx;
+    EnHata* this = THIS;
     s32 rand;
     f32 endFrame;
 
@@ -38,20 +40,20 @@ void EnHata_Init(Actor* thisx, PlayState* play) {
     this->skelAnime.curFrame = rand;
     DynaPolyActor_LoadMesh(play, &this->dyna, &gFlagpoleCol);
     Actor_SetScale(&this->dyna.actor, 0.013f);
-    this->dyna.actor.cullingVolumeScale = 500.0f;
-    this->dyna.actor.cullingVolumeDownward = 500.0f;
-    this->dyna.actor.cullingVolumeDistance = 2200.0f;
+    this->dyna.actor.uncullZoneScale = 500.0f;
+    this->dyna.actor.uncullZoneDownward = 500.0f;
+    this->dyna.actor.uncullZoneForward = 2200.0f;
 }
 
 void EnHata_Destroy(Actor* thisx, PlayState* play) {
-    EnHata* this = (EnHata*)thisx;
+    EnHata* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
 
 void EnHata_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnHata* this = (EnHata*)thisx;
+    EnHata* this = THIS;
     Vec3f sp34;
     f32 phi_fv0;
     s32 pad;
@@ -79,7 +81,7 @@ void EnHata_Update(Actor* thisx, PlayState* play2) {
 }
 
 s32 EnHata_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnHata* this = (EnHata*)thisx;
+    EnHata* this = THIS;
 
     if ((limbIndex == FLAGPOLE_LIMB_FLAG1_HOIST_END_BASE) || (limbIndex == FLAGPOLE_LIMB_FLAG2_HOIST_END_BASE)) {
         rot->y += this->unk_29C;
@@ -89,7 +91,7 @@ s32 EnHata_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* 
 }
 
 void EnHata_Draw(Actor* thisx, PlayState* play) {
-    EnHata* this = (EnHata*)thisx;
+    EnHata* this = THIS;
 
     Gfx_SetupDL37_Opa(play->state.gfxCtx);
     SkelAnime_DrawOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, EnHata_OverrideLimbDraw, NULL,

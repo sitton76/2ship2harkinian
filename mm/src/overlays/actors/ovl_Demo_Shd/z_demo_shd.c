@@ -6,14 +6,16 @@
 
 #include "z_demo_shd.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DemoShd*)thisx)
 
 void DemoShd_Init(Actor* thisx, PlayState* play);
 void DemoShd_Destroy(Actor* thisx, PlayState* play);
 void DemoShd_Update(Actor* thisx, PlayState* play);
 void DemoShd_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Demo_Shd_Profile = {
+ActorInit Demo_Shd_InitVars = {
     /**/ ACTOR_DEMO_SHD,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,

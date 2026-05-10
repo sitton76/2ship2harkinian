@@ -1,5 +1,8 @@
 #include "BenMenuBar.h"
+#include "BenPort.h"
 #include <imgui.h>
+#include "public/bridge/consolevariablebridge.h"
+#include <libultraship/libultraship.h>
 #include "UIWidgets.hpp"
 #include <string>
 

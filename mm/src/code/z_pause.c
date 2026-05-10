@@ -21,9 +21,9 @@
 
 #include "z64frameadvance.h"
 #include "libc/stdbool.h"
-#include "controller.h"
 #include "padutils.h"
-#include <libultraship/bridge/consolevariablebridge.h>
+#include "macros.h"
+#include <libultraship/bridge.h>
 
 void FrameAdvance_Init(FrameAdvanceContext* frameAdvCtx) {
     frameAdvCtx->timer = 0;

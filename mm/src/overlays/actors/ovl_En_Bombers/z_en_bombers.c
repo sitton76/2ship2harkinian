@@ -7,7 +7,9 @@
 #include "z_en_bombers.h"
 #include "overlays/actors/ovl_En_Bom_Bowl_Man/z_en_bom_bowl_man.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnBombers*)thisx)
 
 void EnBombers_Init(Actor* thisx, PlayState* play);
 void EnBombers_Destroy(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ void func_80C042F8(EnBombers* this);
 void func_80C04354(EnBombers* this, PlayState* play);
 void func_80C043C8(EnBombers* this, PlayState* play);
 
-ActorProfile En_Bombers_Profile = {
+ActorInit En_Bombers_InitVars = {
     /**/ ACTOR_EN_BOMBERS,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ ActorProfile En_Bombers_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -44,11 +46,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 10, 30, 0, { 0, 0, 0 } },
@@ -134,7 +136,7 @@ TexturePtr D_80C04838[] = {
 };
 
 void EnBombers_Init(Actor* thisx, PlayState* play) {
-    EnBombers* this = (EnBombers*)thisx;
+    EnBombers* this = THIS;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 19.0f);
@@ -142,7 +144,7 @@ void EnBombers_Init(Actor* thisx, PlayState* play) {
     SkelAnime_InitFlex(play, &this->skelAnime, &object_cs_Skel_00F82C, &gBomberIdleAnim, this->jointTable,
                        this->morphTable, OBJECT_CS_LIMB_MAX);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     Actor_SetScale(&this->actor, 0.01f);
 
     this->unk_2BC = ENBOMBERS_GET_F0(&this->actor);
@@ -194,7 +196,7 @@ void EnBombers_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBombers_Destroy(Actor* thisx, PlayState* play) {
-    EnBombers* this = (EnBombers*)thisx;
+    EnBombers* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -222,7 +224,7 @@ void func_80C038B4(EnBombers* this) {
 
 void func_80C039A8(EnBombers* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
-    this->unk_2A6 = TEXT_STATE_EVENT;
+    this->unk_2A6 = TEXT_STATE_5;
 
     switch (player->transformation) {
         case PLAYER_FORM_HUMAN:
@@ -280,7 +282,7 @@ void func_80C03AF4(EnBombers* this, PlayState* play) {
     Vec3f sp54;
     f32 x;
     f32 z;
-    s32 bgId;
+    s32 sp48;
     s16 abs;
 
     switch (this->unk_2A0) {
@@ -293,7 +295,7 @@ void func_80C03AF4(EnBombers* this, PlayState* play) {
 
                 abs = ABS_ALT(BINANG_SUB(this->actor.world.rot.y, Math_Vec3f_Yaw(&this->actor.world.pos, &sp60)));
                 if ((abs < 0x4000) && !BgCheck_EntityLineTest1(&play->colCtx, &this->actor.world.pos, &sp60, &sp6C,
-                                                               &colPoly, true, false, false, true, &bgId)) {
+                                                               &colPoly, true, false, false, true, &sp48)) {
                     EnBombers_ChangeAnim(this, ENBOMBERS_ANIM_2, 1.0f);
                     Math_Vec3f_Copy(&this->unk_294, &sp60);
                     this->unk_2AA = Rand_S16Offset(30, 50);
@@ -314,7 +316,7 @@ void func_80C03AF4(EnBombers* this, PlayState* play) {
                 sp54.z += Math_CosS(this->actor.world.rot.y) * 60.0f;
 
                 if (BgCheck_EntityLineTest1(&play->colCtx, &this->actor.world.pos, &sp54, &sp6C, &colPoly, true, false,
-                                            false, true, &bgId)) {
+                                            false, true, &sp48)) {
                     this->unk_2A8 = 0;
                     if (Rand_ZeroOne() < 0.5f) {
                         EnBombers_ChangeAnim(this, ENBOMBERS_ANIM_16, 1.0f);
@@ -353,11 +355,11 @@ void func_80C03AF4(EnBombers* this, PlayState* play) {
     if (Text_GetFaceReaction(play, FACE_REACTION_SET_BOMBERS) == 0) {
         func_80C039A8(this, play);
     } else {
-        this->unk_2A6 = TEXT_STATE_EVENT;
+        this->unk_2A6 = TEXT_STATE_5;
         this->actor.textId = Text_GetFaceReaction(play, FACE_REACTION_SET_BOMBERS);
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_2A4 = this->actor.yawTowardsPlayer;
         this->collider.dim.radius = 20;
         this->collider.dim.height = 60;
@@ -397,7 +399,7 @@ void func_80C03FAC(EnBombers* this, PlayState* play) {
     if ((this->unk_2A6 == Message_GetState(&play->msgCtx)) && Message_ShouldAdvance(play)) {
         sp2A = 0;
         Message_CloseTextbox(play);
-        this->unk_2A6 = TEXT_STATE_EVENT;
+        this->unk_2A6 = TEXT_STATE_5;
 
         if ((this->actor.textId == 0x73D) || (this->actor.textId == 0x73E) || (this->actor.textId == 0x73F)) {
             this->actor.textId = 0x740;
@@ -502,7 +504,7 @@ void func_80C042F8(EnBombers* this) {
 
 void func_80C04354(EnBombers* this, PlayState* play) {
     Math_SmoothStepToS(&this->unk_288, this->unk_28E, 1, 0x3E8, 0);
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_28E = 0;
         this->actionFunc = func_80C043C8;
     } else {
@@ -512,7 +514,7 @@ void func_80C04354(EnBombers* this, PlayState* play) {
 
 void func_80C043C8(EnBombers* this, PlayState* play) {
     Math_SmoothStepToS(&this->unk_288, this->unk_28E, 1, 0x3E8, 0);
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         func_80C042F8(this);
     }
@@ -520,7 +522,7 @@ void func_80C043C8(EnBombers* this, PlayState* play) {
 
 void EnBombers_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnBombers* this = (EnBombers*)thisx;
+    EnBombers* this = THIS;
 
     if (this->unk_2AA != 0) {
         this->unk_2AA--;
@@ -547,20 +549,20 @@ void EnBombers_Update(Actor* thisx, PlayState* play) {
         this->unk_2B8++;
         if (this->unk_2B8 >= 3) {
             this->unk_2B8 = 0;
-            this->unk_2BA = TRUNCF_BINANG(Rand_ZeroFloat(60.0f)) + 20;
+            this->unk_2BA = (s16)Rand_ZeroFloat(60.0f) + 20;
         }
     }
 
     Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, 20.0f, 50.0f,
                             UPDBGCHECKINFO_FLAG_1 | UPDBGCHECKINFO_FLAG_4 | UPDBGCHECKINFO_FLAG_8 |
                                 UPDBGCHECKINFO_FLAG_10);
-    this->actor.cullingVolumeDistance = 500.0f;
+    this->actor.uncullZoneForward = 500.0f;
     Collider_UpdateCylinder(&this->actor, &this->collider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
 }
 
 s32 EnBombers_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnBombers* this = (EnBombers*)thisx;
+    EnBombers* this = THIS;
 
     if (limbIndex == OBJECT_CS_LIMB_0F) {
         *dList = NULL;
@@ -579,7 +581,7 @@ s32 EnBombers_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3
 }
 
 void EnBombers_Draw(Actor* thisx, PlayState* play) {
-    EnBombers* this = (EnBombers*)thisx;
+    EnBombers* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

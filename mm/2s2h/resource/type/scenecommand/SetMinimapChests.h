@@ -1,5 +1,5 @@
 #pragma once
-#include <ship/resource/Resource.h>
+#include "Resource.h"
 #include "SceneCommand.h"
 
 namespace SOH {

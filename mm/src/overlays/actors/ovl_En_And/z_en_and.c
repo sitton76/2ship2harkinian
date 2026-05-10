@@ -6,9 +6,9 @@
 
 #include "z_en_and.h"
 
-#define FLAGS                                                                                  \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnAnd*)thisx)
 
 #define EYE_TEXTURES_COUNT 4
 
@@ -17,7 +17,7 @@ void EnAnd_Destroy(Actor* thisx, PlayState* play);
 void EnAnd_Update(Actor* thisx, PlayState* play);
 void EnAnd_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_And_Profile = {
+ActorInit En_And_InitVars = {
     /**/ ACTOR_EN_AND,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -116,7 +116,7 @@ void EnAnd_HandleCutscene(EnAnd* this, PlayState* play) {
 }
 
 void EnAnd_Init(Actor* thisx, PlayState* play) {
-    EnAnd* this = (EnAnd*)thisx;
+    EnAnd* this = THIS;
 
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 14.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gAndSkel, NULL, this->jointTable, this->morphTable,
@@ -124,7 +124,7 @@ void EnAnd_Init(Actor* thisx, PlayState* play) {
     this->animIndex = ENAND_ANIM_NONE;
     EnAnd_ChangeAnim(this, ENAND_ANIM_0);
     Actor_SetScale(&this->actor, 0.01f);
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->flags |= 8;
     this->actionFunc = EnAnd_HandleCutscene;
 }
@@ -133,7 +133,7 @@ void EnAnd_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void EnAnd_Update(Actor* thisx, PlayState* play) {
-    EnAnd* this = (EnAnd*)thisx;
+    EnAnd* this = THIS;
 
     this->actionFunc(this, play);
     SkelAnime_Update(&this->skelAnime);
@@ -141,7 +141,7 @@ void EnAnd_Update(Actor* thisx, PlayState* play) {
 }
 
 void EnAnd_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
-    EnAnd* this = (EnAnd*)thisx;
+    EnAnd* this = THIS;
     s32 stepRot;
     s32 overrideRot;
 
@@ -190,7 +190,7 @@ void EnAnd_Draw(Actor* thisx, PlayState* play) {
         gAndEyeClosedTex,
         gAndEyeOpeningTex,
     };
-    EnAnd* this = (EnAnd*)thisx;
+    EnAnd* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

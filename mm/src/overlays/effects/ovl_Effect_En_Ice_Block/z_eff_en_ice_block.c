@@ -14,7 +14,7 @@ u32 EffectEnIceBlock_Init(PlayState* play, u32 index, EffectSs* this, void* init
 void EffectEnIceBlock_Update(PlayState* play, u32 index, EffectSs* this);
 void EffectEnIceBlock_Draw(PlayState* play, u32 index, EffectSs* this);
 
-EffectSsProfile Effect_En_Ice_Block_Profile = {
+EffectSsInit Effect_En_Ice_Block_InitVars = {
     EFFECT_EN_ICE_BLOCK,
     EffectEnIceBlock_Init,
 };
@@ -71,7 +71,7 @@ void EffectEnIceBlock_Draw(PlayState* play, u32 index, EffectSs* this) {
         Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
         Matrix_RotateZS(this->rRot, MTXMODE_APPLY);
 
-        MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, gfxCtx);
+        gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
         gSPDisplayList(POLY_XLU_DISP++, &gIceBlockShardEffectDL);
 

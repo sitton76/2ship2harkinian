@@ -23,6 +23,7 @@ RUN apt-get install -y \
     zlib1g-dev:i386 \
     libbz2-dev:i386 \
     libpng-dev:i386 \
+    libboost-dev:i386 \
     libgles2-mesa-dev
 
 RUN apt-get install -y \

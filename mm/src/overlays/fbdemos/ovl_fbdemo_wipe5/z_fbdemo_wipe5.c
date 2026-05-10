@@ -9,7 +9,9 @@
 #include "sys_cfb.h"
 #include "z_fbdemo_wipe5.h"
 #include <string.h>
-#include <libultraship/bridge/gfxbridge.h>
+#include "public/bridge/gfxbridge.h"
+
+#define THIS ((TransitionWipe5*)thisx)
 
 void* TransitionWipe5_Init(void* thisx);
 void TransitionWipe5_Destroy(void* thisx);
@@ -21,14 +23,14 @@ void TransitionWipe5_SetColor(void* thisx, u32 color);
 void TransitionWipe5_SetEnvColor(void* thisx, u32 color);
 s32 TransitionWipe5_IsDone(void* thisx);
 
-TransitionProfile TransitionWipe5_Profile = {
+TransitionInit TransitionWipe5_InitVars = {
     TransitionWipe5_Init,     TransitionWipe5_Destroy,     TransitionWipe5_Update,
     TransitionWipe5_Draw,     TransitionWipe5_Start,       TransitionWipe5_SetType,
     TransitionWipe5_SetColor, TransitionWipe5_SetEnvColor, TransitionWipe5_IsDone,
 };
 
 void TransitionWipe5_Start(void* thisx) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     this->isDone = false;
     switch (this->unk_12) {
@@ -56,7 +58,7 @@ void TransitionWipe5_Start(void* thisx) {
 }
 
 void* TransitionWipe5_Init(void* thisx) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     memset(this, 0, sizeof(TransitionWipe5));
     return this;
@@ -66,7 +68,7 @@ void TransitionWipe5_Destroy(void* thisx) {
 }
 
 void TransitionWipe5_Update(void* thisx, s32 updateRate) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     if (this->unk_10 == 0) {
         this->isDone = true;
@@ -84,7 +86,7 @@ void TransitionWipe5_Draw(void* thisx, Gfx** gfxP) {
     s32 width = gScreenWidth;
     s32 height = gScreenHeight;
     void* workBuffer = gWorkBuffer;
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
     s32 alpha = (1.0f - this->unk_0C) * 255.0f;
 
     gDPPipeSync(gfx++);
@@ -118,13 +120,13 @@ void TransitionWipe5_Draw(void* thisx, Gfx** gfxP) {
 }
 
 s32 TransitionWipe5_IsDone(void* thisx) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     return this->isDone;
 }
 
 void TransitionWipe5_SetType(void* thisx, s32 type) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     if (type & 0x80) {
         this->unk_11 = 0;
@@ -137,13 +139,13 @@ void TransitionWipe5_SetType(void* thisx, s32 type) {
 }
 
 void TransitionWipe5_SetColor(void* thisx, u32 color) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     this->primColor.rgba = color;
 }
 
 void TransitionWipe5_SetEnvColor(void* thisx, u32 color) {
-    TransitionWipe5* this = (TransitionWipe5*)thisx;
+    TransitionWipe5* this = THIS;
 
     this->envColor.rgba = color;
 }

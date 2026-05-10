@@ -7,7 +7,9 @@
 #include "z_bg_ikninside.h"
 #include "objects/object_ikninside_obj/object_ikninside_obj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((BgIkninside*)thisx)
 
 void BgIkninside_Init(Actor* thisx, PlayState* play);
 void BgIkninside_Destroy(Actor* thisx, PlayState* play);
@@ -16,7 +18,7 @@ void BgIkninside_Draw(Actor* thisx, PlayState* play);
 
 void func_80C072D0(BgIkninside* this, PlayState* play);
 
-ActorProfile Bg_Ikninside_Profile = {
+ActorInit Bg_Ikninside_InitVars = {
     /**/ ACTOR_BG_IKNINSIDE,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ static Gfx* D_80C076A0[] = { object_ikninside_obj_DL_00A748, object_ikninside_ob
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_PLAYER,
@@ -40,18 +42,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x80000008, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_NONE,
     },
     { 32, 32, 0, { 0, 0, 0 } },
 };
 
 void BgIkninside_Init(Actor* thisx, PlayState* play) {
-    BgIkninside* this = (BgIkninside*)thisx;
+    BgIkninside* this = THIS;
     CollisionHeader* colHeader = NULL;
     s32 pad;
 
@@ -68,7 +70,7 @@ void BgIkninside_Init(Actor* thisx, PlayState* play) {
 }
 
 void BgIkninside_Destroy(Actor* thisx, PlayState* play) {
-    BgIkninside* this = (BgIkninside*)thisx;
+    BgIkninside* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
@@ -102,8 +104,7 @@ void func_80C072D0(BgIkninside* this, PlayState* play) {
     s32 i;
 
     if (this->collider.base.acFlags & AC_HIT) {
-        if ((this->collider.elem.acHitElem != NULL) &&
-            (this->collider.elem.acHitElem->atDmgInfo.dmgFlags & 0x80000000)) {
+        if ((this->collider.info.acHitInfo != NULL) && (this->collider.info.acHitInfo->toucher.dmgFlags & 0x80000000)) {
             for (i = 0; i < 20; i++) {
                 altitude = Rand_S16Offset(0x1800, 0x2800);
                 azimuth = Rand_Next() >> 0x10;
@@ -140,7 +141,7 @@ void func_80C072D0(BgIkninside* this, PlayState* play) {
 }
 
 void BgIkninside_Update(Actor* thisx, PlayState* play) {
-    BgIkninside* this = (BgIkninside*)thisx;
+    BgIkninside* this = THIS;
 
     this->actionFunc(this, play);
 }
@@ -148,7 +149,7 @@ void BgIkninside_Update(Actor* thisx, PlayState* play) {
 void BgIkninside_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     gSPDisplayList(POLY_OPA_DISP++, object_ikninside_obj_DL_00CC78);
 

@@ -6,7 +6,9 @@
 
 #include "z_en_daiku.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnDaiku*)thisx)
 
 void EnDaiku_Init(Actor* thisx, PlayState* play);
 void EnDaiku_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void func_80943BC0(EnDaiku* this);
 void func_80943BDC(EnDaiku* this, PlayState* play);
 void func_809438F8(EnDaiku* this, PlayState* play);
 
-ActorProfile En_Daiku_Profile = {
+ActorInit En_Daiku_InitVars = {
     /**/ ACTOR_EN_DAIKU,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ static u16 sTextIds[] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -44,11 +46,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 20, 60, 0, { 0, 0, 0 } },
@@ -93,11 +95,11 @@ static u8 sAnimationModes[ENDAIKU_ANIM_MAX] = {
 };
 
 void EnDaiku_Init(Actor* thisx, PlayState* play) {
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
 
     this->actor.colChkInfo.mass = MASS_IMMOVABLE;
     ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 40.0f);
-    this->actor.attentionRangeType = ATTENTION_RANGE_0;
+    this->actor.targetMode = TARGET_MODE_0;
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     this->unk_278 = ENDAIKU_GET_FF(&this->actor);
     if (this->unk_278 == ENDAIKU_PARAM_FF_3) {
@@ -111,9 +113,8 @@ void EnDaiku_Init(Actor* thisx, PlayState* play) {
         this->collider.dim.radius = 30;
         this->collider.dim.height = 60;
         this->collider.dim.yShift = 0;
-        this->actor.flags |= ACTOR_FLAG_LOCK_ON_DISABLED;
-        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_RESOLVED_MAYOR_MEETING) ||
-            ((gSaveContext.save.day == 3) && gSaveContext.save.isNight)) {
+        this->actor.flags |= ACTOR_FLAG_CANT_LOCK_ON;
+        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_63_80) || ((gSaveContext.save.day == 3) && gSaveContext.save.isNight)) {
             Actor_Kill(&this->actor);
         }
     } else if ((gSaveContext.save.day == 3) && gSaveContext.save.isNight) {
@@ -151,7 +152,7 @@ void EnDaiku_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnDaiku_Destroy(Actor* thisx, PlayState* play) {
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
@@ -215,7 +216,7 @@ void func_809438F8(EnDaiku* this, PlayState* play) {
         this->actor.textId = sTextIds[this->unk_28C];
     }
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         func_80943BC0(this);
         return;
     }
@@ -277,14 +278,14 @@ void func_80943BDC(EnDaiku* this, PlayState* play) {
         }
     }
 
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         Message_CloseTextbox(play);
         func_80943820(this);
     }
 }
 
 void EnDaiku_Update(Actor* thisx, PlayState* play) {
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
     s32 pad;
 
     if (this->unk_27E == 0) {
@@ -315,13 +316,13 @@ void EnDaiku_Update(Actor* thisx, PlayState* play) {
     Actor_UpdateBgCheckInfo(play, &this->actor, 20.0f, 20.0f, 50.0f,
                             UPDBGCHECKINFO_FLAG_1 | UPDBGCHECKINFO_FLAG_4 | UPDBGCHECKINFO_FLAG_8 |
                                 UPDBGCHECKINFO_FLAG_10);
-    this->actor.cullingVolumeDistance = 650.0f;
+    this->actor.uncullZoneForward = 650.0f;
     Collider_UpdateCylinder(&this->actor, &this->collider);
     CollisionCheck_SetOC(play, &play->colChkCtx, &this->collider.base);
 }
 
 s32 EnDaiku_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
 
     if (limbIndex == OBJECT_DAIKU_LIMB_0F) {
         rot->x += this->unk_260;
@@ -338,7 +339,7 @@ void EnDaiku_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* ro
         object_daiku_DL_006E80,
         object_daiku_DL_006D70,
     };
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -354,7 +355,7 @@ void EnDaiku_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* ro
 }
 
 void EnDaiku_Draw(Actor* thisx, PlayState* play) {
-    EnDaiku* this = (EnDaiku*)thisx;
+    EnDaiku* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

@@ -9,7 +9,9 @@
 
 #include "2s2h/BenPort.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnFall2*)thisx)
 
 void EnFall2_Init(Actor* thisx, PlayState* play);
 void EnFall2_Destroy(Actor* thisx, PlayState* play);
@@ -19,7 +21,7 @@ void EnFall2_Draw(Actor* thisx, PlayState* play);
 void EnFall2_DoNothing(EnFall2* this, PlayState* play);
 void EnFall2_HandleCutscene(EnFall2* this, PlayState* play);
 
-ActorProfile En_Fall2_Profile = {
+ActorInit En_Fall2_InitVars = {
     /**/ ACTOR_EN_FALL2,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -32,13 +34,12 @@ ActorProfile En_Fall2_Profile = {
 };
 
 void EnFall2_Init(Actor* thisx, PlayState* play) {
-    EnFall2* this = (EnFall2*)thisx;
+    EnFall2* this = THIS;
 
     Actor_SetScale(&this->actor, 1.0f);
     this->actionFunc = EnFall2_DoNothing;
-    Keyframe_InitFlex(&this->kfSkelAnime, gFall2KFSkel_8898, gFall2FKAnim_5EF4, this->jointTable, this->morphTable,
-                      NULL);
-    Keyframe_FlexPlayLoop(&this->kfSkelAnime, (void*)gFall2FKAnim_5EF4);
+    Keyframe_InitFlex(&this->skeletonInfo, gFall2KFSkel_8898, gFall2FKAnim_5EF4, this->unk174, this->unk228, NULL);
+    Keyframe_FlexPlayLoop(&this->skeletonInfo, (void*)gFall2FKAnim_5EF4);
     this->unk2DC = Lib_SegmentedToVirtual((void*)object_fall2_Matanimheader_008840);
     Actor_SetScale(&this->actor, 0.02f);
     this->actionFunc = EnFall2_HandleCutscene;
@@ -47,9 +48,9 @@ void EnFall2_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnFall2_Destroy(Actor* thisx, PlayState* play) {
-    EnFall2* this = (EnFall2*)thisx;
+    EnFall2* this = THIS;
 
-    Keyframe_DestroyFlex(&this->kfSkelAnime);
+    Keyframe_DestroyFlex(&this->skeletonInfo);
 }
 
 static u8 sAlphaTableIndices[] = {
@@ -126,7 +127,7 @@ void func_80C1B8F0(EnFall2* this) {
 }
 
 void EnFall2_HandleCutscene(EnFall2* this, PlayState* play) {
-    Keyframe_UpdateFlex(&this->kfSkelAnime);
+    Keyframe_UpdateFlex(&this->skeletonInfo);
     if (Cutscene_IsCueInChannel(play, this->cueType)) {
         Cutscene_ActorTranslateAndYaw(&this->actor, play, Cutscene_GetCueChannel(play, this->cueType));
         if (this->cueId != play->csCtx.actorCues[Cutscene_GetCueChannel(play, this->cueType)]->id) {
@@ -144,26 +145,26 @@ void EnFall2_HandleCutscene(EnFall2* this, PlayState* play) {
 }
 
 void EnFall2_Update(Actor* thisx, PlayState* play) {
-    EnFall2* this = (EnFall2*)thisx;
+    EnFall2* this = THIS;
 
     this->actionFunc(this, play);
 }
 
 void EnFall2_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnFall2* this = (EnFall2*)thisx;
-    Mtx* mtxStack;
+    EnFall2* this = THIS;
+    Mtx* mtx;
 
     if (!(this->alphaLevel <= 0.0f)) {
         Gfx_SetupDL25_Xlu(play->state.gfxCtx);
         AnimatedMat_DrawXlu(play, Lib_SegmentedToVirtual(object_fall2_Matanimheader_008840));
 
-        mtxStack = GRAPH_ALLOC(play->state.gfxCtx, this->kfSkelAnime.skeleton->dListCount * sizeof(Mtx));
+        mtx = GRAPH_ALLOC(play->state.gfxCtx, this->skeletonInfo.skeleton->dListCount * sizeof(Mtx));
 
-        if (mtxStack != NULL) {
+        if (mtx != NULL) {
             Gfx_SetupDL25_Xlu(play->state.gfxCtx);
             Matrix_RotateYS((s16)(Camera_GetCamDirYaw(GET_ACTIVE_CAM(play)) + 0x8000), MTXMODE_APPLY);
-            Keyframe_DrawFlex(play, &this->kfSkelAnime, mtxStack, NULL, NULL, &this->actor);
+            Keyframe_DrawFlex(play, &this->skeletonInfo, mtx, NULL, NULL, &this->actor);
         }
     }
 }

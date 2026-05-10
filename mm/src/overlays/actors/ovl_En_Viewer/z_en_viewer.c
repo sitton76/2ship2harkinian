@@ -6,9 +6,9 @@
 
 #include "z_en_viewer.h"
 
-#define FLAGS                                                                \
-    (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED | \
-     ACTOR_FLAG_UPDATE_DURING_SOARING_AND_SOT_CS)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20 | ACTOR_FLAG_200000)
+
+#define THIS ((EnViewer*)thisx)
 
 void EnViewer_Init(Actor* thisx, PlayState* play);
 void EnViewer_Destroy(Actor* thisx, PlayState* play);
@@ -23,7 +23,7 @@ static u8 D_8089F3E0 = 0;
 
 static u8 D_8089F3E4 = 0;
 
-ActorProfile En_Viewer_Profile = {
+ActorInit En_Viewer_InitVars = {
     /**/ ACTOR_EN_VIEWER,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -42,7 +42,7 @@ void EnViewer_SetupAction(EnViewer* this, EnViewerActionFunc actionFunc) {
 }
 
 void EnViewer_Init(Actor* thisx, PlayState* play) {
-    EnViewer* this = (EnViewer*)thisx;
+    EnViewer* this = THIS;
 
     this->unk_154 = D_8089F3E0;
     D_8089F3E0++;
@@ -52,21 +52,16 @@ void EnViewer_Init(Actor* thisx, PlayState* play) {
             this->unk_150 = (u8)ENVIEWER_GET_1FC(&this->actor) * 40.0f;
             EnViewer_SetupAction(this, func_8089F17C);
             break;
-
         case ENVIEWER_PARAM_1:
             this->unk_148 = (u16)ENVIEWER_GET_FE00(&this->actor) * 40.0f;
             this->unk_150 = (u8)ENVIEWER_GET_1FC(&this->actor) * 40.0f;
             this->unk_14C = (u16)(this->actor.world.rot.y) * 40.0f;
             EnViewer_SetupAction(this, func_8089F218);
             break;
-
         case ENVIEWER_PARAM_2:
             this->unk_148 = (u16)ENVIEWER_GET_FE00(&this->actor) * 40.0f;
             this->unk_14C = (u8)ENVIEWER_GET_1FC(&this->actor) * 40.0f;
             EnViewer_SetupAction(this, func_8089F2C4);
-            break;
-
-        default:
             break;
     }
 }
@@ -81,7 +76,6 @@ void func_8089F014(EnViewer* this, PlayState* play, f32 arg2) {
     } else if (arg2 < 0.0f) {
         arg2 = 0.0f;
     }
-
     play->envCtx.lightSettingOverride = 0;
     play->envCtx.lightBlendOverride = LIGHT_BLEND_OVERRIDE_FULL_CONTROL;
     play->envCtx.lightSetting = this->actor.world.rot.x;
@@ -137,12 +131,10 @@ void func_8089F2C4(EnViewer* this, PlayState* play) {
     Vec3f sp20;
     f32 temp;
 
-    Actor_WorldToActorCoords(&this->actor, &sp20, &player->actor.world.pos);
-
+    Actor_OffsetOfPointInActorCoords(&this->actor, &sp20, &player->actor.world.pos);
     if (this->unk_14C == 0.0f) {
         this->unk_14C = 0.1f;
     }
-
     if ((play->roomCtx.curRoom.num == this->actor.room) && (sp20.x < fabsf(this->unk_148))) {
         temp = sp20.z / this->unk_14C;
         func_8089F014(this, play, temp);
@@ -153,13 +145,12 @@ void func_8089F2C4(EnViewer* this, PlayState* play) {
 
 void EnViewer_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    EnViewer* this = (EnViewer*)thisx;
+    EnViewer* this = THIS;
 
     if (D_8089F4D0 != play->state.frames) {
         D_8089F4D0 = play->state.frames;
         D_8089F3E4 = 0;
     }
-
     this->actionFunc(this, play);
 }
 

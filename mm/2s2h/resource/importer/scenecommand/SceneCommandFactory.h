@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <ship/resource/Resource.h>
-#include <ship/resource/ResourceFactory.h>
+#include "Resource.h"
+#include "ResourceFactory.h"
 #include "2s2h/resource/type/scenecommand/SceneCommand.h"
 
 namespace SOH {

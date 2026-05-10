@@ -7,14 +7,16 @@
 #include "z_en_trt2.h"
 #include "objects/object_trt/object_trt.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY)
+
+#define THIS ((EnTrt2*)thisx)
 
 void EnTrt2_Init(Actor* thisx, PlayState* play);
 void EnTrt2_Destroy(Actor* thisx, PlayState* play);
 void EnTrt2_Update(Actor* thisx, PlayState* play);
 
 void func_80AD46F8(EnTrt2* this);
-s32 EnTrt2_HasReachedPoint(EnTrt2* this, Path* path, s32 pointIndex);
+s32 func_80AD475C(EnTrt2* this, Path* path, s32 arg2);
 s16 func_80AD48F8(Path* path, s32 arg1, Vec3f* arg2, f32* arg3);
 f32 func_80AD49B8(Path* path, s32 arg1, Vec3f* arg2, Vec3s* arg3);
 void func_80AD4A78(EnTrt2* this, PlayState* play);
@@ -24,34 +26,33 @@ void func_80AD4FE4(EnTrt2* this, PlayState* play);
 void func_80AD5234(EnTrt2* this, PlayState* play);
 void func_80AD56E8(Actor* thisx, PlayState* play);
 
-typedef enum Trt2Animation {
-    /*  0 */ TRT2_ANIM_IDLE,
-    /*  1 */ TRT2_ANIM_HALF_AWAKE,
-    /*  2 */ TRT2_ANIM_SLEEPING,
-    /*  3 */ TRT2_ANIM_WAKE_UP,
-    /*  4 */ TRT2_ANIM_SURPRISED,
-    /*  5 */ TRT2_ANIM_HANDS_ON_COUNTER,
-    /*  6 */ TRT2_ANIM_HOVER,
-    /*  7 */ TRT2_ANIM_FLY_LOOK_AROUND,
-    /*  8 */ TRT2_ANIM_FLY_DOWN,
-    /*  9 */ TRT2_ANIM_FLY,
-    /* 10 */ TRT2_ANIM_MAX
+typedef enum {
+    /* 0 */ TRT2_ANIM_IDLE,
+    /* 1 */ TRT2_ANIM_HALF_AWAKE,
+    /* 2 */ TRT2_ANIM_SLEEPING,
+    /* 3 */ TRT2_ANIM_WAKE_UP,
+    /* 4 */ TRT2_ANIM_SURPRISED,
+    /* 5 */ TRT2_ANIM_HANDS_ON_COUNTER,
+    /* 6 */ TRT2_ANIM_HOVER,
+    /* 7 */ TRT2_ANIM_FLY_LOOK_AROUND,
+    /* 8 */ TRT2_ANIM_FLY_DOWN,
+    /* 9 */ TRT2_ANIM_FLY
 } Trt2Animation;
 
-static AnimationInfoS sAnimationInfo[TRT2_ANIM_MAX] = {
-    { &gKotakeIdleAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },           // TRT2_ANIM_IDLE
-    { &gKotakeHalfAwakeAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },      // TRT2_ANIM_HALF_AWAKE
-    { &gKotakeSleepingAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },       // TRT2_ANIM_SLEEPING
-    { &gKotakeWakeUpAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },         // TRT2_ANIM_WAKE_UP
-    { &gKotakeSurprisedAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },      // TRT2_ANIM_SURPRISED
-    { &gKotakeHandsOnCounterAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 }, // TRT2_ANIM_HANDS_ON_COUNTER
-    { &gKotakeHoverAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },          // TRT2_ANIM_HOVER
-    { &gKotakeFlyLookAroundAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },  // TRT2_ANIM_FLY_LOOK_AROUND
-    { &gKotakeFlyDownAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },        // TRT2_ANIM_FLY_DOWN
-    { &gKotakeFlyAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },            // TRT2_ANIM_FLY
+static AnimationInfoS sAnimationInfo[] = {
+    { &gKotakeIdleAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },
+    { &gKotakeHalfAwakeAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },
+    { &gKotakeSleepingAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
+    { &gKotakeWakeUpAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },
+    { &gKotakeSurprisedAnim, 1.0f, 0, -1, ANIMMODE_ONCE, 0 },
+    { &gKotakeHandsOnCounterAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
+    { &gKotakeHoverAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
+    { &gKotakeFlyLookAroundAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
+    { &gKotakeFlyDownAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
+    { &gKotakeFlyAnim, 1.0f, 0, -1, ANIMMODE_LOOP, 0 },
 };
 
-ActorProfile En_Trt2_Profile = {
+ActorInit En_Trt2_InitVars = {
     /**/ ACTOR_EN_TRT2,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -65,7 +66,7 @@ ActorProfile En_Trt2_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -73,11 +74,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 32, 56, 30, { 0, 0, 0 } },
@@ -167,9 +168,9 @@ void func_80AD3530(EnTrt2* this, PlayState* play) {
         if (this->actor.bgCheckFlags & BGCHECKFLAG_WALL) {
             phi_a1 = this->actor.wallYaw;
         }
-        Math_SmoothStepToS(&this->actor.world.rot.y, phi_a1, 4, 0x3E8, 1);
+        Math_SmoothStepToS(&this->actor.world.rot.y, phi_a1, 4, 1000, 1);
         this->actor.shape.rot.y = this->actor.world.rot.y;
-        if (EnTrt2_HasReachedPoint(this, this->path, this->unk_1E4)) {
+        if (func_80AD475C(this, this->path, this->unk_1E4)) {
             if (this->unk_1E4 >= (this->path->count - 1)) {
                 this->unk_1E4 = 0;
             } else {
@@ -239,8 +240,8 @@ void func_80AD381C(EnTrt2* this, PlayState* play) {
             this->actor.world.pos.y -= 50.0f;
             this->unk_3D9 = 0;
             this->unk_3B2 = 0;
-            this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
-            this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
+            this->actor.flags |= ACTOR_FLAG_10;
         }
     } else {
         Actor_Kill(&this->actor);
@@ -256,11 +257,11 @@ void func_80AD38B8(EnTrt2* this, PlayState* play) {
 
     if (this->path != NULL) {
         func_80AD49B8(this->path, this->unk_1E4, &this->actor.world.pos, &sp30);
-        Math_SmoothStepToS(&this->actor.world.rot.y, sp30.y, 4, 0x3E8, 1);
+        Math_SmoothStepToS(&this->actor.world.rot.y, sp30.y, 4, 1000, 1);
         this->actor.shape.rot.y = this->actor.world.rot.y;
-        Math_SmoothStepToS(&this->actor.shape.rot.x, sp30.x, 4, 0x3E8, 1);
+        Math_SmoothStepToS(&this->actor.shape.rot.x, sp30.x, 4, 1000, 1);
         this->actor.world.rot.x = -this->actor.shape.rot.x;
-        if (EnTrt2_HasReachedPoint(this, this->path, this->unk_1E4)) {
+        if (func_80AD475C(this, this->path, this->unk_1E4)) {
             if (this->unk_1E4 >= (this->path->count - 1)) {
                 CutsceneManager_Stop(this->csId);
                 this->unk_3D9 = 2;
@@ -319,8 +320,8 @@ void func_80AD3B6C(EnTrt2* this, PlayState* play) {
 void func_80AD3BE4(EnTrt2* this, PlayState* play) {
     s16 sp2E = this->actor.yawTowardsPlayer - this->actor.shape.rot.y;
 
-    Math_ScaledStepToS(&this->unk_3C0, sp2E, 0x190);
-    Math_SmoothStepToS(&this->unk_3C0, sp2E, 4, 0x2710, 0);
+    Math_ScaledStepToS(&this->unk_3C0, sp2E, 400);
+    Math_SmoothStepToS(&this->unk_3C0, sp2E, 4, 10000, 0);
     this->actor.world.rot.y += this->unk_3C0;
     this->actor.shape.rot.y = this->actor.world.rot.y;
     if (this->actor.world.pos.y < 5.0f) {
@@ -345,7 +346,7 @@ void func_80AD3CEC(EnTrt2* this, PlayState* play) {
     if (this->unk_3D8) {
         Message_StartTextbox(play, this->unk_3A8, &this->actor);
         this->unk_3D8 = false;
-    } else if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    } else if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
         play->msgCtx.stateTimer = 4;
         EnTrt2_ChangeAnim(&this->skelAnime, sAnimationInfo, TRT2_ANIM_HOVER);
@@ -372,7 +373,7 @@ void func_80AD3DA4(EnTrt2* this, PlayState* play) {
 }
 
 void func_80AD3E34(EnTrt2* this, PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         if (Inventory_HasEmptyBottle()) {
             play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
             play->msgCtx.stateTimer = 4;
@@ -401,7 +402,7 @@ void func_80AD3EF0(EnTrt2* this, PlayState* play) {
                 this->unk_3B2 = 10;
             }
         }
-    } else if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    } else if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
         play->msgCtx.stateTimer = 4;
         this->unk_3B2 = 12;
@@ -431,7 +432,7 @@ void func_80AD40AC(EnTrt2* this, PlayState* play) {
 }
 
 void func_80AD4110(EnTrt2* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         this->unk_3A8 = 0x84C;
         Message_ContinueTextbox(play, this->unk_3A8);
         this->unk_3B2 = 10;
@@ -441,7 +442,7 @@ void func_80AD4110(EnTrt2* this, PlayState* play) {
 }
 
 void func_80AD417C(EnTrt2* this, PlayState* play) {
-    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((Message_GetState(&play->msgCtx) == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         if (this->unk_3A8 == 0x84B) {
             func_80AD349C(this);
             func_80AD3DA4(this, play);
@@ -527,7 +528,7 @@ void func_80AD4550(EnTrt2* this, PlayState* play) {
         this->unk_3B2 = 17;
     }
 
-    if ((talkState == TEXT_STATE_EVENT) && Message_ShouldAdvance(play)) {
+    if ((talkState == TEXT_STATE_5) && Message_ShouldAdvance(play)) {
         play->msgCtx.msgMode = MSGMODE_TEXT_CLOSING;
         play->msgCtx.stateTimer = 4;
     }
@@ -564,38 +565,40 @@ void func_80AD46F8(EnTrt2* this) {
     }
 }
 
-s32 EnTrt2_HasReachedPoint(EnTrt2* this, Path* path, s32 pointIndex) {
-    Vec3s* points = Lib_SegmentedToVirtual(path->points);
-    s32 count = path->count;
-    s32 index = pointIndex;
-    s32 reached = false;
-    f32 diffX;
-    f32 diffZ;
-    f32 px;
-    f32 pz;
-    f32 d;
-    Vec3f point;
+s32 func_80AD475C(EnTrt2* this, Path* path, s32 arg2) {
+    Vec3s* points;
+    s32 count;
+    f32 phi_f12;
+    s32 ret;
+    f32 phi_f14;
+    s32 arg = arg2;
+    f32 sp44;
+    f32 sp40;
+    f32 sp3C;
+    Vec3f sp30;
 
-    Math_Vec3s_ToVec3f(&point, &points[index]);
+    points = Lib_SegmentedToVirtual(path->points);
+    count = path->count;
+    ret = false;
+    Math_Vec3s_ToVec3f(&sp30, &points[arg]);
 
-    if (index == 0) {
-        diffX = points[1].x - points[0].x;
-        diffZ = points[1].z - points[0].z;
-    } else if (index == (count - 1)) {
-        diffX = points[count - 1].x - points[count - 2].x;
-        diffZ = points[count - 1].z - points[count - 2].z;
+    if (arg == 0) {
+        phi_f12 = points[1].x - points[0].x;
+        phi_f14 = points[1].z - points[0].z;
+    } else if ((count - 1) == arg) {
+        phi_f12 = points[count - 1].x - points[count - 2].x;
+        phi_f14 = points[count - 1].z - points[count - 2].z;
     } else {
-        diffX = points[index + 1].x - points[index - 1].x;
-        diffZ = points[index + 1].z - points[index - 1].z;
+        phi_f12 = points[arg + 1].x - points[arg - 1].x;
+        phi_f14 = points[arg + 1].z - points[arg - 1].z;
     }
 
-    Math3D_RotateXZPlane(&point, RAD_TO_BINANG(Math_FAtan2F(diffX, diffZ)), &px, &pz, &d);
+    Math3D_RotateXZPlane(&sp30, RAD_TO_BINANG(Math_FAtan2F(phi_f12, phi_f14)), &sp44, &sp40, &sp3C);
 
-    if (((px * this->actor.world.pos.x) + (pz * this->actor.world.pos.z) + d) > 0.0f) {
-        reached = true;
+    if (((this->actor.world.pos.x * sp44) + (sp40 * this->actor.world.pos.z) + sp3C) > 0.0f) {
+        ret = true;
     }
-
-    return reached;
+    return ret;
 }
 
 s16 func_80AD48F8(Path* path, s32 arg1, Vec3f* arg2, f32* arg3) {
@@ -619,15 +622,15 @@ s16 func_80AD48F8(Path* path, s32 arg1, Vec3f* arg2, f32* arg3) {
 f32 func_80AD49B8(Path* path, s32 arg1, Vec3f* arg2, Vec3s* arg3) {
     s32 pad;
     Vec3f sp20;
-    Vec3s* points;
+    Vec3s* temp_v1;
 
     if (path != NULL) {
-        points = Lib_SegmentedToVirtual(path->points);
-        points = &points[arg1];
+        temp_v1 = Lib_SegmentedToVirtual(path->points);
+        temp_v1 = &temp_v1[arg1];
 
-        sp20.x = points->x;
-        sp20.y = points->y;
-        sp20.z = points->z;
+        sp20.x = temp_v1->x;
+        sp20.y = temp_v1->y;
+        sp20.z = temp_v1->z;
     }
     arg3->y = Math_Vec3f_Yaw(arg2, &sp20);
     arg3->x = Math_Vec3f_Pitch(arg2, &sp20);
@@ -640,7 +643,7 @@ void func_80AD4A78(EnTrt2* this, PlayState* play) {
     sp34.x = Rand_CenteredFloat(15.0f) + this->actor.world.pos.x;
     sp34.y = this->actor.world.pos.y;
     sp34.z = Rand_CenteredFloat(15.0f) + this->actor.world.pos.z;
-    Actor_SpawnFloorDustRing(play, &this->actor, &sp34, 50.0f, 0, 2.0f, 0, 0, false);
+    Actor_SpawnFloorDustRing(play, &this->actor, &sp34, 50.0f, 0, 2.0f, 0, 0, 0);
 }
 
 s32 func_80AD4B08(PlayState* play) {
@@ -659,7 +662,7 @@ s32 func_80AD4B4C(EnTrt2* this, PlayState* play) {
     s32 sp24 = false;
     Player* player = GET_PLAYER(play);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         sp24 = true;
         this->actor.speed = 0.0f;
         func_80AD349C(this);
@@ -715,9 +718,9 @@ s32 func_80AD4CCC(EnTrt2* this, PlayState* play) {
 }
 
 void func_80AD4DB4(EnTrt2* this, PlayState* play) {
-    static Vec3f D_80AD5904 = { 0.0f, 50.0f, 0.0f };
+    static Vec3f D_80AD5904 = { 0.0f, 50.0f, 0.0 };
 
-    this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags &= ~ACTOR_FLAG_10;
     Actor_SetObjectDependency(play, &this->actor);
     Actor_SetScale(&this->actor, 0.008f);
     this->path = SubS_GetPathByIndex(play, ENTRT2_GET_PATH_INDEX(&this->actor), ENTRT2_PATH_INDEX_NONE);
@@ -798,12 +801,12 @@ void func_80AD4FE4(EnTrt2* this, PlayState* play) {
 }
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_3, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 500, ICHAIN_STOP),
+    ICHAIN_U8(targetMode, TARGET_MODE_3, ICHAIN_CONTINUE),
+    ICHAIN_F32(targetArrowOffset, 500, ICHAIN_STOP),
 };
 
 void EnTrt2_Init(Actor* thisx, PlayState* play) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     Collider_InitCylinder(play, &this->collider);
     Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
@@ -813,14 +816,14 @@ void EnTrt2_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnTrt2_Destroy(Actor* thisx, PlayState* play) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     SkelAnime_Free(&this->skelAnime, play);
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnTrt2_Update(Actor* thisx, PlayState* play) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     if ((this->unk_3B2 != 6) && (this->unk_3B2 != 10) && (this->unk_3B2 != 13) && (this->unk_3B2 != 14) &&
         (this->unk_3B2 != 16) && (this->unk_3B2 != 8) && (this->unk_3B2 != 9)) {
@@ -886,18 +889,18 @@ void func_80AD5394(s16 arg0, s16 arg1, Vec3f* arg2, Vec3s* arg3, s32 arg4) {
 }
 
 s32 EnTrt2_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     if ((limbIndex == KOTAKE_LIMB_TORSO_LIMB) || (limbIndex == KOTAKE_LIMB_LEFT_HAND) ||
         (limbIndex == KOTAKE_LIMB_RIGHT_HAND)) {
-        rot->y += TRUNCF_BINANG(Math_SinS(this->unk_33C[limbIndex])) * 200;
-        rot->z += TRUNCF_BINANG(Math_CosS(this->unk_372[limbIndex])) * 200;
+        rot->y += (s16)Math_SinS(this->unk_33C[limbIndex]) * 200;
+        rot->z += (s16)Math_CosS(this->unk_372[limbIndex]) * 200;
     }
     return false;
 }
 
 void EnTrt2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
     Vec3f sp30 = { 0.0f, -30.0f, 0.0f };
     s32 phi_v0 = false;
 
@@ -917,7 +920,7 @@ void EnTrt2_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot
 }
 
 void EnTrt2_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     if (limbIndex == KOTAKE_LIMB_HEAD) {
         Matrix_Translate(this->unk_3C8.x, this->unk_3C8.y, this->unk_3C8.z, MTXMODE_NEW);
@@ -935,7 +938,7 @@ void func_80AD56E8(Actor* thisx, PlayState* play) {
         gKotakeEyeClosedTex,
     };
     s32 pad;
-    EnTrt2* this = (EnTrt2*)thisx;
+    EnTrt2* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

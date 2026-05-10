@@ -17,10 +17,12 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjGrassUnit*)thisx)
+
 void ObjGrassUnit_Init(Actor* this, PlayState* play2);
 void ObjGrassUnit_Reset(void);
 
-ActorProfile Obj_Grass_Unit_Profile = {
+ActorInit Obj_Grass_Unit_InitVars = {
     /**/ ACTOR_OBJ_GRASS_UNIT,
     /**/ ACTORCAT_BG,
     /**/ FLAGS,
@@ -91,11 +93,11 @@ s32 ObjGrassUnit_SpawnObjGrassCarry1(Actor* this, PlayState* play) {
 
 s32 ObjGrassUnit_IsUnderwater(PlayState* play, Vec3f* pos) {
     WaterBox* waterBox;
-    f32 waterSurface;
+    f32 ySurface;
     s32 bgId;
 
-    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, pos->x, pos->z, &waterSurface, &waterBox, &bgId) &&
-        (pos->y < waterSurface)) {
+    if (WaterBox_GetSurfaceImpl(play, &play->colCtx, pos->x, pos->z, &ySurface, &waterBox, &bgId) &&
+        (pos->y < ySurface)) {
         return true;
     }
     return false;
@@ -148,9 +150,9 @@ void ObjGrassUnit_Init(Actor* this, PlayState* play2) {
         grassElem = &grassGroup->elements[grassGroup->count];
         grassPos = &grassPattern->positions[i];
 
-        grassElem->pos.x = this->home.pos.x + (Math_CosS(this->home.rot.y + grassPos->angle) * grassPos->distance);
+        grassElem->pos.x = (Math_CosS((this->home.rot.y + grassPos->angle)) * grassPos->distance) + this->home.pos.x;
         grassElem->pos.y = this->home.pos.y + 100.0f;
-        grassElem->pos.z = this->home.pos.z + (Math_SinS(this->home.rot.y + grassPos->angle) * grassPos->distance);
+        grassElem->pos.z = (Math_SinS((this->home.rot.y + grassPos->angle)) * grassPos->distance) + this->home.pos.z;
 
         grassElem->pos.y = BgCheck_EntityRaycastFloor5(&play->colCtx, &poly, &bgId, this, &grassElem->pos);
         tmp = grassElem->pos.y - this->home.pos.y;

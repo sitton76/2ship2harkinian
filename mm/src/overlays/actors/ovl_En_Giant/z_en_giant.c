@@ -6,7 +6,9 @@
 
 #include "z_en_giant.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnGiant*)thisx)
 
 void EnGiant_Init(Actor* thisx, PlayState* play);
 void EnGiant_Destroy(Actor* thisx, PlayState* play);
@@ -48,7 +50,7 @@ typedef enum {
     /* 15 */ GIANT_CUEID_HOLDING_UP_MOON_IN_CLOCK_TOWER
 } GiantCueId;
 
-ActorProfile En_Giant_Profile = {
+ActorInit En_Giant_InitVars = {
     /**/ ACTOR_EN_GIANT,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -160,12 +162,12 @@ s32 EnGiant_IsImprisoned(EnGiant* this) {
 }
 
 void EnGiant_Init(Actor* thisx, PlayState* play) {
-    EnGiant* this = (EnGiant*)thisx;
+    EnGiant* this = THIS;
     s32 type = GIANT_TYPE(thisx);
 
-    this->actor.cullingVolumeDistance = 4000.0f;
-    this->actor.cullingVolumeScale = 2000.0f;
-    this->actor.cullingVolumeDownward = 2400.0f;
+    this->actor.uncullZoneForward = 4000.0f;
+    this->actor.uncullZoneScale = 2000.0f;
+    this->actor.uncullZoneDownward = 2400.0f;
     Actor_SetScale(&this->actor, 0.32f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gGiantSkel, &gGiantLargeStrideAnim, this->jointTable, this->morphTable,
                        GIANT_LIMB_MAX);
@@ -350,7 +352,7 @@ void EnGiant_ChangeAnimBasedOnCueId(EnGiant* this) {
 void EnGiant_UpdateAlpha(EnGiant* this) {
     switch (this->cueId) {
         case GIANT_CUEID_FALLING_OVER:
-            if ((this->skelAnime.curFrame >= 90.0f) && (this->alpha > 0)) {
+            if (this->skelAnime.curFrame >= 90.0f && this->alpha > 0) {
                 this->alpha -= 12;
             }
             break;
@@ -489,7 +491,7 @@ void EnGiant_PerformCutsceneActions(EnGiant* this, PlayState* play) {
 }
 
 void EnGiant_Update(Actor* thisx, PlayState* play) {
-    EnGiant* this = (EnGiant*)thisx;
+    EnGiant* this = THIS;
     s32 blinkTimerTemp;
 
     this->actionFunc(this, play);
@@ -523,7 +525,7 @@ void EnGiant_PostLimbDrawOpa(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s*
 }
 
 void EnGiant_PostLimbDrawXlu(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx, Gfx** gfx) {
-    EnGiant* this = (EnGiant*)thisx;
+    EnGiant* this = THIS;
 
     if (limbIndex == GIANT_LIMB_HEAD) {
         Matrix_Get(&this->headDrawMtxF);
@@ -532,7 +534,7 @@ void EnGiant_PostLimbDrawXlu(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s*
 
 void EnGiant_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnGiant* this = (EnGiant*)thisx;
+    EnGiant* this = THIS;
     static TexturePtr sFaceTextures[] = { gGiantFaceEyeOpenTex, gGiantFaceEyeHalfTex, gGiantFaceEyeClosedTex };
 
     if (this->alpha > 0) {
@@ -559,7 +561,7 @@ void EnGiant_Draw(Actor* thisx, PlayState* play) {
                 SkelAnime_DrawFlex(play, this->skelAnime.skeleton, this->skelAnime.jointTable,
                                    this->skelAnime.dListCount, NULL, EnGiant_PostLimbDrawXlu, thisx, POLY_XLU_DISP);
             Matrix_Mult(&this->headDrawMtxF, MTXMODE_NEW);
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gGiantBeardDL);
         }
 

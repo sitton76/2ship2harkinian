@@ -8,7 +8,9 @@
 #include "objects/object_stk2/object_stk2.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED | ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((DmChar02*)thisx)
 
 void DmChar02_Init(Actor* thisx, PlayState* play);
 void DmChar02_Destroy(Actor* thisx, PlayState* play);
@@ -17,7 +19,7 @@ void DmChar02_Draw(Actor* thisx, PlayState* play);
 
 void DmChar02_HandleCutscene(DmChar02* this, PlayState* play);
 
-ActorProfile Dm_Char02_Profile = {
+ActorInit Dm_Char02_InitVars = {
     /**/ ACTOR_DM_CHAR02,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -81,12 +83,12 @@ void DmChar02_PlaySfxForCutscenes(DmChar02* this, PlayState* play) {
 }
 
 void DmChar02_Init(Actor* thisx, PlayState* play) {
-    DmChar02* this = (DmChar02*)thisx;
+    DmChar02* this = THIS;
 
     if (GameInteractor_Should(VB_STK_HAVE_OCARINA,
                               gSaveContext.save.saveInfo.inventory.items[SLOT_OCARINA] == ITEM_NONE)) {
         this->animIndex = DMCHAR02_ANIM_HIT_GROUND;
-        this->actor.lockOnArrowOffset = 3000.0f;
+        this->actor.targetArrowOffset = 3000.0f;
         ActorShape_Init(&this->actor.shape, 0.0f, ActorShadow_DrawCircle, 24.0f);
         SkelAnime_InitFlex(play, &this->skelAnime, &gClockTowerOcarinaOfTimeSkel, NULL, NULL, NULL, 0);
         DmChar02_ChangeAnim(&this->skelAnime, &sAnimationInfo[DMCHAR02_ANIM_HIT_GROUND], 0);
@@ -101,7 +103,7 @@ void DmChar02_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void DmChar02_HandleCutscene(DmChar02* this, PlayState* play) {
-    u8 changeAnim = true;
+    u8 shouldChangeAnimation = true;
     s32 cueChannel;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_131)) {
@@ -110,7 +112,7 @@ void DmChar02_HandleCutscene(DmChar02* this, PlayState* play) {
             switch (play->csCtx.actorCues[cueChannel]->id) {
                 default:
                     this->animIndex = DMCHAR02_ANIM_HIT_GROUND;
-                    changeAnim = false;
+                    shouldChangeAnimation = false;
                     break;
 
                 case 1:
@@ -126,7 +128,7 @@ void DmChar02_HandleCutscene(DmChar02* this, PlayState* play) {
                     break;
             }
 
-            if (changeAnim) {
+            if (shouldChangeAnimation) {
                 DmChar02_ChangeAnim(&this->skelAnime, &sAnimationInfo[this->animIndex], 0);
             }
         }
@@ -143,14 +145,11 @@ void DmChar02_HandleCutscene(DmChar02* this, PlayState* play) {
 }
 
 void DmChar02_Update(Actor* thisx, PlayState* play) {
-    DmChar02* this = (DmChar02*)thisx;
+    DmChar02* this = THIS;
 
     SkelAnime_Update(&this->skelAnime);
-
-    this->unk_2F0 = this->unk_2F0; // Set to itself
-
+    this->unk_2F0 = this->unk_2F0;
     this->actionFunc(this, play);
-
     if (!Actor_HasParent(&this->actor, play)) {
         Actor_OfferGetItem(&this->actor, play, GI_OCARINA_OF_TIME, 30.0f, 80.0f);
     } else {
@@ -174,7 +173,7 @@ void DmChar02_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
 
 void DmChar02_Draw(Actor* thisx, PlayState* play) {
     s32 pad[2];
-    DmChar02* this = (DmChar02*)thisx;
+    DmChar02* this = THIS;
     s32 shouldDraw = false;
 
     if ((play->csCtx.state == CS_STATE_IDLE) && (this->actor.world.pos.y < 100.0f)) {

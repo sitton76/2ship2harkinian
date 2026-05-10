@@ -11,6 +11,8 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjBigicicle*)thisx)
+
 void ObjBigicicle_Init(Actor* thisx, PlayState* play);
 void ObjBigicicle_Destroy(Actor* thisx, PlayState* play);
 void ObjBigicicle_Update(Actor* thisx, PlayState* play);
@@ -22,7 +24,7 @@ void func_80AE9180(ObjBigicicle* this, PlayState* play);
 void func_80AE9258(ObjBigicicle* this, PlayState* play);
 void func_80AE939C(ObjBigicicle* this, PlayState* play);
 
-ActorProfile Obj_Bigicicle_Profile = {
+ActorInit Obj_Bigicicle_InitVars = {
     /**/ ACTOR_OBJ_BIGICICLE,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -36,7 +38,7 @@ ActorProfile Obj_Bigicicle_Profile = {
 
 static ColliderCylinderInit sCylinderInit1 = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -44,11 +46,11 @@ static ColliderCylinderInit sCylinderInit1 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00003820, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 23, 68, -40, { 0, 0, 0 } },
@@ -56,7 +58,7 @@ static ColliderCylinderInit sCylinderInit1 = {
 
 static ColliderCylinderInit sCylinderInit2 = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_NONE,
         AC_ON | AC_HARD | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -64,11 +66,11 @@ static ColliderCylinderInit sCylinderInit2 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 31, 90, -150, { 0, 0, 0 } },
@@ -80,7 +82,7 @@ Vec3f D_80AE987C = { 0.0f, -1.0f, 0.0f };
 
 static InitChainEntry sInitChain[] = {
     ICHAIN_F32(gravity, -2, ICHAIN_CONTINUE),
-    ICHAIN_F32(cullingVolumeDistance, 5600, ICHAIN_STOP),
+    ICHAIN_F32(uncullZoneForward, 5600, ICHAIN_STOP),
 };
 
 s32 D_80AE9890 = false;
@@ -97,7 +99,7 @@ Gfx* D_80AE98A8[] = {
 };
 
 void ObjBigicicle_Init(Actor* thisx, PlayState* play) {
-    ObjBigicicle* this = (ObjBigicicle*)thisx;
+    ObjBigicicle* this = THIS;
     f32 sp30;
     s32 sp28;
 
@@ -114,14 +116,14 @@ void ObjBigicicle_Init(Actor* thisx, PlayState* play) {
     sp30 = sp28 * (1.0f / 60.0f);
 
     Collider_InitAndSetCylinder(play, &this->collider1, &this->actor, &sCylinderInit1);
-    this->collider1.dim.radius *= sp30;
-    this->collider1.dim.height *= sp30;
-    this->collider1.dim.yShift *= sp30;
+    this->collider1.dim.radius = this->collider1.dim.radius * sp30;
+    this->collider1.dim.height = this->collider1.dim.height * sp30;
+    this->collider1.dim.yShift = this->collider1.dim.yShift * sp30;
 
     Collider_InitAndSetCylinder(play, &this->collider2, &this->actor, &sCylinderInit2);
-    this->collider2.dim.radius *= sp30;
-    this->collider2.dim.height *= sp30;
-    this->collider2.dim.yShift *= sp30;
+    this->collider2.dim.radius = this->collider2.dim.radius * sp30;
+    this->collider2.dim.height = this->collider2.dim.height * sp30;
+    this->collider2.dim.yShift = this->collider2.dim.yShift * sp30;
 
     if (Flags_GetSwitch(play, OBJBIGICLE_GET_SWITCH_FLAG(&this->actor))) {
         Actor_Kill(&this->actor);
@@ -144,7 +146,7 @@ void ObjBigicicle_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjBigicicle_Destroy(Actor* thisx, PlayState* play) {
-    ObjBigicicle* this = (ObjBigicicle*)thisx;
+    ObjBigicicle* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider1);
     Collider_DestroyCylinder(play, &this->collider2);
@@ -178,7 +180,7 @@ void func_80AE8DE4(ObjBigicicle* this, PlayState* play) {
 
 void func_80AE8FD4(ObjBigicicle* this, PlayState* play) {
     if ((this->collider1.base.acFlags & AC_HIT) ||
-        ((this->collider2.base.acFlags & AC_HIT) && (this->collider2.elem.acHitElem->atDmgInfo.dmgFlags & 0x3820))) {
+        ((this->collider2.base.acFlags & AC_HIT) && (this->collider2.info.acHitInfo->toucher.dmgFlags & 0x3820))) {
         if ((this->unk_148 == 0) || (this->unk_149 == 1)) {
             CutsceneManager_Queue(this->actor.csId);
             this->actionFunc = func_80AE9090;
@@ -200,11 +202,11 @@ void func_80AE9090(ObjBigicicle* this, PlayState* play) {
         if (this->unk_149 == 2) {
             f32 temp_f0 = this->actor.scale.y * 2100.0f;
 
-            this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->actor.flags |= ACTOR_FLAG_10;
             this->actor.shape.yOffset = 2100.0f;
             this->actor.world.pos.y -= temp_f0;
-            this->collider1.dim.yShift += TRUNCF_BINANG(temp_f0);
-            this->collider2.dim.yShift += TRUNCF_BINANG(temp_f0);
+            this->collider1.dim.yShift += (s16)temp_f0;
+            this->collider2.dim.yShift += (s16)temp_f0;
             this->actionFunc = func_80AE9258;
         } else {
             this->unk_14A = 50;
@@ -288,7 +290,7 @@ void func_80AE939C(ObjBigicicle* this, PlayState* play) {
 
 void ObjBigicicle_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjBigicicle* this = (ObjBigicicle*)thisx;
+    ObjBigicicle* this = THIS;
     Vec3f sp44;
 
     this->actionFunc(this, play);
@@ -311,7 +313,7 @@ void ObjBigicicle_Update(Actor* thisx, PlayState* play) {
 }
 
 void ObjBigicicle_Draw(Actor* thisx, PlayState* play) {
-    ObjBigicicle* this = (ObjBigicicle*)thisx;
+    ObjBigicicle* this = THIS;
 
     Gfx_DrawDListXlu(play, D_80AE989C[this->unk_149]);
     Gfx_DrawDListXlu(play, D_80AE98A8[this->unk_149]);

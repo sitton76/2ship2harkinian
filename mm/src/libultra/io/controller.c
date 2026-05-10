@@ -1,6 +1,5 @@
 #include "ultra64.h"
 #include "PR/controller.h"
-#include "libc/stdbool.h"
 #include "alignment.h"
 #include "macros.h"
 

@@ -6,14 +6,7 @@
 
 #ifndef __cplusplus
 
-#if (__STDC_VERSION__ >= 202311L)
-// bool is a type in C23, do not define it
-#elif (__STDC_VERSION__ >= 199901L)
-#define bool    _Bool
-#else
-#define bool    int
-#endif
-
+#define bool    u32
 #define false   0
 #define true    1
 

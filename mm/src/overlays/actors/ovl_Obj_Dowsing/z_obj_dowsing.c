@@ -6,7 +6,9 @@
 
 #include "z_obj_dowsing.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((ObjDowsing*)thisx)
 
 void ObjDowsing_Init(Actor* thisx, PlayState* play);
 void ObjDowsing_Destroy(Actor* thisx, PlayState* play);
@@ -15,7 +17,7 @@ void ObjDowsing_Update(Actor* thisx, PlayState* play);
 s32 ObjDowsing_GetFlag(ObjDowsing* this, PlayState* play);
 s32 ObjDowsing_CheckValidSpawn(ObjDowsing* this, PlayState* play);
 
-ActorProfile Obj_Dowsing_Profile = {
+ActorInit Obj_Dowsing_InitVars = {
     /**/ ACTOR_OBJ_DOWSING,
     /**/ ACTORCAT_ITEMACTION,
     /**/ FLAGS,
@@ -51,7 +53,7 @@ s32 ObjDowsing_CheckValidSpawn(ObjDowsing* this, PlayState* play) {
 }
 
 void ObjDowsing_Init(Actor* thisx, PlayState* play) {
-    ObjDowsing* this = (ObjDowsing*)thisx;
+    ObjDowsing* this = THIS;
 
     ObjDowsing_CheckValidSpawn(this, play);
 }
@@ -60,7 +62,7 @@ void ObjDowsing_Destroy(Actor* thisx, PlayState* play) {
 }
 
 void ObjDowsing_Update(Actor* thisx, PlayState* play) {
-    ObjDowsing* this = (ObjDowsing*)thisx;
+    ObjDowsing* this = THIS;
 
     if (!ObjDowsing_CheckValidSpawn(this, play)) {
         Actor_SetClosestSecretDistance(thisx, play);

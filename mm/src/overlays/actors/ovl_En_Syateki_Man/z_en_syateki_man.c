@@ -14,9 +14,9 @@
 #include "overlays/actors/ovl_En_Syateki_Wf/z_en_syateki_wf.h"
 #include "2s2h/GameInteractor/GameInteractor.h"
 
-#define FLAGS                                                                                  \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_LOCK_ON_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_CANT_LOCK_ON)
+
+#define THIS ((EnSyatekiMan*)thisx)
 
 void EnSyatekiMan_Init(Actor* thisx, PlayState* play);
 void EnSyatekiMan_Destroy(Actor* thisx, PlayState* play);
@@ -87,7 +87,7 @@ void EnSyatekiMan_Town_EndGame(EnSyatekiMan* this, PlayState* play);
 // the Heart Piece, then this score will be used instead to determine if the player should get a Purple Rupee.
 #define SG_SWAMP_HEART_PIECE_SCORE (SG_SWAMP_PERFECT_SCORE_WITHOUT_BONUS + (6 * SG_BONUS_POINTS_PER_SECOND))
 
-ActorProfile En_Syateki_Man_Profile = {
+ActorInit En_Syateki_Man_InitVars = {
     /**/ ACTOR_EN_SYATEKI_MAN,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -99,14 +99,13 @@ ActorProfile En_Syateki_Man_Profile = {
     /**/ EnSyatekiMan_Draw,
 };
 
-typedef enum ShootingGalleryManAnimation {
+typedef enum {
     /* 0 */ SG_MAN_ANIM_HANDS_ON_TABLE,
     /* 1 */ SG_MAN_ANIM_HEAD_SCRATCH_LOOP,
-    /* 2 */ SG_MAN_ANIM_HEAD_SCRATCH_END,
-    /* 3 */ SG_MAN_ANIM_MAX
+    /* 2 */ SG_MAN_ANIM_HEAD_SCRATCH_END
 } ShootingGalleryManAnimation;
 
-static AnimationInfo sAnimationInfo[SG_MAN_ANIM_MAX] = {
+static AnimationInfo sAnimationInfo[] = {
     { &gBurlyGuyHandsOnTableAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -8.0f },    // SG_MAN_ANIM_HANDS_ON_TABLE
     { &gBurlyGuyHeadScratchLoopAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_LOOP, -8.0f }, // SG_MAN_ANIM_HEAD_SCRATCH_LOOP
     { &gBurlyGuyHeadScratchEndAnim, 1.0f, 0.0f, 0.0f, ANIMMODE_ONCE, -8.0f },  // SG_MAN_ANIM_HEAD_SCRATCH_END
@@ -202,12 +201,12 @@ void EnSyatekiMan_Swamp_SpawnTargetActors(EnSyatekiMan* this, PlayState* play2, 
 }
 
 void EnSyatekiMan_Init(Actor* thisx, PlayState* play) {
-    EnSyatekiMan* this = (EnSyatekiMan*)thisx;
+    EnSyatekiMan* this = THIS;
     s32 pad;
     Path* path = &play->setupPathList[SG_MAN_GET_PATH_INDEX(&this->actor)];
     s32 actorListLength = sSwampTargetActorListLengths[this->swampTargetActorListIndex];
 
-    this->actor.attentionRangeType = ATTENTION_RANGE_1;
+    this->actor.targetMode = TARGET_MODE_1;
     Actor_SetScale(&this->actor, 0.01f);
     if (play->sceneId == SCENE_SYATEKI_MORI) {
         SkelAnime_InitFlex(play, &this->skelAnime, &gBurlyGuySkel, &gBurlyGuyHeadScratchLoopAnim, this->jointTable,
@@ -250,25 +249,24 @@ void EnSyatekiMan_Destroy(Actor* thisx, PlayState* play) {
  * Moves the player to the destination through automated control stick movements.
  * This is used to move the player to the right place to play the shooting game.
  */
-s32 EnSyatekiMan_MovePlayerToPos(PlayState* play, Vec3f targetPos) {
+s32 EnSyatekiMan_MovePlayerToPos(PlayState* play, Vec3f pos) {
     Player* player = GET_PLAYER(play);
     f32 distXZ;
-    f32 controlStickMagnitude;
-    s16 controlStickAngle;
+    f32 magnitude;
+    s16 yaw = Math_Vec3f_Yaw(&player->actor.world.pos, &pos);
 
-    controlStickAngle = Math_Vec3f_Yaw(&player->actor.world.pos, &targetPos);
-    distXZ = Math_Vec3f_DistXZ(&player->actor.world.pos, &targetPos);
+    distXZ = Math_Vec3f_DistXZ(&player->actor.world.pos, &pos);
 
     if (distXZ < 5.0f) {
-        controlStickMagnitude = 10.0f;
+        magnitude = 10.0f;
     } else if (distXZ < 30.0f) {
-        controlStickMagnitude = 40.0f;
+        magnitude = 40.0f;
     } else {
-        controlStickMagnitude = 80.0f;
+        magnitude = 80.0f;
     }
 
-    play->actorCtx.isOverrideInputOn = true;
-    Actor_SetControlStickData(play, &play->actorCtx.overrideInput, controlStickMagnitude, controlStickAngle);
+    play->actorCtx.unk268 = 1;
+    func_800B6F20(play, &play->actorCtx.unk_26C, magnitude, yaw);
 
     if (distXZ < 5.0f) {
         return true;
@@ -288,7 +286,7 @@ void EnSyatekiMan_SetupIdle(EnSyatekiMan* this, PlayState* play) {
 void EnSyatekiMan_Swamp_Idle(EnSyatekiMan* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         u16 faceReactionTextId;
 
         Actor_ChangeAnimationByInfo(&this->skelAnime, sAnimationInfo, SG_MAN_ANIM_HEAD_SCRATCH_END);
@@ -482,7 +480,7 @@ void EnSyatekiMan_Swamp_Talk(EnSyatekiMan* this, PlayState* play) {
             EnSyatekiMan_Swamp_HandleChoice(this, play);
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             EnSyatekiMan_Swamp_HandleNormalMessage(this, play);
             break;
 
@@ -499,12 +497,12 @@ void EnSyatekiMan_Swamp_Talk(EnSyatekiMan* this, PlayState* play) {
             break;
 
         case TEXT_STATE_NONE:
-        case TEXT_STATE_NEXT:
-        case TEXT_STATE_FADING:
-        case TEXT_STATE_SONG_DEMO_DONE:
+        case TEXT_STATE_1:
+        case TEXT_STATE_3:
+        case TEXT_STATE_7:
         case TEXT_STATE_8:
         case TEXT_STATE_9:
-        case TEXT_STATE_AWAITING_NEXT:
+        case TEXT_STATE_10:
             break;
     }
 
@@ -590,7 +588,7 @@ void EnSyatekiMan_Town_StartIntroTextbox(EnSyatekiMan* this, PlayState* play) {
             }
             break;
 
-        // 2S2H [FD Enhancement] Don't allow playing town archery with FD because Swamp prevents FD archery by default.
+        // 2SH2 [FD Enhancement]  Don't allow playing town archery with FD becuase Swamp prevents FD archery by default.
         // Get Goron's "quite the build" text
         case PLAYER_FORM_FIERCE_DEITY:
         case PLAYER_FORM_GORON:
@@ -623,7 +621,7 @@ void EnSyatekiMan_Town_StartIntroTextbox(EnSyatekiMan* this, PlayState* play) {
 }
 
 void EnSyatekiMan_Town_Idle(EnSyatekiMan* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         u16 faceReactionTextId = Text_GetFaceReaction(play, FACE_REACTION_SET_TOWN_SHOOTING_GALLERY_MAN);
 
         if (faceReactionTextId != 0) {
@@ -861,7 +859,7 @@ void EnSyatekiMan_Town_Talk(EnSyatekiMan* this, PlayState* play) {
             EnSyatekiMan_Town_HandleChoice(this, play);
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             EnSyatekiMan_Town_HandleNormalMessage(this, play);
             break;
 
@@ -876,12 +874,12 @@ void EnSyatekiMan_Town_Talk(EnSyatekiMan* this, PlayState* play) {
             break;
 
         case TEXT_STATE_NONE:
-        case TEXT_STATE_NEXT:
-        case TEXT_STATE_FADING:
-        case TEXT_STATE_SONG_DEMO_DONE:
+        case TEXT_STATE_1:
+        case TEXT_STATE_3:
+        case TEXT_STATE_7:
         case TEXT_STATE_8:
         case TEXT_STATE_9:
-        case TEXT_STATE_AWAITING_NEXT:
+        case TEXT_STATE_10:
             break;
     }
 }
@@ -921,8 +919,8 @@ void EnSyatekiMan_Swamp_SetupGiveReward(EnSyatekiMan* this, PlayState* play) {
 void EnSyatekiMan_Swamp_GiveReward(EnSyatekiMan* this, PlayState* play) {
     Player* player = GET_PLAYER(play);
 
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
-        if ((CURRENT_DAY == 3) && (CURRENT_TIME > CLOCK_TIME(12, 0))) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
+        if ((CURRENT_DAY == 3) && (gSaveContext.save.time > CLOCK_TIME(12, 0))) {
             // We've been having a lot of earthquakes lately.
             Message_StartTextbox(play, 0xA36, &this->actor);
             this->prevTextId = 0xA36;
@@ -933,7 +931,7 @@ void EnSyatekiMan_Swamp_GiveReward(EnSyatekiMan* this, PlayState* play) {
         }
 
         player->stateFlags1 &= ~PLAYER_STATE1_20;
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         this->score = 0;
         this->shootingGameState = SG_GAME_STATE_NONE;
         this->actionFunc = EnSyatekiMan_Swamp_Talk;
@@ -993,12 +991,12 @@ void EnSyatekiMan_Town_GiveReward(EnSyatekiMan* this, PlayState* play) {
             CLEAR_WEEKEVENTREG(WEEKEVENTREG_KICKOUT_TIME_PASSED);
             this->actionFunc = EnSyatekiMan_SetupIdle;
         }
-    } else if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    } else if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         // This may be our last day in business...
         Message_StartTextbox(play, 0x408, &this->actor);
         this->prevTextId = 0x408;
         player->stateFlags1 &= ~PLAYER_STATE1_20;
-        this->actor.flags &= ~ACTOR_FLAG_TALK_OFFER_AUTO_ACCEPTED;
+        this->actor.flags &= ~ACTOR_FLAG_10000;
         this->score = 0;
         this->shootingGameState = SG_GAME_STATE_NONE;
         this->actionFunc = EnSyatekiMan_Town_Talk;
@@ -1487,7 +1485,7 @@ void EnSyatekiMan_Blink(EnSyatekiMan* this) {
 }
 
 void EnSyatekiMan_Update(Actor* thisx, PlayState* play) {
-    EnSyatekiMan* this = (EnSyatekiMan*)thisx;
+    EnSyatekiMan* this = THIS;
 
     this->actionFunc(this, play);
     EnSyatekiMan_Blink(this);
@@ -1500,7 +1498,7 @@ void EnSyatekiMan_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnSyatekiMan_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnSyatekiMan* this = (EnSyatekiMan*)thisx;
+    EnSyatekiMan* this = THIS;
 
     if ((play->sceneId == SCENE_SYATEKI_MIZU) && (limbIndex == BURLY_GUY_LIMB_HEAD)) {
         *dList = gTownShootingGalleryManHeadDL;
@@ -1519,7 +1517,7 @@ s32 EnSyatekiMan_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, V
 }
 
 void EnSyatekiMan_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx) {
-    EnSyatekiMan* this = (EnSyatekiMan*)thisx;
+    EnSyatekiMan* this = THIS;
     Vec3f sFocusOffset = { 1600.0f, 0.0f, 0.0f };
 
     if (limbIndex == BURLY_GUY_LIMB_HEAD) {
@@ -1533,7 +1531,7 @@ void EnSyatekiMan_Draw(Actor* thisx, PlayState* play) {
         gSwampShootingGalleryManEyeHalfTex,
         gSwampShootingGalleryManEyeHalfTex,
     };
-    EnSyatekiMan* this = (EnSyatekiMan*)thisx;
+    EnSyatekiMan* this = THIS;
     s32 pad;
 
     if (play->sceneId == SCENE_SYATEKI_MIZU) {

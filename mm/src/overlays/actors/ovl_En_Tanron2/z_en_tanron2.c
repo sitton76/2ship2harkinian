@@ -4,16 +4,15 @@
  * Description: Wart's Bubbles
  */
 
-#include "prevent_bss_reordering.h"
 #include "z_en_tanron2.h"
 #include "overlays/actors/ovl_Boss_04/z_boss_04.h"
 #include "objects/gameplay_keep/gameplay_keep.h"
 #include "objects/object_boss04/object_boss04.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 
-#define FLAGS                                                                                 \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_DRAW_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_20)
+
+#define THIS ((EnTanron2*)thisx)
 
 void EnTanron2_Init(Actor* thisx, PlayState* play);
 void EnTanron2_Destroy(Actor* thisx, PlayState* play);
@@ -32,7 +31,7 @@ Boss04* D_80BB8450;
 f32 D_80BB8454;
 EnTanron2* D_80BB8458[82];
 
-ActorProfile En_Tanron2_Profile = {
+ActorInit En_Tanron2_InitVars = {
     /**/ ACTOR_EN_TANRON2,
     /**/ ACTORCAT_BOSS,
     /**/ FLAGS,
@@ -81,7 +80,7 @@ static DamageTable sDamageTable = {
 
 static ColliderCylinderInit sCylinderInit1 = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -89,11 +88,11 @@ static ColliderCylinderInit sCylinderInit1 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK3,
+        ELEMTYPE_UNK3,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xFFFFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 30, 50, -25, { 0, 0, 0 } },
@@ -101,7 +100,7 @@ static ColliderCylinderInit sCylinderInit1 = {
 
 static ColliderCylinderInit sCylinderInit2 = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_ON | AT_TYPE_ENEMY,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -109,40 +108,43 @@ static ColliderCylinderInit sCylinderInit2 = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK3,
+        ELEMTYPE_UNK3,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xF7FFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_NORMAL,
-        ACELEM_ON | ACELEM_HOOKABLE,
+        TOUCH_ON | TOUCH_SFX_NORMAL,
+        BUMP_ON | BUMP_HOOKABLE,
         OCELEM_ON,
     },
     { 22, 42, -21, { 0, 0, 0 } },
 };
 
+Color_RGBA8 D_80BB81E8 = { 255, 255, 255, 255 };
+Color_RGBA8 D_80BB81EC = { 255, 100, 100, 255 };
+
 void EnTanron2_Init(Actor* thisx, PlayState* play) {
-    EnTanron2* this = (EnTanron2*)thisx;
+    EnTanron2* this = THIS;
 
     D_80BB8450 = (Boss04*)this->actor.parent;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
 
     if (this->actor.params == 100) {
         this->actor.update = func_80BB7B90;
-        Actor_ChangeCategory(play, &play->actorCtx, &this->actor, ACTORCAT_ENEMY);
+        func_800BC154(play, &play->actorCtx, &this->actor, 5);
         return;
     }
 
-    this->actor.flags |= ACTOR_FLAG_HOOKSHOT_PULLS_ACTOR;
+    this->actor.flags |= ACTOR_FLAG_200;
     Actor_SetScale(&this->actor, 1.0f);
 
     this->actor.draw = NULL;
     this->actor.colChkInfo.health = 1;
     this->actor.colChkInfo.damageTable = &sDamageTable;
-    this->actor.attentionRangeType = ATTENTION_RANGE_5;
+    this->actor.targetMode = TARGET_MODE_5;
 
     Collider_InitAndSetCylinder(play, &this->collider1, &this->actor, &sCylinderInit1);
     Collider_InitAndSetCylinder(play, &this->collider2, &this->actor, &sCylinderInit2);
 
-    if ((KREG(64) != 0) || CHECK_EVENTINF(EVENTINF_INTRO_CS_WATCHED_WART)) {
+    if ((KREG(64) != 0) || CHECK_EVENTINF(EVENTINF_60)) {
         func_80BB69C0(this);
     } else {
         func_80BB6F64(this);
@@ -206,7 +208,7 @@ void func_80BB6B80(EnTanron2* this) {
     this->actor.velocity.x = 0.0f;
     this->unk_158 = 0;
     this->unk_159 = 1;
-    this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags |= ACTOR_FLAG_TARGETABLE;
     this->collider1.dim.radius = 30;
     this->collider1.dim.height = 50;
     this->collider1.dim.yShift = -25;
@@ -222,7 +224,7 @@ void func_80BB6BD8(EnTanron2* this, PlayState* play) {
         this->actor.world.pos.x += this->actor.velocity.x;
         this->actor.world.pos.y += this->actor.velocity.y;
         this->actor.world.pos.z += this->actor.velocity.z;
-        this->actor.velocity.y -= 2.0f;
+        this->actor.velocity.y = this->actor.velocity.y - 2.0f;
 
         if (this->actor.world.pos.y <= this->actor.floorHeight) {
             this->actor.world.pos.y = this->actor.floorHeight;
@@ -253,7 +255,7 @@ void func_80BB6BD8(EnTanron2* this, PlayState* play) {
                 case 2:
                     sp32 = Math_Atan2S(player->actor.world.pos.x - this->actor.world.pos.x,
                                        player->actor.world.pos.z - this->actor.world.pos.z) +
-                           TRUNCF_BINANG(Rand_ZeroFloat(20000.0f));
+                           (s16)Rand_ZeroFloat(20000.0f);
                     this->actor.speed = Rand_ZeroFloat(7.0f) + 7.0f;
                     if ((this->unk_152 == 0) && (D_80BB8450->unk_1F6 == 0)) {
                         this->unk_158 = 1;
@@ -315,7 +317,7 @@ void func_80BB6F78(EnTanron2* this, PlayState* play) {
         case 1:
             if (this->unk_14E == 0) {
                 this->actor.world.pos.y += this->actor.velocity.y;
-                this->actor.velocity.y -= 2.0f;
+                this->actor.velocity.y = this->actor.velocity.y - 2.0f;
 
                 if (this->actor.world.pos.y <= this->actor.floorHeight) {
                     this->actor.world.pos.y = this->actor.floorHeight;
@@ -354,26 +356,24 @@ void func_80BB6F78(EnTanron2* this, PlayState* play) {
 }
 
 void func_80BB71C8(EnTanron2* this, PlayState* play) {
-    static Color_RGBA8 sPrimColor = { 255, 255, 255, 255 };
-    static Color_RGBA8 sEnvColor = { 255, 100, 100, 255 };
     s32 i;
-    Vec3f velocity;
-    Vec3f accel;
-    Vec3f pos;
+    Vec3f spA8;
+    Vec3f sp9C;
+    Vec3f sp90;
 
     for (i = 0; i < 15; i++) {
-        Matrix_RotateYF(Rand_ZeroFloat(2 * M_PIf), MTXMODE_NEW);
-        Matrix_RotateXFApply(Rand_ZeroFloat(2 * M_PIf));
-        Matrix_MultVecZ(Rand_ZeroFloat(10.0f) + 5.0f, &velocity);
-        pos.x = this->actor.world.pos.x + velocity.x;
-        pos.y = this->actor.world.pos.y + velocity.y;
-        pos.z = this->actor.world.pos.z + velocity.z;
+        Matrix_RotateYF(Rand_ZeroFloat(6.2831855f), MTXMODE_NEW);
+        Matrix_RotateXFApply(Rand_ZeroFloat(6.2831855f));
+        Matrix_MultVecZ(Rand_ZeroFloat(10.0f) + 5.0f, &spA8);
+        sp90.x = this->actor.world.pos.x + spA8.x;
+        sp90.y = this->actor.world.pos.y + spA8.y;
+        sp90.z = this->actor.world.pos.z + spA8.z;
 
-        accel.x = velocity.x * -0.03f;
-        accel.y = velocity.y * -0.03f;
-        accel.z = velocity.z * -0.03f;
+        sp9C.x = spA8.x * -0.03f;
+        sp9C.y = spA8.y * -0.03f;
+        sp9C.z = spA8.z * -0.03f;
 
-        EffectSsDtBubble_SpawnCustomColor(play, &pos, &velocity, &accel, &sPrimColor, &sEnvColor,
+        EffectSsDtBubble_SpawnCustomColor(play, &sp90, &spA8, &sp9C, &D_80BB81E8, &D_80BB81EC,
                                           Rand_ZeroFloat(100.0f) + 200.0f, Rand_ZeroFloat(5.0f) + 15.0f, false);
     }
 }
@@ -416,30 +416,31 @@ void func_80BB7408(EnTanron2* this, PlayState* play) {
 }
 
 void func_80BB7578(EnTanron2* this, PlayState* play) {
-    ColliderElement* acHitElem;
+    ColliderInfo* acHitInfo;
     s32 pad;
     Player* player = GET_PLAYER(play);
-    s32 pad2[2];
+    s32 pad2;
+    s32 pad3;
     u8 damage;
 
     if (this->unk_154 == 0) {
         if (this->collider1.base.acFlags & AC_HIT) {
             this->collider1.base.acFlags &= ~AC_HIT;
-            acHitElem = this->collider1.elem.acHitElem;
-            if (acHitElem->atDmgInfo.dmgFlags & 0x80) {
+            acHitInfo = this->collider1.info.acHitInfo;
+            if (acHitInfo->toucher.dmgFlags & 0x80) {
                 func_80BB6B80(this);
                 this->unk_158 = 1;
                 Actor_PlaySfx(&this->actor, NA_SE_EN_IKURA_DAMAGE);
-                if ((player->focusActor != NULL) && (&this->actor != player->focusActor)) {
-                    player->focusActor = &this->actor;
-                    play->actorCtx.attention.tatlHoverActor = &this->actor;
-                    play->actorCtx.attention.reticleActor = &this->actor;
+                if ((player->lockOnActor != NULL) && (&this->actor != player->lockOnActor)) {
+                    player->lockOnActor = &this->actor;
+                    play->actorCtx.targetCtx.fairyActor = &this->actor;
+                    play->actorCtx.targetCtx.lockOnActor = &this->actor;
                 }
             } else {
                 this->unk_154 = 15;
                 if (this->actionFunc != func_80BB69FC) {
                     Matrix_RotateYS(this->actor.yawTowardsPlayer, MTXMODE_NEW);
-                    if ((acHitElem->atDmgInfo.dmgFlags & 0x300000) != 0) {
+                    if ((acHitInfo->toucher.dmgFlags & 0x300000) != 0) {
                         this->unk_154 = 10;
                         Matrix_MultVecZ(-10.0f, &this->actor.velocity);
                     } else {
@@ -479,7 +480,7 @@ void func_80BB7578(EnTanron2* this, PlayState* play) {
 
 void EnTanron2_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnTanron2* this = (EnTanron2*)thisx;
+    EnTanron2* this = THIS;
     s32 pad2[2];
     Input* input;
 
@@ -552,16 +553,16 @@ void EnTanron2_Update(Actor* thisx, PlayState* play) {
 
             if (ABS_ALT(BINANG_SUB(D_80BB8450->actor.yawTowardsPlayer, atan)) > 0x3000) {
                 this->unk_159 = 0;
-                this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+                this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
             } else {
                 this->unk_159 = 1;
-                this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+                this->actor.flags |= ACTOR_FLAG_TARGETABLE;
             }
         }
     }
 
-    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_HOOKSHOT_ATTACHED) && (this->actor.xzDistToPlayer < 80.0f)) {
-        this->actor.flags &= ~ACTOR_FLAG_HOOKSHOT_ATTACHED;
+    if (CHECK_FLAG_ALL(this->actor.flags, ACTOR_FLAG_2000) && (this->actor.xzDistToPlayer < 80.0f)) {
+        this->actor.flags &= ~ACTOR_FLAG_2000;
         this->unk_15A = 25;
         this->unk_159 = 1;
     }
@@ -577,7 +578,7 @@ void EnTanron2_Update(Actor* thisx, PlayState* play) {
 }
 
 void func_80BB7B90(Actor* thisx, PlayState* play) {
-    EnTanron2* this = (EnTanron2*)thisx;
+    EnTanron2* this = THIS;
 
     D_80BB8454 = (Math_SinS(play->gameplayFrames * 0x3000) * 0.1f) + 1.0f;
     if (D_80BB8450->unk_1F6 == 11) {
@@ -635,7 +636,7 @@ void EnTanron2_Draw(Actor* thisx, PlayState* play2) {
             Matrix_Scale(0.13f, 0.14299999f, 0.13f, MTXMODE_APPLY);
             Matrix_RotateZS(-D_80BB8458[i]->unk_14A, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gWartBubbleModelDL);
             FrameInterpolation_RecordCloseChild();
         }
@@ -653,7 +654,7 @@ void EnTanron2_Draw(Actor* thisx, PlayState* play2) {
             Matrix_Translate(tanron2->world.pos.x, D_80BB8450->actor.floorHeight, tanron2->world.pos.z, MTXMODE_NEW);
             Matrix_Scale(0.6f, 0.0f, 0.6f, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gWartShadowModelDL);
             FrameInterpolation_RecordCloseChild();
         }
@@ -676,7 +677,7 @@ void EnTanron2_Draw(Actor* thisx, PlayState* play2) {
                              MTXMODE_NEW);
             Matrix_Scale(D_80BB8454, 0.0f, D_80BB8454, MTXMODE_APPLY);
 
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gEffWaterRippleDL);
             FrameInterpolation_RecordCloseChild();
         }

@@ -1,11 +1,10 @@
 #include "z64.h"
-#include "buffers.h"
 #include "regs.h"
 #include "functions.h"
 #include "macros.h"
 #include "2s2h/framebuffer_effects.h"
+#include <libultraship/bridge.h>
 #include "BenPort.h"
-#include <libultraship/bridge/gfxbridge.h>
 
 // Variables are put before most headers as a hacky way to bypass bss reordering
 OSViMode sNotebookViMode; // placeholder name
@@ -43,6 +42,9 @@ u8 gSysCfbHiResEnabled;
 #include "buffers.h"
 #include "system_malloc.h"
 #include "z64vimode.h"
+
+extern u16 gFramebufferHiRes0[HIRES_BUFFER_WIDTH][HIRES_BUFFER_HEIGHT];
+extern u16 gFramebufferHiRes1[HIRES_BUFFER_WIDTH][HIRES_BUFFER_HEIGHT];
 
 void SysCfb_SetLoResMode(void) {
     gFramebuffers[1] = sCfbLoRes1;
@@ -97,8 +99,8 @@ void SysCfb_SetHiResMode(void) {
 }
 
 void SysCfb_Init(void) {
-    sCfbLoRes1 = gLoBuffer.framebuffer;
-    sCfbLoRes0 = gHiBuffer.framebuffer;
+    sCfbLoRes1 = gFramebuffer1;
+    sCfbLoRes0 = gFramebuffer0;
     sCfbHiRes1 = gFramebufferHiRes1;
     sCfbHiRes0 = gFramebufferHiRes0;
     SysCfb_SetLoResMode();

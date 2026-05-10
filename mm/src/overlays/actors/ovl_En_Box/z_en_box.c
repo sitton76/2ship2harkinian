@@ -39,6 +39,8 @@ when set, gets cleared next EnBox_Update call and clip to the floor
 #define ENBOX_MOVE_0x40 (1 << 6)
 #define ENBOX_MOVE_0x80 (1 << 7)
 
+#define THIS ((EnBox*)thisx)
+
 void EnBox_Init(Actor* thisx, PlayState* play);
 void EnBox_Destroy(Actor* thisx, PlayState* play);
 void EnBox_Update(Actor* thisx, PlayState* play);
@@ -55,7 +57,7 @@ void EnBox_Open(EnBox* this, PlayState* play);
 void func_80867FBC(struct_80867BDC_a0* arg0, PlayState* play, s32 arg2);
 void func_80867FE4(struct_80867BDC_a0* arg0, PlayState* play);
 
-ActorProfile En_Box_Profile = {
+ActorInit En_Box_InitVars = {
     /**/ ACTOR_EN_BOX,
     /**/ ACTORCAT_CHEST,
     /**/ FLAGS,
@@ -68,7 +70,7 @@ ActorProfile En_Box_Profile = {
 };
 
 static InitChainEntry sInitChain[] = {
-    ICHAIN_U8(attentionRangeType, ATTENTION_RANGE_0, ICHAIN_STOP),
+    ICHAIN_U8(targetMode, TARGET_MODE_0, ICHAIN_STOP),
 };
 
 void EnBox_SetupAction(EnBox* this, EnBoxActionFunc func) {
@@ -106,7 +108,7 @@ void func_80867C14(struct_80867BDC_a0* arg0, PlayState* play) {
 void func_80867C8C(struct_80867BDC_a0* arg0, PlayState* play) {
     s32 temp_s6 = arg0->unk_18 - arg0->unk_1C;
     s32 i;
-    s32 pad;
+    f32 pad;
 
     if (temp_s6 > 0) {
         OPEN_DISPS(play->state.gfxCtx);
@@ -134,7 +136,7 @@ void func_80867C8C(struct_80867BDC_a0* arg0, PlayState* play) {
             gDPSetEnvColor(POLY_XLU_DISP++, 255, 150, 0, 255);
             Gfx_SetupDL25_Xlu(play->state.gfxCtx);
             Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(POLY_XLU_DISP++, play->state.gfxCtx);
+            gSPMatrix(POLY_XLU_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(POLY_XLU_DISP++, gEffFlash1DL);
         }
         Matrix_Pop();
@@ -176,7 +178,7 @@ void EnBox_ClipToGround(EnBox* this, PlayState* play) {
 
 void EnBox_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnBox* this = (EnBox*)thisx;
+    EnBox* this = THIS;
     s16 csId;
     CollisionHeader* colHeader;
     f32 startFrame;
@@ -226,7 +228,7 @@ void EnBox_Init(Actor* thisx, PlayState* play) {
         EnBox_SetupAction(this, EnBox_FallOnSwitchFlag);
         this->alpha = 0;
         this->movementFlags |= ENBOX_MOVE_IMMOBILE;
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
     } else if (((this->type == ENBOX_TYPE_BIG_ROOM_CLEAR) || (this->type == ENBOX_TYPE_SMALL_ROOM_CLEAR)) &&
                !Flags_GetClear(play, this->dyna.actor.room)) {
         EnBox_SetupAction(this, EnBox_AppearOnRoomClear);
@@ -238,7 +240,7 @@ void EnBox_Init(Actor* thisx, PlayState* play) {
         }
         this->alpha = 0;
         this->movementFlags |= ENBOX_MOVE_IMMOBILE;
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
     } else if ((this->type == ENBOX_TYPE_BIG_SONG_ZELDAS_LULLABY) || (this->type == ENBOX_TYPE_BIG_SONG_SUNS)) {
 
     } else if (((this->type == ENBOX_TYPE_BIG_SWITCH_FLAG) || (this->type == ENBOX_TYPE_SMALL_SWITCH_FLAG)) &&
@@ -252,7 +254,7 @@ void EnBox_Init(Actor* thisx, PlayState* play) {
         }
         this->alpha = 0;
         this->movementFlags |= ENBOX_MOVE_IMMOBILE;
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
     } else {
         if ((this->type == ENBOX_TYPE_BIG_INVISIBLE) || (this->type == ENBOX_TYPE_SMALL_INVISIBLE)) {
             this->dyna.actor.flags |= ACTOR_FLAG_REACT_TO_LENS;
@@ -263,7 +265,7 @@ void EnBox_Init(Actor* thisx, PlayState* play) {
     }
 
     if ((this->getItemId == GI_STRAY_FAIRY) && !Flags_GetTreasure(play, ENBOX_GET_CHEST_FLAG(&this->dyna.actor))) {
-        this->dyna.actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->dyna.actor.flags |= ACTOR_FLAG_10;
     }
 
     this->dyna.actor.shape.rot.y += 0x8000;
@@ -296,7 +298,7 @@ void EnBox_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnBox_Destroy(Actor* thisx, PlayState* play) {
-    EnBox* this = (EnBox*)thisx;
+    EnBox* this = THIS;
 
     DynaPoly_DeleteBgActor(play, &play->colCtx.dyna, this->dyna.bgId);
 }
@@ -497,7 +499,7 @@ void EnBox_WaitOpen(EnBox* this, PlayState* play) {
         Player* player = GET_PLAYER(play);
         Vec3f offset;
 
-        Actor_WorldToActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
+        Actor_OffsetOfPointInActorCoords(&this->dyna.actor, &offset, &player->actor.world.pos);
         if ((offset.z > -50.0f) && (offset.z < 0.0f) && (fabsf(offset.y) < 10.0f) && (fabsf(offset.x) < 20.0f) &&
             Player_IsFacingActor(&this->dyna.actor, 0x3000, play)) {
             if (((this->getItemId == GI_HEART_PIECE) || (this->getItemId == GI_BOTTLE)) &&
@@ -599,7 +601,7 @@ void EnBox_SpawnIceSmoke(EnBox* this, PlayState* play) {
 }
 
 void EnBox_Update(Actor* thisx, PlayState* play) {
-    EnBox* this = (EnBox*)thisx;
+    EnBox* this = THIS;
 
     if (this->movementFlags & ENBOX_MOVE_STICK_TO_GROUND) {
         this->movementFlags &= ~ENBOX_MOVE_STICK_TO_GROUND;
@@ -629,10 +631,10 @@ void EnBox_Update(Actor* thisx, PlayState* play) {
 
 void EnBox_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* thisx, Gfx** gfx) {
     s32 pad;
-    EnBox* this = (EnBox*)thisx;
+    EnBox* this = THIS;
 
     if (limbIndex == OBJECT_BOX_CHEST_LIMB_01) {
-        MATRIX_FINALIZE_AND_LOAD((*gfx)++, play->state.gfxCtx);
+        gSPMatrix((*gfx)++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         if (this->type == ENBOX_TYPE_BIG_ORNATE) {
             gSPDisplayList((*gfx)++, &gBoxChestBaseOrnateDL);
         } else if (Actor_IsSmallChest(this)) {
@@ -645,7 +647,7 @@ void EnBox_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot,
             gSPDisplayList((*gfx)++, &gBoxChestBaseGildedDL);
         }
     } else if (limbIndex == OBJECT_BOX_CHEST_LIMB_03) {
-        MATRIX_FINALIZE_AND_LOAD((*gfx)++, play->state.gfxCtx);
+        gSPMatrix((*gfx)++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         if (this->type == ENBOX_TYPE_BIG_ORNATE) {
             gSPDisplayList((*gfx)++, &gBoxChestLidOrnateDL);
         } else if (Actor_IsSmallChest(this)) {
@@ -693,7 +695,7 @@ Gfx* EnBox_SetRenderMode3(GraphicsContext* gfxCtx) {
 
 void EnBox_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnBox* this = (EnBox*)thisx;
+    EnBox* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 

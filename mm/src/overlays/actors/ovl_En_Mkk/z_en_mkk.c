@@ -7,7 +7,9 @@
 #include "z_en_mkk.h"
 #include "objects/object_mkk/object_mkk.h"
 
-#define FLAGS (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_HOSTILE)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_UNFRIENDLY)
+
+#define THIS ((EnMkk*)thisx)
 
 void EnMkk_Init(Actor* thisx, PlayState* play);
 void EnMkk_Destroy(Actor* thisx, PlayState* play);
@@ -33,7 +35,7 @@ void func_80A4E67C(EnMkk* this);
 void func_80A4E84C(EnMkk* this);
 void func_80A4EBBC(EnMkk* this, PlayState* play);
 
-ActorProfile En_Mkk_Profile = {
+ActorInit En_Mkk_InitVars = {
     /**/ ACTOR_EN_MKK,
     /**/ ACTORCAT_ENEMY,
     /**/ FLAGS,
@@ -47,7 +49,7 @@ ActorProfile En_Mkk_Profile = {
 
 static ColliderSphereInit sSphereInit = {
     {
-        COL_MATERIAL_HIT3,
+        COLTYPE_HIT3,
         AT_NONE | AT_TYPE_ENEMY,
         AC_NONE | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -55,11 +57,11 @@ static ColliderSphereInit sSphereInit = {
         COLSHAPE_SPHERE,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0xF7CFFFFF, 0x00, 0x04 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_ON | ATELEM_SFX_HARD,
-        ACELEM_ON,
+        TOUCH_ON | TOUCH_SFX_HARD,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 1, { { 0, 0, 0 }, 15 }, 100 },
@@ -112,7 +114,7 @@ static DamageTable sDamageTable = {
 static InitChainEntry sInitChain[] = {
     ICHAIN_F32_DIV1000(gravity, -500, ICHAIN_CONTINUE),
     ICHAIN_F32(terminalVelocity, -5, ICHAIN_CONTINUE),
-    ICHAIN_F32(lockOnArrowOffset, 3000, ICHAIN_STOP),
+    ICHAIN_F32(targetArrowOffset, 3000, ICHAIN_STOP),
 };
 
 static Color_RGBA8 D_80A4F780 = { 250, 250, 250, 255 };
@@ -136,7 +138,7 @@ static Color_RGBA8 D_80A4F7C4[] = {
 };
 
 void EnMkk_Init(Actor* thisx, PlayState* play) {
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
     s32 paramsFF00;
     s32 params2;
 
@@ -166,9 +168,9 @@ void EnMkk_Init(Actor* thisx, PlayState* play) {
     this->actor.params &= 1;
 
     if (this->actor.params == 1) {
-        this->actor.hintId = TATL_HINT_ID_WHITE_BOE;
+        this->actor.hintId = 0x3C;
     } else {
-        this->actor.hintId = TATL_HINT_ID_BLACK_BOE;
+        this->actor.hintId = 0x2C;
     }
 
     if ((paramsFF00 == 0) || (paramsFF00 == 255)) {
@@ -185,7 +187,7 @@ void EnMkk_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnMkk_Destroy(Actor* thisx, PlayState* play) {
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
 
     Collider_DestroySphere(play, &this->collider);
 }
@@ -193,7 +195,7 @@ void EnMkk_Destroy(Actor* thisx, PlayState* play) {
 void func_80A4E0CC(EnMkk* this) {
     this->alpha = 0;
     this->unk_14B |= 3;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actionFunc = func_80A4E100;
 }
 
@@ -209,7 +211,7 @@ void func_80A4E100(EnMkk* this, PlayState* play) {
         this->primColorSelect = 3;
         this->collider.base.acFlags |= AC_ON;
         this->alpha = 255;
-        this->actor.flags |= ACTOR_FLAG_ATTENTION_ENABLED;
+        this->actor.flags |= ACTOR_FLAG_TARGETABLE;
         this->actor.shape.rot.y = this->actor.yawTowardsPlayer;
         this->unk_14B &= ~4;
         func_80A4E190(this);
@@ -277,7 +279,7 @@ void func_80A4E2E8(EnMkk* this, PlayState* play) {
     if (sp20) {
         this->unk_14B &= ~2;
         func_80A4E190(this);
-    } else if ((this->unk_149 == 0) && !(player->stateFlags3 & PLAYER_STATE3_100) &&
+    } else if ((this->unk_149 == 0) && (!(player->stateFlags3 & PLAYER_STATE3_100)) &&
                (Player_GetMask(play) != PLAYER_MASK_STONE) && (this->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
                Actor_IsFacingPlayer(&this->actor, 0x1800) && (this->actor.xzDistToPlayer < 120.0f) &&
                (fabsf(this->actor.playerHeightRel) < 100.0f)) {
@@ -308,9 +310,9 @@ void func_80A4E60C(EnMkk* this, PlayState* play) {
 
 void func_80A4E67C(EnMkk* this) {
     this->unk_14B |= 1;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->collider.base.acFlags &= ~AC_ON;
-    this->actor.flags |= ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    this->actor.flags |= ACTOR_FLAG_10;
     Actor_PlaySfx(&this->actor, NA_SE_EN_PO_DEAD);
     this->alpha = 254;
     func_800BE568(&this->actor, &this->collider);
@@ -393,7 +395,7 @@ void func_80A4E84C(EnMkk* this) {
 void func_80A4EBBC(EnMkk* this, PlayState* play) {
     if (this->collider.base.acFlags & AC_HIT) {
         this->collider.base.acFlags &= ~AC_HIT;
-        Actor_SetDropFlag(&this->actor, &this->collider.elem);
+        Actor_SetDropFlag(&this->actor, &this->collider.info);
         Enemy_StartFinishingBlow(play, &this->actor);
         func_80A4E67C(this);
     }
@@ -402,7 +404,7 @@ void func_80A4EBBC(EnMkk* this, PlayState* play) {
 void EnMkk_Update(Actor* thisx, PlayState* play) {
     s32 pad;
     Player* player;
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
 
     if (this->primColorSelect > 0) {
         this->primColorSelect--;
@@ -440,7 +442,7 @@ void EnMkk_Update(Actor* thisx, PlayState* play) {
 void func_80A4EDF0(EnMkk* this) {
     this->alpha = 0;
     this->unk_14B |= 3;
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actor.draw = NULL;
     this->actor.update = func_80A4F16C;
     this->actor.gravity = -0.5f;
@@ -452,12 +454,12 @@ void func_80A4EE48(EnMkk* this, PlayState* play) {
     if (this->unk_14E > 0) {
         this->unk_14E--;
         if (this->unk_14E == 0) {
-            this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+            this->actor.flags &= ~ACTOR_FLAG_10;
         }
     } else if ((this->actor.xzDistToPlayer < this->unk_178) && (Player_GetMask(play) != PLAYER_MASK_STONE)) {
         this->actor.update = EnMkk_Update;
         this->actor.draw = EnMkk_Draw;
-        this->actor.flags &= ~ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+        this->actor.flags &= ~ACTOR_FLAG_10;
         func_80A4E0CC(this);
     }
 }
@@ -503,7 +505,7 @@ void func_80A4EF74(EnMkk* this, PlayState* play) {
 }
 
 void func_80A4F16C(Actor* thisx, PlayState* play) {
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
 
     this->actionFunc(this, play);
 }
@@ -512,7 +514,7 @@ void EnMkk_Draw(Actor* thisx, PlayState* play) {
     EnMkkDlists* dLists = &sBoeDLists[thisx->params];
     Gfx* gfx;
     Color_RGBA8* primColors;
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
 
     if (this->actor.projectedPos.z > 0.0f) {
         MtxF* matrix;
@@ -525,7 +527,7 @@ void EnMkk_Draw(Actor* thisx, PlayState* play) {
             gSPDisplayList(&gfx[0], gSetupDLs[SETUPDL_25]);
             gDPSetPrimColor(&gfx[1], 0, 0xFF, primColors->r, primColors->g, primColors->b, primColors->a);
             gSPSegment(&gfx[2], 0x08, D_801AEFA0);
-            MATRIX_FINALIZE_AND_LOAD(&gfx[3], play->state.gfxCtx);
+            gSPMatrix(&gfx[3], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(&gfx[4], dLists->unkC);
             POLY_OPA_DISP = &gfx[5];
         }
@@ -534,7 +536,7 @@ void EnMkk_Draw(Actor* thisx, PlayState* play) {
         gDPSetEnvColor(&gfx[1], 255, 255, 255, this->alpha);
         gSPDisplayList(&gfx[2], dLists->unk0);
         Matrix_ReplaceRotation(&play->billboardMtxF);
-        MATRIX_FINALIZE_AND_LOAD(&gfx[3], play->state.gfxCtx);
+        gSPMatrix(&gfx[3], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         gSPDisplayList(&gfx[4], dLists->unk4);
         if (thisx->params == 0) {
             matrix = Matrix_GetCurrent();
@@ -543,7 +545,7 @@ void EnMkk_Draw(Actor* thisx, PlayState* play) {
             matrix->mf[3][2] = this->unk_154.z;
 
             Matrix_Scale(0.85f, 0.85f, 0.85f, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(&gfx[5], play->state.gfxCtx);
+            gSPMatrix(&gfx[5], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(&gfx[6], dLists->unk4);
 
             matrix->mf[3][0] = this->unk_160.x;
@@ -551,7 +553,7 @@ void EnMkk_Draw(Actor* thisx, PlayState* play) {
             matrix->mf[3][2] = this->unk_160.z;
 
             Matrix_Scale(0.85f, 0.85f, 0.85f, MTXMODE_APPLY);
-            MATRIX_FINALIZE_AND_LOAD(&gfx[7], play->state.gfxCtx);
+            gSPMatrix(&gfx[7], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
             gSPDisplayList(&gfx[8], dLists->unk4);
             gSPDisplayList(&gfx[9], dLists->unk8);
 
@@ -570,7 +572,7 @@ void func_80A4F4C8(Actor* thisx, PlayState* play) {
     Gfx* gfx;
     MtxF* matrix;
     EnMkkDlists* dLists = &sBoeDLists[thisx->params];
-    EnMkk* this = (EnMkk*)thisx;
+    EnMkk* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
@@ -579,7 +581,7 @@ void func_80A4F4C8(Actor* thisx, PlayState* play) {
     gDPSetEnvColor(&gfx[1], 255, 255, 255, this->alpha);
     gSPDisplayList(&gfx[2], dLists->unk0);
     Matrix_ReplaceRotation(&play->billboardMtxF);
-    MATRIX_FINALIZE_AND_LOAD(&gfx[3], play->state.gfxCtx);
+    gSPMatrix(&gfx[3], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[4], dLists->unk4);
 
     matrix = Matrix_GetCurrent();
@@ -587,21 +589,21 @@ void func_80A4F4C8(Actor* thisx, PlayState* play) {
     matrix->mf[3][1] = this->unk_154.y + 5.0f;
     matrix->mf[3][2] = this->unk_154.z;
 
-    MATRIX_FINALIZE_AND_LOAD(&gfx[5], play->state.gfxCtx);
+    gSPMatrix(&gfx[5], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[6], dLists->unk4);
 
     matrix->mf[3][0] = this->unk_160.x;
     matrix->mf[3][1] = this->unk_160.y + 5.0f;
     matrix->mf[3][2] = this->unk_160.z;
 
-    MATRIX_FINALIZE_AND_LOAD(&gfx[7], play->state.gfxCtx);
+    gSPMatrix(&gfx[7], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[8], dLists->unk4);
 
     matrix->mf[3][0] = this->unk_16C.x;
     matrix->mf[3][1] = this->unk_16C.y + 5.0f;
     matrix->mf[3][2] = this->unk_16C.z;
 
-    MATRIX_FINALIZE_AND_LOAD(&gfx[9], play->state.gfxCtx);
+    gSPMatrix(&gfx[9], Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(&gfx[10], dLists->unk4);
     gSPDisplayList(&gfx[11], dLists->unk8);
     POLY_XLU_DISP = &gfx[12];

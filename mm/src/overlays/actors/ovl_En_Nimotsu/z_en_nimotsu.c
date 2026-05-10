@@ -7,14 +7,18 @@
 #include "z_en_nimotsu.h"
 #include "assets/objects/object_boj/object_boj.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_CULLING_DISABLED)
+#define FLAGS (ACTOR_FLAG_10)
+
+#define THIS ((EnNimotsu*)thisx)
 
 void EnNimotsu_Init(Actor* thisx, PlayState* play);
 void EnNimotsu_Destroy(Actor* thisx, PlayState* play);
 void EnNimotsu_Update(Actor* thisx, PlayState* play);
 void EnNimotsu_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile En_Nimotsu_Profile = {
+void EnNimotsu_UpdateCollision(EnNimotsu* this, PlayState* play);
+
+ActorInit En_Nimotsu_InitVars = {
     /**/ ACTOR_EN_NIMOTSU,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -28,7 +32,7 @@ ActorProfile En_Nimotsu_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -36,11 +40,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK4,
+        ELEMTYPE_UNK4,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 10, 30, 0, { 0, 0, 0 } },
@@ -53,7 +57,7 @@ void EnNimotsu_UpdateCollision(EnNimotsu* this, PlayState* play) {
 }
 
 void EnNimotsu_Init(Actor* thisx, PlayState* play) {
-    EnNimotsu* this = (EnNimotsu*)thisx;
+    EnNimotsu* this = THIS;
 
     Collider_InitCylinder(play, &this->collider);
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
@@ -65,14 +69,14 @@ void EnNimotsu_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnNimotsu_Destroy(Actor* thisx, PlayState* play) {
-    EnNimotsu* this = (EnNimotsu*)thisx;
+    EnNimotsu* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnNimotsu_Update(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnNimotsu* this = (EnNimotsu*)thisx;
+    EnNimotsu* this = THIS;
     Vec3f dustPosition;
 
     Actor_MoveWithGravity(&this->actor);
@@ -86,7 +90,7 @@ void EnNimotsu_Update(Actor* thisx, PlayState* play) {
             dustPosition.x = this->actor.world.pos.x + Rand_CenteredFloat(15.0f);
             dustPosition.y = this->actor.world.pos.y;
             dustPosition.z = this->actor.world.pos.z + Rand_CenteredFloat(15.0f);
-            Actor_SpawnFloorDustRing(play, &this->actor, &dustPosition, 20.0f, 0, 2.0f, 0, 0, false);
+            Actor_SpawnFloorDustRing(play, &this->actor, &dustPosition, 20.0f, 0, 2.0f, 0, 0, 0);
         }
     }
 
@@ -95,14 +99,14 @@ void EnNimotsu_Update(Actor* thisx, PlayState* play) {
 
 void EnNimotsu_Draw(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnNimotsu* this = (EnNimotsu*)thisx;
+    EnNimotsu* this = THIS;
     Vec3f position;
     Vec3f scale;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, &gBombShopBagDL);
     Gfx_SetupDL25_Xlu(play->state.gfxCtx);
 

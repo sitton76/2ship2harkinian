@@ -9,12 +9,14 @@
 
 #define FLAGS 0x00000000
 
+#define THIS ((ObjMilkBin*)thisx)
+
 void ObjMilkBin_Init(Actor* thisx, PlayState* play);
 void ObjMilkBin_Destroy(Actor* thisx, PlayState* play);
 void ObjMilkBin_Update(Actor* thisx, PlayState* play2);
 void ObjMilkBin_Draw(Actor* thisx, PlayState* play);
 
-ActorProfile Obj_Milk_Bin_Profile = {
+ActorInit Obj_Milk_Bin_InitVars = {
     /**/ ACTOR_OBJ_MILK_BIN,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -28,7 +30,7 @@ ActorProfile Obj_Milk_Bin_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_HARD,
+        COLTYPE_HARD,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -36,18 +38,18 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0xF7CFFFFF, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 12, 30, 0, { 0, 0, 0 } },
 };
 
 void ObjMilkBin_Init(Actor* thisx, PlayState* play) {
-    ObjMilkBin* this = (ObjMilkBin*)thisx;
+    ObjMilkBin* this = THIS;
 
     Collider_InitAndSetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     Collider_UpdateCylinder(&this->actor, &this->collider);
@@ -62,17 +64,17 @@ void ObjMilkBin_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjMilkBin_Destroy(Actor* thisx, PlayState* play) {
-    ObjMilkBin* this = (ObjMilkBin*)thisx;
+    ObjMilkBin* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void ObjMilkBin_Update(Actor* thisx, PlayState* play2) {
     PlayState* play = play2;
-    ObjMilkBin* this = (ObjMilkBin*)thisx;
+    ObjMilkBin* this = THIS;
 
     if (this->type == OBJ_MILK_BIN_TYPE_1) {
-        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_DEFENDED_AGAINST_ALIENS)) {
+        if (CHECK_WEEKEVENTREG(WEEKEVENTREG_DEFENDED_AGAINST_THEM)) {
             if (((gSaveContext.save.day == 2) && (gSaveContext.save.isNight == 1)) || (gSaveContext.save.day >= 3)) {
                 Actor_Kill(&this->actor);
                 return;
@@ -93,7 +95,7 @@ void ObjMilkBin_Update(Actor* thisx, PlayState* play2) {
 }
 
 void ObjMilkBin_Draw(Actor* thisx, PlayState* play) {
-    ObjMilkBin* this = (ObjMilkBin*)thisx;
+    ObjMilkBin* this = THIS;
 
     if (!(this->disableDraw & 1)) {
         Gfx_DrawDListOpa(play, gMilkBinMilkJarDL);

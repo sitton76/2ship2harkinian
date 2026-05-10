@@ -6,9 +6,9 @@
 
 #include "z_en_hgo.h"
 
-#define FLAGS                                                                                  \
-    (ACTOR_FLAG_ATTENTION_ENABLED | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_UPDATE_CULLING_DISABLED | \
-     ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_TARGETABLE | ACTOR_FLAG_FRIENDLY | ACTOR_FLAG_10 | ACTOR_FLAG_2000000)
+
+#define THIS ((EnHgo*)thisx)
 
 void EnHgo_Init(Actor* thisx, PlayState* play);
 void EnHgo_Destroy(Actor* thisx, PlayState* play);
@@ -23,6 +23,9 @@ void EnHgo_Talk(EnHgo* this, PlayState* play);
 void EnHgo_SetupDialogueHandler(EnHgo* this);
 void EnHgo_DefaultDialogueHandler(EnHgo* this, PlayState* play);
 void EnHgo_HandlePlayerChoice(EnHgo* this, PlayState* play);
+s32 EnHgo_HandleCsAction(EnHgo* this, PlayState* play);
+s32 EnHgo_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx);
+void EnHgo_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* pos, Actor* thisx);
 
 #define TALK_FLAG_NONE 0
 #define TALK_FLAG_HAS_SPOKEN_WITH_HUMAN (1 << 0)
@@ -35,7 +38,7 @@ typedef enum {
     /* 2 */ HGO_EYE_CLOSED
 } EyeState;
 
-ActorProfile En_Hgo_Profile = {
+ActorInit En_Hgo_InitVars = {
     /**/ ACTOR_EN_HGO,
     /**/ ACTORCAT_NPC,
     /**/ FLAGS,
@@ -70,7 +73,7 @@ static AnimationInfo sAnimationInfo[HGO_ANIM_MAX] = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_NONE,
+        COLTYPE_NONE,
         AT_NONE,
         AC_NONE,
         OC1_ON | OC1_TYPE_ALL,
@@ -78,11 +81,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK0,
+        ELEMTYPE_UNK0,
         { 0x00000000, 0x00, 0x00 },
         { 0x00000000, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_NONE,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_NONE,
         OCELEM_ON,
     },
     { 18, 46, 0, { 0, 0, 0 } },
@@ -92,7 +95,7 @@ static CollisionCheckInfoInit2 sColChkInfoInit = { 0, 0, 0, 0, MASS_IMMOVABLE };
 
 void EnHgo_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
 
     ActorShape_Init(&thisx->shape, 0.0f, ActorShadow_DrawCircle, 36.0f);
     SkelAnime_InitFlex(play, &this->skelAnime, &gPamelasFatherHumanSkel, &gPamelasFatherArmsFoldedAnim,
@@ -100,7 +103,7 @@ void EnHgo_Init(Actor* thisx, PlayState* play) {
     Collider_InitCylinder(play, &this->collider);
     Collider_SetCylinder(play, &this->collider, &this->actor, &sCylinderInit);
     CollisionCheck_SetInfo2(&thisx->colChkInfo, NULL, &sColChkInfoInit);
-    thisx->attentionRangeType = ATTENTION_RANGE_6;
+    thisx->targetMode = TARGET_MODE_6;
 
     this->eyeIndex = 0;
     this->blinkTimer = 0;
@@ -117,13 +120,13 @@ void EnHgo_Init(Actor* thisx, PlayState* play) {
 }
 
 void EnHgo_Destroy(Actor* thisx, PlayState* play) {
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
 
     Collider_DestroyCylinder(play, &this->collider);
 }
 
 void EnHgo_SetupDoNothing(EnHgo* this) {
-    this->actor.flags &= ~ACTOR_FLAG_ATTENTION_ENABLED;
+    this->actor.flags &= ~ACTOR_FLAG_TARGETABLE;
     this->actionFunc = EnHgo_DoNothing;
 }
 
@@ -147,7 +150,7 @@ void EnHgo_SetupTalk(EnHgo* this) {
 }
 
 void EnHgo_Talk(EnHgo* this, PlayState* play) {
-    if (Actor_TalkOfferAccepted(&this->actor, &play->state)) {
+    if (Actor_ProcessTalkRequest(&this->actor, &play->state)) {
         if (Player_GetMask(play) == PLAYER_MASK_GIBDO) {
             if (!(this->talkFlags & TALK_FLAG_HAS_SPOKEN_WITH_GIBDO_MASK)) {
                 this->talkFlags |= TALK_FLAG_HAS_SPOKEN_WITH_GIBDO_MASK;
@@ -190,13 +193,13 @@ void EnHgo_SetupDialogueHandler(EnHgo* this) {
 void EnHgo_DefaultDialogueHandler(EnHgo* this, PlayState* play) {
     switch (Message_GetState(&play->msgCtx)) {
         case TEXT_STATE_NONE:
-        case TEXT_STATE_NEXT:
+        case TEXT_STATE_1:
         case TEXT_STATE_CLOSING:
-        case TEXT_STATE_FADING:
+        case TEXT_STATE_3:
         case TEXT_STATE_CHOICE:
             break;
 
-        case TEXT_STATE_EVENT:
+        case TEXT_STATE_5:
             EnHgo_HandlePlayerChoice(this, play);
             break;
 
@@ -280,7 +283,7 @@ void EnHgo_HandlePlayerChoice(EnHgo* this, PlayState* play) {
     }
 }
 
-s32 EnHgo_HandleCutscene(EnHgo* this, PlayState* play) {
+s32 EnHgo_HandleCsAction(EnHgo* this, PlayState* play) {
     s32 cueChannel;
 
     if (Cutscene_IsCueInChannel(play, CS_CMD_ACTOR_CUE_486)) {
@@ -381,12 +384,12 @@ void EnHgo_UpdateModel(EnHgo* this, PlayState* play) {
 }
 
 void EnHgo_Update(Actor* thisx, PlayState* play) {
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
     s32 pad;
 
     this->actionFunc(this, play);
     SkelAnime_Update(&this->skelAnime);
-    if (EnHgo_HandleCutscene(this, play)) {
+    if (EnHgo_HandleCsAction(this, play)) {
         Actor_TrackNone(&this->headRot, &this->torsoRot);
     } else if (this->actionFunc != EnHgo_DoNothing) {
         if (this->actionFunc != EnHgo_UpdateCollision) {
@@ -398,7 +401,7 @@ void EnHgo_Update(Actor* thisx, PlayState* play) {
 }
 
 s32 EnHgo_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* pos, Vec3s* rot, Actor* thisx) {
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
 
     if (limbIndex == PAMELAS_FATHER_HUMAN_LIMB_HEAD) {
         rot->x += this->headRot.y;
@@ -408,7 +411,7 @@ s32 EnHgo_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f* p
 }
 
 void EnHgo_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* pos, Actor* thisx) {
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
 
     if (limbIndex == PAMELAS_FATHER_HUMAN_LIMB_HEAD) {
         Matrix_Get(&this->mf);
@@ -423,16 +426,16 @@ static TexturePtr sEyeTextures[] = {
 };
 
 void EnHgo_Draw(Actor* thisx, PlayState* play) {
-    EnHgo* this = (EnHgo*)thisx;
+    EnHgo* this = THIS;
 
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     gSPSegment(POLY_OPA_DISP++, 0x08, Lib_SegmentedToVirtual(sEyeTextures[this->eyeIndex]));
     SkelAnime_DrawFlexOpa(play, this->skelAnime.skeleton, this->skelAnime.jointTable, this->skelAnime.dListCount,
-                          EnHgo_OverrideLimbDraw, EnHgo_PostLimbDraw, &this->actor);
+                          EnHgo_OverrideLimbDraw, &EnHgo_PostLimbDraw, &this->actor);
     Matrix_Put(&this->mf);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gPamelasFatherHumanEyebrowsDL);
 
     CLOSE_DISPS(play->state.gfxCtx);

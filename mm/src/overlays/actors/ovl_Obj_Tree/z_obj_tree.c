@@ -7,7 +7,9 @@
 #include "z_obj_tree.h"
 #include "objects/object_tree/object_tree.h"
 
-#define FLAGS (ACTOR_FLAG_UPDATE_DURING_OCARINA)
+#define FLAGS (ACTOR_FLAG_2000000)
+
+#define THIS ((ObjTree*)thisx)
 
 void ObjTree_Init(Actor* thisx, PlayState* play);
 void ObjTree_Destroy(Actor* thisx, PlayState* play);
@@ -18,7 +20,7 @@ void ObjTree_DoNothing(ObjTree* this, PlayState* play);
 void ObjTree_SetupDoNothing(ObjTree* this);
 void ObjTree_Sway(ObjTree* this, PlayState* play);
 
-ActorProfile Obj_Tree_Profile = {
+ActorInit Obj_Tree_InitVars = {
     /**/ ACTOR_OBJ_TREE,
     /**/ ACTORCAT_PROP,
     /**/ FLAGS,
@@ -32,7 +34,7 @@ ActorProfile Obj_Tree_Profile = {
 
 static ColliderCylinderInit sCylinderInit = {
     {
-        COL_MATERIAL_TREE,
+        COLTYPE_TREE,
         AT_NONE,
         AC_ON | AC_TYPE_PLAYER,
         OC1_ON | OC1_TYPE_ALL,
@@ -40,11 +42,11 @@ static ColliderCylinderInit sCylinderInit = {
         COLSHAPE_CYLINDER,
     },
     {
-        ELEM_MATERIAL_UNK1,
+        ELEMTYPE_UNK1,
         { 0x00000000, 0x00, 0x00 },
         { 0x0100020A, 0x00, 0x00 },
-        ATELEM_NONE | ATELEM_SFX_NORMAL,
-        ACELEM_ON,
+        TOUCH_NONE | TOUCH_SFX_NORMAL,
+        BUMP_ON,
         OCELEM_ON,
     },
     { 28, 120, 0, { 0, 0, 0 } },
@@ -89,12 +91,12 @@ static CollisionCheckInfoInit2 sColchkInfoInit = { 8, 0, 0, 0, MASS_HEAVY };
 
 void ObjTree_Init(Actor* thisx, PlayState* play) {
     s32 pad;
-    ObjTree* this = (ObjTree*)thisx;
+    ObjTree* this = THIS;
     CollisionHeader* colHeader = NULL;
 
     if (OBJTREE_ISLARGE(&this->dyna.actor)) {
         Actor_SetScale(&this->dyna.actor, 0.15f);
-        this->dyna.actor.cullingVolumeDistance = 4000.0f;
+        this->dyna.actor.uncullZoneForward = 4000.0f;
     } else {
         Actor_SetScale(&this->dyna.actor, 0.1f);
         DynaPolyActor_Init(&this->dyna, DYNA_TRANSFORM_POS);
@@ -117,7 +119,7 @@ void ObjTree_Init(Actor* thisx, PlayState* play) {
 }
 
 void ObjTree_Destroy(Actor* thisx, PlayState* play) {
-    ObjTree* this = (ObjTree*)thisx;
+    ObjTree* this = THIS;
     s32 bgId;
 
     if (!OBJTREE_ISLARGE(&this->dyna.actor)) {
@@ -171,7 +173,7 @@ void ObjTree_UpdateCollision(ObjTree* this, PlayState* play) {
 }
 
 void ObjTree_Update(Actor* thisx, PlayState* play) {
-    ObjTree* this = (ObjTree*)thisx;
+    ObjTree* this = THIS;
 
     this->actionFunc(this, play);
     ObjTree_UpdateCollision(this, play);
@@ -184,11 +186,11 @@ void ObjTree_Draw(Actor* thisx, PlayState* play) {
     OPEN_DISPS(play->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gTreeBodyDL);
 
     Matrix_RotateZYX(xRot, 0, zRot, MTXMODE_APPLY);
-    MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
+    gSPMatrix(POLY_OPA_DISP++, Matrix_NewMtx(play->state.gfxCtx), G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(POLY_OPA_DISP++, gTreeLeavesDL);
 
     CLOSE_DISPS(play->state.gfxCtx);
