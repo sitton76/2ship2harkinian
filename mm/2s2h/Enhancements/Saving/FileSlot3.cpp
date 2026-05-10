@@ -1,4 +1,4 @@
-#include <libultraship/libultraship.h>
+#include <libultraship/bridge/consolevariablebridge.h>
 #include "2s2h/ShipInit.hpp"
 
 extern "C" {

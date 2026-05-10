@@ -1,4 +1,4 @@
-#include <libultraship/bridge.h>
+#include <libultraship/bridge/consolevariablebridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 
@@ -19,11 +19,12 @@ void RegisterSkipTatlInterrupts() {
         if (gSaveContext.save.entrance == ENTRANCE(SOUTH_CLOCK_TOWN, 0) && gSaveContext.save.cutsceneIndex == 0 &&
             !CHECK_WEEKEVENTREG(WEEKEVENTREG_59_04)) {
             Flags_SetWeekEventReg(WEEKEVENTREG_59_04);
+            Sram_SaveSpecialEnterClockTown(gPlayState);
         }
     });
 
     // General Interupt
-    COND_VB_SHOULD(VB_TATL_INTERUPT_MSG, CVAR, {
+    COND_VB_SHOULD(VB_TATL_INTERRUPT_MSG, CVAR, {
         if (*should) {
             Actor* actor = va_arg(args, Actor*);
             *should = false;
@@ -35,7 +36,7 @@ void RegisterSkipTatlInterrupts() {
     });
 
     // General interupt (3)
-    COND_VB_SHOULD(VB_TATL_INTERUPT_MSG3, CVAR, {
+    COND_VB_SHOULD(VB_TATL_INTERRUPT_MSG3, CVAR, {
         if (*should) {
             Actor* actor = va_arg(args, Actor*);
             *should = false;
@@ -47,7 +48,7 @@ void RegisterSkipTatlInterrupts() {
     });
 
     // General interupt (4)
-    COND_VB_SHOULD(VB_TATL_INTERUPT_MSG4, CVAR, {
+    COND_VB_SHOULD(VB_TATL_INTERRUPT_MSG4, CVAR, {
         if (*should) {
             Actor* actor = va_arg(args, Actor*);
             *should = false;
@@ -59,9 +60,9 @@ void RegisterSkipTatlInterrupts() {
     });
 
     // General interupt (6) (the flags were directly copied from the original code)
-    COND_VB_SHOULD(VB_TATL_INTERUPT_MSG6, CVAR, {
-        if (*should) {
-            Actor* actor = va_arg(args, Actor*);
+    COND_VB_SHOULD(VB_TATL_INTERRUPT_MSG6, CVAR, {
+        Actor* actor = va_arg(args, Actor*);
+        if (*should && actor->csId != -1 && actor->csId != 124) {
             *should = false;
             switch (actor->textId) {
                 case 0x224:

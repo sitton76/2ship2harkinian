@@ -1,7 +1,6 @@
 #ifndef MENUTYPES_H
 #define MENUTYPES_H
 
-#include <libultraship/libultraship.h>
 #include "UIWidgets.hpp"
 
 typedef enum {
@@ -25,11 +24,14 @@ typedef enum {
     DISABLE_FOR_MOTION_BLUR_MODE,
     DISABLE_FOR_MOTION_BLUR_OFF,
     DISABLE_FOR_FRAME_ADVANCE_OFF,
-    DISABLE_FOR_WARP_POINT_NOT_SET,
     DISABLE_FOR_INTRO_SKIP_OFF,
     DISABLE_FOR_ADVANCED_RESOLUTION_ON,
     DISABLE_FOR_VERTICAL_RES_TOGGLE_ON,
     DISABLE_FOR_LOW_RES_MODE_ON,
+    DISABLE_FOR_ADVANCED_RESOLUTION_OFF,
+    DISABLE_FOR_VERTICAL_RESOLUTION_OFF,
+    DISABLE_FOR_LINKS_VOICE_PITCH_MULTIPLIER_OFF,
+    DISABLE_FOR_KOUME_INVINCIBLE,
 } DisableOption;
 
 struct WidgetInfo;
@@ -48,6 +50,7 @@ typedef enum {
     WIDGET_CVAR_COMBOBOX,
     WIDGET_CVAR_SLIDER_INT,
     WIDGET_CVAR_SLIDER_FLOAT,
+    WIDGET_CVAR_BTN_SELECTOR,
     WIDGET_BUTTON,
     WIDGET_COLOR_24, // color picker without alpha
     WIDGET_COLOR_32, // color picker with alpha
@@ -60,6 +63,12 @@ typedef enum {
     WIDGET_VIDEO_BACKEND, // same as above
     WIDGET_CUSTOM,
 } WidgetType;
+
+typedef enum {
+    SECTION_COLUMN_1,
+    SECTION_COLUMN_2,
+    SECTION_COLUMN_3,
+} SectionColumns;
 
 typedef enum {
     MOTION_BLUR_DYNAMIC,
@@ -80,9 +89,9 @@ typedef enum {
 // holds the widget values for a widget, contains all CVar types available from LUS. int32_t is used for boolean
 // evaluation
 using CVarVariant = std::variant<int32_t, const char*, float, Color_RGBA8, Color_RGB8>;
-using OptionsVariant =
-    std::variant<UIWidgets::ButtonOptions, UIWidgets::CheckboxOptions, UIWidgets::ComboboxOptions,
-                 UIWidgets::FloatSliderOptions, UIWidgets::IntSliderOptions, UIWidgets::WidgetOptions>;
+using OptionsVariant = std::variant<UIWidgets::ButtonOptions, UIWidgets::CheckboxOptions, UIWidgets::ComboboxOptions,
+                                    UIWidgets::FloatSliderOptions, UIWidgets::IntSliderOptions,
+                                    UIWidgets::BtnSelectorOptions, UIWidgets::WidgetOptions>;
 
 // All the info needed for display and search of all widgets in the menu.
 // `name` is the label displayed,
@@ -118,6 +127,7 @@ struct WidgetInfo {
     const char* windowName = "";
     bool isHidden = false;
     bool sameLine = false;
+    bool hideInSearch = false;
 
     WidgetInfo& CVar(const char* cVar_) {
         cVar = cVar_;
@@ -148,6 +158,10 @@ struct WidgetInfo {
             case WIDGET_BUTTON:
             case WIDGET_WINDOW_BUTTON:
                 options = std::make_shared<UIWidgets::ButtonOptions>(std::get<UIWidgets::ButtonOptions>(options_));
+                break;
+            case WIDGET_CVAR_BTN_SELECTOR:
+                options =
+                    std::make_shared<UIWidgets::BtnSelectorOptions>(std::get<UIWidgets::BtnSelectorOptions>(options_));
                 break;
             case WIDGET_TEXT:
             case WIDGET_SEPARATOR_TEXT:
@@ -195,12 +209,17 @@ struct WidgetInfo {
         customFunction = customFunction_;
         return *this;
     }
+
+    WidgetInfo& HideInSearch(bool hide) {
+        hideInSearch = hide;
+        return *this;
+    }
 };
 
 struct WidgetPath {
     std::string sectionName;
     std::string sidebarName;
-    uint8_t column;
+    SectionColumns column;
 };
 
 // `disabledInfo` holds information on reasons for hiding or disabling a widget, as well as an evaluation lambda that
@@ -247,25 +266,72 @@ struct SidebarEntry {
     std::vector<std::vector<WidgetInfo>> columnWidgets;
 };
 
+struct SearchWidget {
+    // First four required
+    WidgetInfo& info;
+    std::string menuName;
+    std::string sidebarName;
+    std::string location;
+    std::string extraTerms = "";
+};
+
 // Contains entries for what's listed in the header at the top, including the name displayed on the top bar (label),
 // a vector of the SidebarEntries for that header entry, and the name of the cvar used to track what sidebar entry is
 // the last viewed for that header.
 struct MainMenuEntry {
     std::string label;
-    std::unordered_map<std::string, SidebarEntry> sidebars;
     const char* sidebarCvar;
-    std::vector<std::string> sidebarOrder;
+    std::unordered_map<std::string, SidebarEntry> sidebars = {};
+    std::vector<std::string> sidebarOrder = {};
 };
 
 static const std::unordered_map<Ship::AudioBackend, const char*> audioBackendsMap = {
     { Ship::AudioBackend::WASAPI, "Windows Audio Session API" },
     { Ship::AudioBackend::SDL, "SDL" },
+    { Ship::AudioBackend::NUL, "Null" },
 };
 
 static const std::unordered_map<Ship::WindowBackend, const char*> windowBackendsMap = {
     { Ship::WindowBackend::FAST3D_DXGI_DX11, "DirectX" },
     { Ship::WindowBackend::FAST3D_SDL_OPENGL, "OpenGL" },
     { Ship::WindowBackend::FAST3D_SDL_METAL, "Metal" },
+};
+
+struct MenuInit {
+    static std::vector<std::function<void()>>& GetInitFuncs() {
+        static std::vector<std::function<void()>> menuInitFuncs;
+        return menuInitFuncs;
+    }
+
+    static std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::function<void()>>>>&
+    GetUpdateFuncs() {
+        static std::unordered_map<std::string, std::unordered_map<std::string, std::vector<std::function<void()>>>>
+            menuUpdateFuncs;
+        return menuUpdateFuncs;
+    }
+
+    static void InitAll() {
+        auto& menuInitFuncs = MenuInit::GetInitFuncs();
+        for (const auto& initFunc : menuInitFuncs) {
+            initFunc();
+        }
+    }
+};
+
+struct RegisterMenuInitFunc {
+    RegisterMenuInitFunc(std::function<void()> initFunc) {
+        auto& menuInitFuncs = MenuInit::GetInitFuncs();
+
+        menuInitFuncs.push_back(initFunc);
+    }
+};
+
+struct RegisterMenuUpdateFunc {
+    RegisterMenuUpdateFunc(std::function<void()> updateFunc, std::string sectionName, std::string sidebarName) {
+        auto& menuUpdateFuncs = MenuInit::GetUpdateFuncs();
+
+        menuUpdateFuncs[sectionName][sidebarName].push_back(updateFunc);
+    }
 };
 
 #endif // MENUTYPES_H

@@ -1,5 +1,4 @@
 #include "ActorBehavior.h"
-#include <libultraship/libultraship.h>
 
 extern "C" {
 #include "variables.h"
@@ -7,7 +6,7 @@ extern "C" {
 
 /*
  * This is the same block found for non-scripted actors in OfferGetItem.cpp, with the removal
- * of Player_TalkWithPlayer()
+ * of Player_StartTalking()
  */
 void Rando::ActorBehavior::InitEnOtBehavior() {
     COND_VB_SHOULD(VB_GIVE_ITEM_FROM_OFFER, IS_RANDO, {

@@ -1,9 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
-#include "Resource.h"
-#include <libultraship/libultra/types.h>
+#include <ship/resource/Resource.h>
 
 namespace SOH {
 

@@ -1,5 +1,5 @@
 #include "ActorBehavior.h"
-#include <libultraship/libultraship.h>
+#include <libultraship/bridge/consolevariablebridge.h>
 #include "CustomItem/CustomItem.h"
 
 extern "C" {
@@ -14,7 +14,7 @@ void Rando::ActorBehavior::InitEnRuppecrowBehavior() {
 
         RandoCheckId randoCheckId = (RandoCheckId)(RC_TERMINA_FIELD_GUAY_RUPEE_DROP_01 + rupeeIndex);
 
-        if (RANDO_SAVE_CHECKS[randoCheckId].obtained || !RANDO_SAVE_CHECKS[randoCheckId].shuffled) {
+        if (RANDO_SAVE_CHECKS[randoCheckId].cycleObtained || !RANDO_SAVE_CHECKS[randoCheckId].shuffled) {
             return;
         }
 
@@ -25,7 +25,8 @@ void Rando::ActorBehavior::InitEnRuppecrowBehavior() {
             [](Actor* actor, PlayState* play) {
                 auto& randoSaveCheck = RANDO_SAVE_CHECKS[CUSTOM_ITEM_PARAM];
                 Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                Rando::DrawItem(Rando::ConvertItem(randoSaveCheck.randoItemId, (RandoCheckId)CUSTOM_ITEM_PARAM), actor);
+                Rando::DrawItem(Rando::ConvertItem(randoSaveCheck.randoItemId, (RandoCheckId)CUSTOM_ITEM_PARAM),
+                                (RandoCheckId)CUSTOM_ITEM_PARAM, actor);
             });
 
         // Apply rupee drop heavy gravity

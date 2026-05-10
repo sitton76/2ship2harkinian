@@ -1,5 +1,5 @@
 #include "Spoiler.h"
-#include <libultraship/libultraship.h>
+#include "Rando/Rando.h"
 
 namespace Rando {
 
@@ -15,6 +15,9 @@ nlohmann::json GenerateFromSaveContext() {
     for (auto& [randoOptionId, randoStaticOption] : Rando::StaticData::Options) {
         spoiler["options"][randoStaticOption.name] = RANDO_SAVE_OPTIONS[randoOptionId];
     }
+
+    auto startingItems = Rando::GetStartingItemsFromSave(gSaveContext.save.shipSaveInfo.rando);
+    Rando::SetStartingItemsInSpoiler(spoiler, startingItems);
 
     spoiler["checks"] = nlohmann::json::object();
     for (auto& [randoCheckId, randoStaticCheck] : Rando::StaticData::Checks) {

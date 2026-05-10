@@ -1,12 +1,17 @@
 #include "Spoiler.h"
-#include <libultraship/libultraship.h>
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
 #include <spdlog/spdlog.h>
 #include "BenPort.h"
+#include <libultraship/bridge/consolevariablebridge.h>
+#include <ship/window/Window.h>
 
-bool Rando::Spoiler::HandleFileDropped(std::string filePath) {
+extern "C" {
+#include "sfx.h"
+}
+
+bool Rando::Spoiler::HandleFileDropped(char* filePath) {
     try {
         std::ifstream fileStream(filePath);
 
